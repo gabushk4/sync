@@ -290,10 +290,15 @@ export default function Home() {
   // but they don't occupy the day: no block on the timeline, no "fully booked" card,
   // and they don't remove common free slots.
   const evenementsHoraire = useMemo(() => userEvents.filter((ev: any) => !estJourFerie(ev)), [userEvents])
-  // Unavailabilities in red on the member's row (Philip — user story 20).
+  // Unavailabilities in red on the member's row (Philip — user story 20), group
+  // events in their own color (Philip — user story 23).
   const evenementsMembreAffiches = useMemo(
-    () => evenementsHoraire.map((ev: any) => (ev.nature === 'indisponibilite' ? { ...ev, couleur: colors.indisponible } : ev)),
-    [evenementsHoraire, colors.indisponible]
+    () => evenementsHoraire.map((ev: any) => (
+      ev.nature === 'indisponibilite' ? { ...ev, couleur: colors.indisponible }
+        : ev.groupe ? { ...ev, couleur: colors.groupe }
+        : ev
+    )),
+    [evenementsHoraire, colors.indisponible, colors.groupe]
   )
   const feriesDuJour = useMemo(() => joursFeriesDuJour(userEvents, todayDateTime), [userEvents, todayDateTime])
 

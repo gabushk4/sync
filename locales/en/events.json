@@ -139,5 +139,32 @@
     "rangeTaken": "You already have something then",
     "inTheWay": "Already planned: {{titres}}",
     "createFailed": "Unable to add the unavailability"
+  },
+  "postpone": {
+    "title": "Propose another time",
+    "suggestionsCount": "Proposed times ({{count}})",
+    "noSlot": "No time when everyone is free in the next 7 days",
+    "alreadyProposed": "already proposed",
+    "proposedBy": "by {{pseudo}}",
+    "propose": "Propose",
+    "confirmTitle": "Propose this time?",
+    "confirmMessage": "{{plage}}\nThe other participants will be able to vote.",
+    "cancel": "Cancel",
+    "sentTitle": "Proposal sent",
+    "sentMessage": "The participants will vote",
+    "apply": "Change the time",
+    "applyTitle": "Change the time?",
+    "applyMessage": "{{plage}}\nYes ({{oui}}): attending · No ({{non}}): not attending · the others will have to answer again.",
+    "appliedTitle": "Time changed",
+    "appliedMessage": "The participants have been notified",
+    "conflictTitle": "You already have something then",
+    "conflictMessage": "Already planned: {{titres}}",
+    "voteYes": "Available",
+    "voteNo": "Not available",
+    "loadFailed": "Unable to load the proposed times",
+    "proposeFailed": "Unable to send the proposal",
+    "voteFailed": "Unable to save your vote",
+    "applyFailed": "Unable to change the time",
+    "range": "{{jour}} from {{debut}} to {{fin}}"
   }
 }

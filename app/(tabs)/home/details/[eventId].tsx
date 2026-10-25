@@ -20,6 +20,7 @@ import EventForm from "@/components/eventForm";
 import { toastTypes } from "@/constants/toastConfig";
 import { useNavFab } from "@/hooks/useNavFAB";
 import PanneauDecisionInvitation from "@/components/panneauDecisionInvitation";
+import PanneauReport from "@/components/panneauReport";
 import ouvrirRevueInvitation from "@/functions/ouvrirRevueInvitation";
 import useDecisionInvitation from "@/hooks/useDecisionInvitation";
 import { InvitationInfo } from "@/types/invitation";
@@ -230,11 +231,20 @@ export default function Details(){
                         accepter={decision.accepter}
                         refuser={decision.refuser}
                         enCours={decision.enCours}
-                    />
+                    >
+                        {/* Proposing another time instead (Philip — user story 23). */}
+                        <PanneauReport idEvenement={invitation.id_evenement} integre />
+                    </PanneauDecisionInvitation>
                     {decision.conflit}
                 </>
             ) : (
-                // quit (non-creators) / delete (creator) button
+                <>
+                {/* Postponement votes: propose / vote (invitee), apply one (creator).
+                    Philip — user story 23. */}
+                {!!event.id && (
+                    <PanneauReport idEvenement={event.id} onPlageChangee={() => getDetails(event.id as string)} />
+                )}
+                {/* quit (non-creators) / delete (creator) button */}
                 <TouchableOpacity style={s.floatingBtn} onPress={() => {
                     if (event.privilege_membre === 'editeur')
                         verifAvantDelete()
@@ -243,6 +253,7 @@ export default function Details(){
                 }}>
                     <Icon name='trash-sharp' color={colors.error} size={28}/>
                 </TouchableOpacity>
+                </>
             )}
         </View>
     )

@@ -139,5 +139,32 @@
     "rangeTaken": "Tu as déjà quelque chose sur cette plage",
     "inTheWay": "Déjà prévu : {{titres}}",
     "createFailed": "Impossible d'ajouter l'indisponibilité"
+  },
+  "postpone": {
+    "title": "Proposer une autre plage",
+    "suggestionsCount": "Plages proposées ({{count}})",
+    "noSlot": "Aucune plage où tout le monde est libre dans les 7 prochains jours",
+    "alreadyProposed": "déjà proposée",
+    "proposedBy": "par {{pseudo}}",
+    "propose": "Proposer",
+    "confirmTitle": "Proposer cette plage?",
+    "confirmMessage": "{{plage}}\nLes autres participants pourront voter.",
+    "cancel": "Annuler",
+    "sentTitle": "Proposition envoyée",
+    "sentMessage": "Les participants vont voter",
+    "apply": "Changer la plage",
+    "applyTitle": "Changer la plage?",
+    "applyMessage": "{{plage}}\nOui ({{oui}}) : présents · Non ({{non}}) : absents · les autres devront répondre de nouveau.",
+    "appliedTitle": "Plage changée",
+    "appliedMessage": "Les participants sont avertis",
+    "conflictTitle": "Tu as déjà quelque chose à cette heure",
+    "conflictMessage": "Déjà prévu : {{titres}}",
+    "voteYes": "Disponible",
+    "voteNo": "Pas disponible",
+    "loadFailed": "Impossible de charger les plages proposées",
+    "proposeFailed": "Impossible d'envoyer la proposition",
+    "voteFailed": "Impossible d'enregistrer ton vote",
+    "applyFailed": "Impossible de changer la plage",
+    "range": "{{jour}} de {{debut}} à {{fin}}"
   }
 }

@@ -1,6 +1,7 @@
 import axios from "axios";
 import { DateTime } from "luxon";
 import { useEffect, useState } from "react";
+import { router } from "expo-router";
 import { useTranslation } from 'react-i18next';
 import { Image, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
@@ -68,6 +69,13 @@ export default function NotificationItem({ item, index, vu }: ItemProps) {
     // level; there's no `payload` anymore.
     const categorie = categorieNotification(item.type)
     const demandeAmiEnAttente = item.type === 'demande_ami' && item.statut_metier === 'en_attente'
+    // A postponement vote: yes / no buttons (the actions); its answer reads
+    // "available" / "not available". Philip — user story 23.
+    const voteReport = item.type === 'postpone_vote'
+    // Event the notification is about (the API sends it for every event notification).
+    const idEvenement: string | null = categorie === 'evenements'
+        ? (item.id_evenement ?? item.details?.id_evenement ?? null)
+        : null
     const nonLue = item.statut_notification === "non_lue"
 
     const [selectionner, setSelectionner] = useState(false)
@@ -299,6 +307,23 @@ export default function NotificationItem({ item, index, vu }: ItemProps) {
 
     let expired = false
     if (item.expiration === "expired") expired = true
+
+    /**
+     * "Manage" button of an event notification: a pending invitation opens its
+     * decision page (event, organizer, participants, accept / refuse / adjust my
+     * schedule, propose another time); any other one (answered or expired
+     * invitation, vote, time changed...) opens the event's page.
+     *
+     * @author Philip — user story 23 (user story 8 for the decision page)
+     * @returns {void}
+     */
+    const gerer = () => {
+        if (invitation && item.statut_metier === 'en_attente' && !expired) {
+            ouvrirDecisionInvitation(invitation)
+        } else if (idEvenement) {
+            router.push({ pathname: '/(tabs)/home/details/[eventId]', params: { eventId: idEvenement } } as any)
+        }
+    }
     // The API sends "expired" instead of a date once the invitation has expired
     // (sync_api validateExpiration.js); convertUTCToLocal throws on it and crashed the list.
     const expiration = item.expiration && !expired ? convertUTCToLocal(item.expiration) : undefined
@@ -455,13 +480,8 @@ export default function NotificationItem({ item, index, vu }: ItemProps) {
                 </View>
                 <TouchableOpacity
                     onPress={() => {
-                        // A pending invitation opens its decision page (event, organizer,
-                        // participants, accept / refuse / adjust my schedule).
-                        // Philip — user story 8.
-                        if (!selectionner && invitation && item.statut_metier === 'en_attente' && !expired) {
-                            ouvrirDecisionInvitation(invitation)
-                            return
-                        }
+                        // An event notification unfolds too (expiration, status); its
+                        // "manage" button opens the page (see gerer). Philip — user story 23.
                         if (!selectionner) {
                             setMontrerDetails(!montrerDetails)
                             setMontrerExplExpiration(true)
@@ -571,11 +591,25 @@ export default function NotificationItem({ item, index, vu }: ItemProps) {
                     )}
                 </View>
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    {/* User story 9: once answered, show the answer instead of the buttons. */}
-                    {(item.statut_metier === "acceptee" || item.statut_metier === "refusee") && (
-                        <Text style={[s.reponse, { color: item.statut_metier === "acceptee" ? colors.success : colors.error }]}>
-                            {t(`answer.${item.statut_metier}`)}
+                    {/* User story 9: once answered, show the answer instead of the buttons.
+                        Pending is shown too for an event notification (Philip — user story 23). */}
+                    {(item.statut_metier === "acceptee" || item.statut_metier === "refusee"
+                        || (idEvenement && item.statut_metier === "en_attente")) && (
+                        <Text style={[s.reponse, {
+                            color: item.statut_metier === "acceptee" ? colors.success
+                                : item.statut_metier === "refusee" ? colors.error : colors.warning,
+                        }]}>
+                            {t(`${voteReport ? 'vote' : 'answer'}.${item.statut_metier}`)}
                         </Text>
+                    )}
+                    {idEvenement && (
+                        <TouchableOpacity
+                            style={[s.optionBouton, { width: 'auto', paddingHorizontal: 12, borderColor: colors.secondary, backgroundColor: colors.card }]}
+                            onPress={gerer}
+                            accessibilityRole="button"
+                        >
+                            <Text style={{ color: colors.text, fontFamily: fonts.title, fontSize: 14 }}>{t('manage')}</Text>
+                        </TouchableOpacity>
                     )}
                     {!demandeAmiEnAttente && options}
                     <TouchableOpacity onPress={() => supprNotif([item.id])} style={[{ position: "relative", right: 0, backgroundColor: colors.error, borderColor: colors.border }]}> 

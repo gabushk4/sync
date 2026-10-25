@@ -13,6 +13,8 @@ export type Event = {
   type?: "recurrence" | "exception";
   // 'indisponibilite': a busy stretch the member declared (Philip — user story 20).
   nature?: "evenement" | "indisponibilite";
+  // Other participants than the creator: drawn in the group color (Philip — user story 23).
+  groupe?: boolean;
   regle_recurrence?: string;
   id_parent?: string;
   debut_occurence?: DateTime;

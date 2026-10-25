@@ -17,6 +17,7 @@ export default function categorieNotification(type: string | null | undefined): 
         case 'amis':
             return 'amis'
         case 'invitation_evenement':
+        case 'postpone_vote': // Philip — user story 23 (postponement votes)
         case 'evenements':
             return 'evenements'
         default:

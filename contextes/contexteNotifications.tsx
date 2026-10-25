@@ -33,6 +33,8 @@ export type Notification = {
     date_envoie: string;
     message: string;
     source_url: { method: string, url: string };
+    /** Public id of the related event (event notifications), or null. Philip — user story 23. */
+    id_evenement?: string | null;
     icon?: string;
     payload?: Record<string, any> | null;
 };

@@ -1,5 +1,5 @@
 import Ionicons from '@react-native-vector-icons/ionicons'
-import { useEffect, useState } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
@@ -23,6 +23,8 @@ type Props = {
     refuser: () => void
     /** The answer being sent (spinner on its button, every button disabled), or false. */
     enCours: false | 'acceptee' | 'refusee'
+    /** Shown under the participants: the postponement proposals (Philip — user story 23). */
+    children?: ReactNode
 }
 
 /**
@@ -31,11 +33,12 @@ type Props = {
  * participants with their answer, "adjust my schedule" (the invitation review), and
  * the decision — accept or refuse (see useDecisionInvitation).
  *
- * @author Philip — user story 8 (answering an invitation in conflict)
+ * @author Philip — user story 8 (answering an invitation in conflict); user story 23
+ *   (children: proposing another time, see PanneauReport)
  * @param {Props} props
  * @returns {JSX.Element}
  */
-export default function PanneauDecisionInvitation({ idEvenement, organisateur, voirHoraire, accepter, refuser, enCours }: Props) {
+export default function PanneauDecisionInvitation({ idEvenement, organisateur, voirHoraire, accepter, refuser, enCours, children }: Props) {
     const { t } = useTranslation('events')
     const { colors } = usePalette()
     const { fonts } = useFont()
@@ -123,6 +126,8 @@ export default function PanneauDecisionInvitation({ idEvenement, organisateur, v
                         </Text>
                     </View>
                 )))}
+
+            {children}
 
             <TouchableOpacity style={[s.bouton, { flex: 0, borderColor: colors.secondary }]} onPress={voirHoraire} disabled={!!enCours}>
                 <Ionicons name="time-outline" size={18} color={colors.text} />

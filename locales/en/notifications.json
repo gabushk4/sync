@@ -16,7 +16,14 @@
 	},
 	"answer": {
 		"acceptee": "accepted",
-		"refusee": "refused"
+		"refusee": "refused",
+		"en_attente": "pending"
+	},
+	"manage": "Manage",
+	"vote": {
+		"acceptee": "available",
+		"refusee": "not available",
+		"en_attente": "not voted yet"
 	},
 	"refused": {
 		"link": "Refused",
