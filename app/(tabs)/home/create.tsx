@@ -1,7 +1,7 @@
 import { useFocusEffect, useLocalSearchParams, useNavigation } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { StyleSheet, useColorScheme, View } from 'react-native';
+import { Alert, StyleSheet, useColorScheme, View } from 'react-native';
 
 import { useActionFab } from "@/hooks/useActionFAB";
 
@@ -110,6 +110,22 @@ export default function CreateEvent({ }) {
      *   conflict screen can create it itself once the existing ones are removed.
      * @returns {void}
      */
+    /**
+     * Story #21 : asks the creator whether a group conversation with the participants
+     * should be created along with the shared event. Resolves to the answer.
+     */
+    const demanderConversation = () => new Promise<boolean>((resolve) => {
+        Alert.alert(
+            t('create.conversationTitle'),
+            t('create.conversationMessage'),
+            [
+                { text: t('create.conversationNo'), style: 'cancel', onPress: () => resolve(false) },
+                { text: t('create.conversationYes'), onPress: () => resolve(true), isPreferred: true },
+            ],
+            { cancelable: true, onDismiss: () => resolve(false) }
+        )
+    })
+
     const afficherConflit = (existants: EvenementEnConflit[], nouveau: NouvelEvenement) => {
         setConflit({ existants, nouveau })
     }
@@ -180,6 +196,9 @@ export default function CreateEvent({ }) {
             }
 
             if (valid) {
+                // Story #21 : a shared event (with invitees) can get its group conversation
+                const creerConversation = invites.length > 0 ? await demanderConversation() : false
+
                 setEnChargement(true)
 
                 nouveau = {
@@ -190,7 +209,9 @@ export default function CreateEvent({ }) {
                     debut: formaterDatePourServeur(convertLocalToUTC(values.start)),
                     fin: formaterDatePourServeur(convertLocalToUTC(values.end)),
                     regle_recurrence: values.regleRecurrence,
-                    participants: invites.map((i) => ({ id: i.id, privilege: i.privilege }))
+                    participants: invites.map((i) => ({ id: i.id, privilege: i.privilege })),
+                    // kept in `nouveau`, so the conflict screen re-sends it too
+                    creer_conversation: creerConversation,
                 }
 
                 const response = await api.post('/evenements/', nouveau)

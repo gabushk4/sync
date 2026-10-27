@@ -23,6 +23,8 @@ export type Event = {
   // whether tapping the block does anything. Philip Kvaratshelya — user story 8.
   couleur?: string;
   cliquable?: boolean;
+  // Story #21: public id of the shared event's group conversation, when the member is in it.
+  conversation_id?: string | null;
 };
 
 export const defaultEvent = <Event>{
