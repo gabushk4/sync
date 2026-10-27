@@ -137,8 +137,7 @@ export default function ConflitEvenement({ existants: existantsInitiaux, eveneme
     const [fermeture, setFermeture] = useState(false)
 
     useEffect(() => {
-        fond.set(withTiming(1, { duration: 220, easing: Easing.out(Easing.quad) }))
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        fond.set(withTiming(1, { duration: 220, easing: Easing.out(Easing.quad) }))        
     }, [])
 
     const styleFond = useAnimatedStyle(() => ({ opacity: fond.value }))

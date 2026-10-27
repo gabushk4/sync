@@ -41,7 +41,7 @@ export type CalendrierGoogle = {
     /** identifiant public Sync du calendrier, null tant qu'il n'est pas sélectionné */
     id_publique: string | null;
     nom: string;
-    couleur: string | null;
+    couleur: number | null;
     /** déjà importé dans Sync */
     actif: boolean;
     /** calendrier principal du compte, proposé par défaut */
@@ -140,6 +140,13 @@ export async function selectionnerCalendriersGoogle(
     return { jobId: data.job_id ?? null, calendriersDesactives: data.calendriers_desactives ?? 0 };
 }
 
+export async function modifierCalendriersGoogle(
+    api: AxiosInstance,
+    idPublique: string,
+    modifications: Partial<CalendrierGoogle>
+) {
+    await api.patch(`/calendriers/google/${idPublique}`, modifications);
+}
 /** Relance l'import d'un calendrier déjà sélectionné. */
 export async function resynchroniserCalendrierGoogle(api: AxiosInstance, idPublique: string): Promise<string> {
     const { data } = await api.post<{ job_id: string }>(`/calendriers/syncroniser/${idPublique}`);

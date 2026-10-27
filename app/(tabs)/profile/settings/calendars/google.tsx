@@ -1,5 +1,7 @@
 import Container from '@/abstractions/container';
 import ToastAbs from '@/abstractions/toastAbs';
+import CalendarOptions from '@/components/calendarOptions';
+import ModalBase from '@/components/modalBase';
 import Radius from '@/constants/Radius';
 import { toastTypes } from '@/constants/toastConfig';
 import { useAPI } from '@/contextes/contexteAPI';
@@ -15,6 +17,7 @@ import {
     chargerConfigGoogle,
     connecterCompteGoogle,
     deconnecterCompteGoogle,
+    modifierCalendriersGoogle,
     resynchroniserCalendrierGoogle,
     selectionnerCalendriersGoogle,
     suivreImportGoogle,
@@ -22,9 +25,13 @@ import {
 import { ConfigurationOAuthInvalide, demanderCodeGoogle } from '@/functions/googleOAuth';
 import Icon from '@react-native-vector-icons/ionicons';
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useRef, useState, JSX } from 'react';
+import { JSX, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
+
+import { L, S } from '@/constants/EventsSL';
+import log from '@/functions/log';
+import RenderCalendarColor from '@/functions/renderCalendarColor';
 
 /**
  * Écran « Google Agenda » : linker un compte Google, choisir les calendriers à
@@ -44,6 +51,7 @@ export default function GoogleAgendaScreen() : JSX.Element  {
     const { api } = useAPI();
     const { colors } = usePalette();
     const { fonts } = useFont();
+    const scheme = useColorScheme();
 
     const [chargement, setChargement] = useState(true);
     const [comptes, setComptes] = useState<CompteGoogle[]>([]);
@@ -51,6 +59,8 @@ export default function GoogleAgendaScreen() : JSX.Element  {
     const [selection, setSelection] = useState<Set<string>>(new Set());
     const [action, setAction] = useState<null | 'connexion' | 'enregistrement' | 'deconnexion'>(null);
     const [progression, setProgression] = useState<ProgressionImport | null>(null);
+    const [selectedCalendar, setSelectedCalendar] = useState<CalendrierGoogle>();
+    const [optionsModalVisible, setOptionsModalVisible] = useState<boolean>(false);
 
     // permet d'arrêter le suivi de l'import quand on quitte l'écran
     const arreterSuivi = useRef<(() => void) | null>(null);
@@ -79,7 +89,7 @@ export default function GoogleAgendaScreen() : JSX.Element  {
             gap: 12,
         },
         rowDisabled: { opacity: 0.5 },
-        rowText: { flex: 1, color: colors.text, fontFamily: fonts.body, fontSize: 16 },
+        rowText: { flex: 1, color: colors.text, fontFamily: fonts.body, fontSize: 16, justifyContent:'center' },
         rowSubText: { color: colors.muted, fontFamily: fonts.body, fontSize: 13, marginTop: 2 },
         action: {
             minHeight: 52,
@@ -278,6 +288,36 @@ export default function GoogleAgendaScreen() : JSX.Element  {
         }
     };
 
+    const enregistrerModificationsCalendrier = async (
+        calendrier: CalendrierGoogle,
+        modifications: Partial<CalendrierGoogle>,
+    ) => {
+        setCalendriers(current => current.map(item =>
+            item.id_publique === calendrier.id_publique
+                ? { ...item, ...modifications }
+                : item,
+        ));
+
+        if (calendrier.id_publique) {
+            try {
+                await modifierCalendriersGoogle(api, calendrier.id_publique, modifications)
+                ToastAbs.show({
+                    type: toastTypes.success,
+                    text1: 'modifié',
+                    text2: `modifications: ${Object.keys(modifications).join(',')}`
+                })
+            } catch (err) {
+                log('impossible de modifier le calendrier', calendrier.nom, err)
+                catcher(err, 'modification impossible')
+            }
+        }
+            
+    };
+
+    const fermerOptionsCalendrier = () => {
+        setOptionsModalVisible(false);
+    };
+
     /** Déconnecte un compte : ses calendriers sont désactivés et ses événements retirés. */
     const deconnecter = async (compte: CompteGoogle) => {
         setAction('deconnexion');
@@ -316,7 +356,7 @@ export default function GoogleAgendaScreen() : JSX.Element  {
                                 color={compte.statut === 'actif' ? colors.secondary : colors.error}
                             />
                             <View style={styles.rowText}>
-                                <Text style={styles.rowText}>{compte.courriel ?? t('google.unknownAccount')}</Text>
+                                <Text numberOfLines={1} style={[styles.body, {color:colors.text}]}>{compte.courriel ?? t('google.unknownAccount')}</Text>
                                 {compte.a_reconnecter ? (
                                     <Text style={[styles.rowSubText, { color: colors.error }]}>
                                         {t('google.needsReconnect')}
@@ -388,7 +428,7 @@ export default function GoogleAgendaScreen() : JSX.Element  {
                                                 accessibilityRole="checkbox"
                                                 accessibilityState={{ checked: coche, disabled: indisponible }}
                                                 disabled={indisponible || occupe}
-                                                style={[styles.row, indisponible && styles.rowDisabled]}
+                                                style={[styles.row, indisponible && styles.rowDisabled, { backgroundColor: RenderCalendarColor(calendrier.couleur ?? 275, scheme) }]}
                                                 onPress={() => basculer(calendrier.id_externe)}
                                             >
                                                 <Icon
@@ -405,14 +445,16 @@ export default function GoogleAgendaScreen() : JSX.Element  {
                                                         <Text style={styles.rowSubText}>{t('google.linkedElsewhere')}</Text>
                                                     ) : null}
                                                 </View>
-                                                {calendrier.couleur ? (
-                                                    <View style={{
-                                                        width: 14,
-                                                        height: 14,
-                                                        borderRadius: 7,
-                                                        backgroundColor: calendrier.couleur,
-                                                    }} />
-                                                ) : null}
+                                                {calendrier.actif && calendrier.id_publique &&
+                                                    <TouchableOpacity
+                                                        onPress={() => {
+                                                            setSelectedCalendar(calendrier);
+                                                            setOptionsModalVisible(true)
+                                                        }}
+                                                    >
+                                                        <Icon name='ellipsis-horizontal' size={24} color={colors.secondary} />
+                                                    </TouchableOpacity>
+                                                }
                                             </TouchableOpacity>
                                             {calendrier.actif && calendrier.id_publique ? (
                                                 <TouchableOpacity
@@ -478,6 +520,23 @@ export default function GoogleAgendaScreen() : JSX.Element  {
                     </View>
                 ) : null}
             </ScrollView>
+            {/* Options Modal: il est possible de: 
+            
+                - modifier la couleur du calendrier ainsi que des blocs evenementiels liés
+                - resyncroniser le calendrier */}
+            <Modal
+                visible={optionsModalVisible}
+                onRequestClose={fermerOptionsCalendrier}
+                transparent={true}
+            >
+                <ModalBase canDismiss={false} onDismiss={fermerOptionsCalendrier}>
+                    <CalendarOptions
+                        selectedCalendar={selectedCalendar}
+                        onSave={enregistrerModificationsCalendrier}
+                        onClose={fermerOptionsCalendrier}
+                    />
+                </ModalBase>
+            </Modal>
         </Container>
     );
 }
