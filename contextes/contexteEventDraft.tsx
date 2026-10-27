@@ -11,6 +11,7 @@ import { createContext, Dispatch, ReactNode, SetStateAction, useCallback, useCon
 import { useAPI } from "./contexteAPI"
 import { useInvites } from "./contexteInvites"
 import ceilBy5 from "@/functions/ceilBy5"
+import versCreneauxLocaux from "@/functions/versCreneauxLocaux"
 
 type EventDraftContextType = {
     invites: Participant[];
@@ -75,11 +76,8 @@ export const EventDraftProvider = ({makeReq = true, initialStart, initialEnd, ch
             suggestionsOffset.current = res.data.offset
             log("getCommonAvail:", res.data)
             if (res.data.disponibilites && res.status === 200) {
-                setSlotSuggestions(res.data.disponibilites.map((d: Interval) => ({
-                    ...d,
-                    debut: convertUTCToLocal(d.debut),
-                    fin: convertUTCToLocal(d.fin)
-                })))
+                // Shared with a friend's profile widget (Philip — user story 25).
+                setSlotSuggestions(versCreneauxLocaux(res.data.disponibilites))
             }
         } catch (err) {
             if (axios.isCancel(err) || signal.aborted || (err as any)?.code === 'ERR_CANCELED') return
