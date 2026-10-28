@@ -58,7 +58,7 @@ export default function EventBloc({ event, blockColor, displayDate, horizontal =
   return (
     <View style={[s.container, s.innerStyle]}>
       <BlurView
-        intensity={40}
+        intensity={20}
         tint="default"
         style={[
           {
