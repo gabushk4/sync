@@ -18,6 +18,7 @@ import { Dimensions, Easing, Image, Keyboard, StyleSheet, Text, TouchableOpacity
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { getCommonFreeSlotsSurPlage } from '@/functions/availability';
+import { heuresVersDate } from '@/functions/positionTimeline';
 import catcher from '@/functions/catcher';
 import { convertUTCToLocal } from '@/functions/convertirUTCenLocal';
 import log from '@/functions/log';
@@ -150,15 +151,6 @@ export default function Home() {
   // Rows shown: the loaded friends whose pseudo contains the typed text (case and
   // accents ignored, like the API), so each letter filters right away.
   const motifRecherche = normaliserRecherche(texteRecherche)
-  const amisAffiches = useMemo(
-    () => (rechercheOuverte && motifRecherche
-      ? friends.filter((ami) => normaliserRecherche(ami.pseudo ?? '').includes(motifRecherche))
-      : friends),
-    [friends, rechercheOuverte, motifRecherche]
-  )
-  const aucunResultat = rechercheOuverte && !!motifRecherche && amisAffiches.length === 0
-    && rechercheRepondue === texteRecherche.trim()
-
   /**
    * Params of the friends' request: the loaded window, plus the search if any.
    *
@@ -222,6 +214,9 @@ export default function Home() {
   const [windowStart, setWindowStart] = useState<DateTime>(() => DateTime.now().startOf('day').minus({ days: 3 }))
   const windowStartRef = useRef(windowStart)
   const windowStartMillis = useSharedValue(windowStart.toMillis())
+  // Forward scroll changes to JS only when the visible calendar day changes or
+  // the window itself is rebased, never on every animation frame.
+  const dernierePositionTraitee = useSharedValue('')
   const fenetreEnCoursRef = useRef('')
   // Day the member's / friends' loaded events belong to. Until both match the
   // displayed day, the previous day's events are still on screen: the common free
@@ -315,6 +310,19 @@ export default function Home() {
     const finJour = debutJour.plus({ days: 1 }).minus({ minutes: 1 })
     return evenementsHoraire.find((ev: any) => ev?.debut && ev?.fin && ev.debut <= debutJour && ev.fin >= finJour)
   }, [evenementsHoraire, todayDateTime, evenementsMembreAJour])
+  // The full-day/loading card follows the scrolled content and spans only the
+  // selected calendar day. A viewport-wide overlay hid adjacent days in the
+  // seven-day timeline (especially an empty day beside an all-day event).
+  const decalageJourneeSelectionnee = todayDateTime && windowStart
+    ? Math.round(todayDateTime.startOf('day').diff(windowStart.startOf('day'), 'days').days)
+    : 0
+  const styleJourneeSelectionnee = useAnimatedStyle(() => {
+    const largeurCellule = pxHeures + L_HEURES
+    return {
+      left: decalageJourneeSelectionnee * 24 * largeurCellule - offsetX.value,
+      width: 24 * largeurCellule,
+    }
+  }, [decalageJourneeSelectionnee, pxHeures, L_HEURES])
 
   // Shared availability can be shown as soon as both full window responses are
   // loaded. A fully booked selected day must not hide availability on the other
@@ -329,7 +337,7 @@ export default function Home() {
   const amisAvecDisponibilites = useMemo(() => {
     const maintenant = tempsClassement
     return disponibilitesAmis.map(({ ami, disponibilites }) => {
-      const aVenir = disponibilites.filter((slot: any) => !slot.passe && slot.end > maintenant)
+      const aVenir: any[] = disponibilites.filter((slot: any) => !slot.passe && slot.end > maintenant)
       const minutesCommunes = aVenir.reduce((total: number, slot: any) => {
         const debutUtile = slot.start > maintenant ? slot.start : maintenant
         return total + Math.max(0, slot.end.diff(debutUtile, 'minutes').minutes)
@@ -344,6 +352,16 @@ export default function Home() {
       || String(a.ami.pseudo ?? '').localeCompare(String(b.ami.pseudo ?? ''))
     )
   }, [disponibilitesAmis, tempsClassement])
+  // Keep the availability ranking in the rendered list, then apply the current
+  // search without changing that order.
+  const amisAffiches = useMemo(() => {
+    const classes = rechercheOuverte && motifRecherche
+      ? amisAvecDisponibilites.filter(({ ami }) => normaliserRecherche(ami.pseudo ?? '').includes(motifRecherche))
+      : amisAvecDisponibilites
+    return classes
+  }, [amisAvecDisponibilites, rechercheOuverte, motifRecherche])
+  const aucunResultat = rechercheOuverte && !!motifRecherche && amisAffiches.length === 0
+    && rechercheRepondue === texteRecherche.trim()
   const [chargementEchec, setChargementEchec] = useState(false)
   const [chargementEvenements, setChargementEvenements] = useState(false)
   // Pre-fills the create screen with the day currently displayed, at the suggested
@@ -644,16 +662,17 @@ export default function Home() {
     const cellule = pxHeures + L_HEURES
     const heures = offset / cellule
     const debut = windowStartRef.current
-    const dateVue = debut.plus({ hours: Math.max(0, heures) })
+    // The axis is laid out as 24 wall-clock hours per calendar day. Convert the
+    // offset by calendar day so crossing midnight stays aligned with its label.
+    const dateVue = heuresVersDate(Math.max(0, heures), debut)
     if (!todayDateTime?.hasSame(dateVue, 'day')) {
       setTodayDateTime(dateVue.startOf('day'))
       dateAujShared.value = dateVue.toMillis()
     }
-    // Keep several days available on both sides. Rebase by three days so the
-    // visible instant stays at exactly the same pixel while the seven-day window
-    // and its query range slide underneath it.
+    // Keep the seven-day window moving by one calendar day at a time. This limits
+    // refetches to one per 24h scrolled and preserves the visible instant.
     if (heures < 24 || heures > 6 * 24) {
-      const deltaJours = heures < 24 ? -3 : 3
+      const deltaJours = heures < 24 ? -1 : 1
       const nouveauDebut = debut.plus({ days: deltaJours })
       windowStartRef.current = nouveauDebut
       windowStartMillis.value = nouveauDebut.toMillis()
@@ -779,13 +798,20 @@ export default function Home() {
   )
 
   useAnimatedReaction(
-    () => offsetX.value,
-    (current) => {
+    () => {
+      const current = offsetX.value
+      const cellule = pxHeures + L_HEURES
+      const jour = Math.floor(current / (cellule * 24))
+      return { current, startMillis: windowStartMillis.value, position: `${windowStartMillis.value}:${jour}` }
+    },
+    (state) => {
       if (!accueilActif.get()) return
-      onPan(current)
-      scheduleOnRN(traiterDefilementTimeline, current, windowStartMillis.value)
+      onPan(state.current)
+      if (dernierePositionTraitee.value === state.position) return
+      dernierePositionTraitee.value = state.position
+      scheduleOnRN(traiterDefilementTimeline, state.current, state.startMillis)
     }
-  , [pxHeures, L_HEURES, todayDateTime])
+  , [pxHeures, L_HEURES])
 
   useNavFab("home", {
     href: '/home/create',
@@ -1009,8 +1035,6 @@ export default function Home() {
       position: 'absolute',
       top: 0,
       bottom: 0,
-      left: 0,
-      right: 0,
       paddingVertical: RETRAIT_RANGEE,
       paddingHorizontal: 8,
       backgroundColor: colors.card,
@@ -1179,7 +1203,7 @@ export default function Home() {
                       majMaxY();
                     }}
                   >
-                    {amisAffiches.map((friend) => {
+                    {amisAffiches.map(({ ami: friend, disponibilites }) => {
                       // Toujours calculer sur la fenêtre active entière, pas sur
                       // le jour actuellement visible (qui peut être le 16 dans
                       // une fenêtre chargée du 14 au 20).
@@ -1204,7 +1228,7 @@ export default function Home() {
                           {/* Événements horizontaux */}
                           <EventsList
                             owner={friend}
-                            commonFreeSlots={commonFreeSlots}
+                            commonFreeSlots={disponibilites}
                             listSize={LIST_HEIGHT}
                             horizontal={true}
                             events={friend.evenements}
@@ -1252,12 +1276,12 @@ export default function Home() {
                 {/* Day not loaded yet (not cached): blank row instead of the previous
                     day's timeline, until it's known whether the day is fully booked. */}
                 {!evenementsMembreAJour && (
-                  <View style={[s.journeeComplete, s.chargementMembre]}>
+                  <Animated.View style={[s.journeeComplete, s.chargementMembre, styleJourneeSelectionnee]}>
                     <Spinner size={24} color={colors.muted} />
-                  </View>
+                  </Animated.View>
                 )}
                 {evenementJourneeComplete && (
-                  <View style={s.journeeComplete}>
+                  <Animated.View style={[s.journeeComplete, styleJourneeSelectionnee]}>
                     <TouchableOpacity
                       style={s.carteJourneeComplete}
                       onPress={() => ouvrirDetailsEvenement(evenementJourneeComplete)}
@@ -1268,7 +1292,7 @@ export default function Home() {
                         {evenementJourneeComplete.titre?.trim() || t('untitledEvent')}
                       </Text>
                     </TouchableOpacity>
-                  </View>
+                  </Animated.View>
                 )}
               </View>
             </Animated.View>
