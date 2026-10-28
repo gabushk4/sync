@@ -24,6 +24,17 @@
 	},
 	"memberSince": "member since {{date}}",
 	"memberIdLabel": "member ID",
+	"admin": {
+		"title": "Admin dashboard",
+		"dashboard": "Open admin dashboard",
+		"bugsTab": "Bugs",
+		"empty": "No bugs have been reported.",
+		"loadFailed": "Could not load reported bugs.",
+		"retry": "Try again",
+		"accessDenied": "Access denied.",
+		"reportedAt": "Date: {{date}}",
+		"unknown": "Unknown"
+	},
 	"friendMood": "Mood",
 	"moodEmpty": "No mood shared right now.",
 	"bioEmpty": "No bio yet.",

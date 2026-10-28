@@ -1,9 +1,7 @@
-import RequestStatus from "@/components/requestStatus";
 import { useFont } from "@/contextes/contexteFont";
 
 import { Stack } from "expo-router";
 import { useTranslation } from 'react-i18next';
-import { View } from "react-native";
 
 export default function HomeLayout() {
     const {fonts} = useFont()
@@ -14,7 +12,6 @@ export default function HomeLayout() {
                 headerShown: true,
                 headerTitleStyle: { fontFamily: fonts.title },
                 headerBackVisible: false,
-                headerRight: () => <View style={{height:24, aspectRatio:1/1}}><RequestStatus/></View>
             }}
         >
             <Stack.Screen

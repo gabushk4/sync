@@ -70,6 +70,7 @@ export default function ProfilEcran(){
     const editOptionBottom = useSharedValue(0)
     const logOutOptionBottom = useSharedValue(0)
     const importOptionBottom = useSharedValue(0) // stories #4 et #7 : importer un calendrier
+    const adminOptionBottom = useSharedValue(0)
     const optionOpacity = useSharedValue(0)
 
     const opaciteAnime = useSharedValue(1)
@@ -153,6 +154,10 @@ export default function ProfilEcran(){
             opacity: optionOpacity.value
         }
     })
+    const adminOptionAnimated = useAnimatedStyle(() => ({
+        bottom: adminOptionBottom.value,
+        opacity: optionOpacity.value
+    }))
     const backdropAnimated = useAnimatedStyle(() => {
         return {
             opacity:interpolate(optionOpacity.value, [0, 1], [0, 0.5])
@@ -213,6 +218,7 @@ export default function ProfilEcran(){
         paramsOptionBottom.value = withDelay(40, withSpring(isOpen ? (FLOATING_BTN_HEIGHT + MENU_OPTIONS_GAP) * 2 : 0, withSpringConfig))
         logOutOptionBottom.value = withDelay(80, withSpring(isOpen ? (FLOATING_BTN_HEIGHT + MENU_OPTIONS_GAP) * 3 : 0, withSpringConfig))
         importOptionBottom.value = withDelay(120, withSpring(isOpen ? (FLOATING_BTN_HEIGHT + MENU_OPTIONS_GAP) * 4 : 0, withSpringConfig))
+        adminOptionBottom.value = withDelay(160, withSpring(isOpen ? (FLOATING_BTN_HEIGHT + MENU_OPTIONS_GAP) * 4 : 0, withSpringConfig))
         optionOpacity.value = withDelay(isOpen ? 0 : 160, withTiming(isOpen ? 1 : 0, withTimingConfig))
         
         setTimeout(() => Haptics.click(), 0 + SPRING_DURATION_ESTIMATE)
@@ -450,6 +456,19 @@ export default function ProfilEcran(){
                         >
                             <Icon name='log-out' color={colors.error} size={28} />
                         </AnimatedTouchableOpacity>
+                        {membre.admin && (
+                            <AnimatedTouchableOpacity
+                                style={[s.floatingButton, s.floatingOption, adminOptionAnimated]}
+                                onPress={() => {
+                                    toggleHamburgerMenu()
+                                    router.push('/(tabs)/profile/admin')
+                                }}
+                                accessibilityRole="button"
+                                accessibilityLabel={t('admin.dashboard')}
+                            >
+                                <Icon name="shield-checkmark-outline" color={colors.text} size={28} />
+                            </AnimatedTouchableOpacity>
+                        )}
                 </View>
         </View>         
         </View>                  
