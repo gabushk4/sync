@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { useFocusEffect, useIsFocused } from "expo-router/react-navigation";
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Dimensions, FlexAlignType, ImageSourcePropType, Pressable, StyleSheet, Text, TouchableOpacity, useColorScheme, View, ViewStyle } from 'react-native';
+import { Alert, Dimensions, ImageSourcePropType, Pressable, StyleSheet, Text, TouchableOpacity, useColorScheme, View, ViewStyle } from 'react-native';
 import Animated, { createAnimatedComponent, interpolate, useAnimatedProps, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
 import { interpolatePath, parse } from 'react-native-redash';
 import Svg, { Path } from 'react-native-svg';
@@ -75,7 +75,7 @@ export default function ProfilEcran(){
 
     const opaciteAnime = useSharedValue(1)
 
-    const infosMembreAlignItems = useSharedValue<FlexAlignType>('flex-start')
+    const infosMembreAlignItems = useSharedValue<ViewStyle['alignItems']>('flex-start')
     const opaciteInfosMembre = useSharedValue(1)  
 
     const banniereAnimee = useAnimatedStyle(() => {

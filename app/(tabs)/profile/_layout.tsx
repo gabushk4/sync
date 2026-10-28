@@ -7,6 +7,7 @@ export default function ProfileLayout() {
     return (
         <Stack
             screenOptions={{
+                headerTransparent: false,
                 headerBackButtonDisplayMode:'minimal'
             }}
         >

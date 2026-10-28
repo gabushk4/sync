@@ -79,7 +79,7 @@ export async function demanderCodeGoogle(config: ConfigOAuthGoogle): Promise<Cod
 
     if (resultat.type !== 'success') {
         if (resultat.type === 'error') {
-            throw new Error(resultat.error?.message ?? 'autorisation Google refusée');
+            throw new Error(resultat.error?.description ?? 'autorisation Google refusée');
         }
         return null; // annulé ou fenêtre fermée
     }

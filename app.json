@@ -37,7 +37,12 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router",
+      [
+        "expo-router",
+        {
+          "apiRoutes": true
+        }
+      ],
       "expo-web-browser",
       "@react-native-vector-icons/ionicons",
       "@react-native-community/datetimepicker",

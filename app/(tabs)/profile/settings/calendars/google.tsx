@@ -51,7 +51,7 @@ export default function GoogleAgendaScreen() : JSX.Element  {
     const { api } = useAPI();
     const { colors } = usePalette();
     const { fonts } = useFont();
-    const scheme = useColorScheme();
+    const scheme = useColorScheme() ?? 'light';
 
     const [chargement, setChargement] = useState(true);
     const [comptes, setComptes] = useState<CompteGoogle[]>([]);
