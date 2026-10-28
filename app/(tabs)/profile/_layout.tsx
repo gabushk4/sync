@@ -20,6 +20,9 @@ export default function ProfileLayout() {
                 name="settings" options={{ headerTitle: t('navigation.settings')}}
             />
             <Stack.Screen
+                name="admin" options={{ headerTitle: t('admin.title') }}
+            />
+            <Stack.Screen
                 name="importCalendar" options={{ headerTitle: t('navigation.importCalendar')}}
             />
             <Stack.Screen
