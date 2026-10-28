@@ -5,6 +5,8 @@
 		"availableForSlot": "disponibles entre {{start}} et {{end}}",
 		"noAvailableFriends": "aucun ami disponible pour ce créneau",
 		"otherFriends": "autres amis",
+		"suggestedAvailability": "disponibilité commune : {{range}}",
+		"moreSuggestions": "+ {{count}} autres créneaux",
 		"loadMore": "charger plus d'amis disponibles",
 		"friendSince": "ami depuis le {{date}}",
 		"emptyState": "Ajoute des amis grâce à l'option :"

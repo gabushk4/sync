@@ -25,7 +25,7 @@ import Ionicons from '@react-native-vector-icons/ionicons';
 import { router } from 'expo-router';
 import { Text } from 'react-native';
 import { FlatList } from 'react-native-gesture-handler';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 // Garde tes imports actuels et ajoute simplement `useMemo` à l'import de 'react'
 // import { useState, useEffect, useCallback, useMemo } from 'react'
 
@@ -118,13 +118,13 @@ export default function ParticipantsListe({ participantsUrl, listType, peutGerer
             Math.max(LINE_HEIGHT, LINE_HEIGHT * (count + 1 + Number(includeShowMore)) + TITLE_HEIGHT)
         ) + (afficherLegende ? HAUTEUR_LEGENDE : 0)
 
-    const containerHeight = useSharedValue(computeHeight(participantsTruncated.length, showMore))
+    const targetContainerHeight = computeHeight(participantsTruncated.length, showMore)
 
     const animatedContainer = useAnimatedStyle(() => {
         return {
-            height: containerHeight.value
+            height: withTiming(targetContainerHeight, withTimingConfig)
         }
-    })
+    }, [targetContainerHeight])
 
     // Ne s'occupe QUE du serveur. La fusion avec les invites se fait dans le useMemo.
     const getParticipants = useCallback(async () => {
@@ -185,14 +185,6 @@ export default function ParticipantsListe({ participantsUrl, listType, peutGerer
         getParticipants()
     }, [getParticipants]))
 
-    useEffect(() => {        
-        containerHeight.value = withTiming(
-            computeHeight(participantsTruncated.length, showMore),
-            withTimingConfig
-        )
-    }, [participantsTruncated, participants, afficherLegende])
-
-
     return(
         <Animated.View style={[s.container, { backgroundColor: colors.card }, animatedContainer]}>
             <Text style={{ fontFamily: fonts.body, color: colors.muted, marginBottom:8, fontSize:20 }}>{t('events:form.participants')} - {participants.length}</Text>
@@ -217,6 +209,7 @@ export default function ParticipantsListe({ participantsUrl, listType, peutGerer
                             // and invited when the event is created (POST /evenements).
                             // Philip — user story 8.
                             ...(participantsUrl ? { inviterUrl: participantsUrl } : {}),
+                            excludedFriendIds: JSON.stringify(participants.map(participant => participant.id)),
                             availableFriendIds: JSON.stringify(availableFriendIds),
                             hasMoreFriends: String(friendsHasMore),
                         },
