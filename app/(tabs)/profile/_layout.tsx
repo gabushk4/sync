@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 export default function ProfileLayout() {
     const { t } = useTranslation('profile')
+    const { t: tEvents } = useTranslation('events')
     return (
         <Stack
             screenOptions={{
@@ -26,8 +27,12 @@ export default function ProfileLayout() {
             />
             <Stack.Screen
                 name="settings/calendars/outlook" options={{ headerTitle: 'Outlook Calendar' }}
+            />            
+            {/* Event creation from a friend's profile: back returns to that profile.
+                Philip — rectification (user story 20). */}
+            <Stack.Screen
+                name="create" options={{ headerTitle: tEvents('navigation.create')}}
             />
-            
         </Stack>
     )
 }

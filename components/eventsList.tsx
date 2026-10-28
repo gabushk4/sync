@@ -1,5 +1,6 @@
 // components/EvenementsListe.tsx
 import { DateTime } from 'luxon'
+import { ReactNode } from 'react'
 import { StyleSheet, View } from 'react-native'
 import Animated, { scrollTo, useAnimatedReaction, useAnimatedRef } from 'react-native-reanimated'
 
@@ -10,7 +11,6 @@ import ListItem from './listItem'
 import { useGestionScroll } from '@/contextes/contexteGestionListes'
 import { useTimeline } from '@/contextes/contexteTimeline'
 
-import { useEffect } from 'react'
 import FreeSlotItem from './freeSlotItem'
 
 /** Inset of a horizontal row's blocks (top and bottom); the home screen's profile column uses it too. */
@@ -29,13 +29,13 @@ export type EventsListProps = {
     owner: any
     /** Replaces the default tap on an event (open its details). */
     onPressEvenement?: (event: Event) => void;
-    /** Scroll every row to the current hour on first layout (default). The
-     * invitation review screen scrolls to the event's hour itself. */
-    defilerMaintenant?: boolean;
+    timelineDays?: number;
+    /** Drawn behind the events, over the whole row (the member's free blocks). */
+    arrierePlan?: ReactNode;
 }
 
 /**
- * One timeline row: a horizontal (or vertical) strip 24 hours long holding the
+ * One timeline row: a horizontal (or vertical) strip holding the loaded timeline
  * owner's events (ListItem) and, for a friend's row, the free slots shared
  * with the member. The strip isn't scrolled directly: it follows the shared
  * scroll offset of the home screen, so every row stays aligned on the hours.
@@ -54,9 +54,11 @@ export type EventsListProps = {
  * @param {any[] | undefined} props.commonFreeSlots - Free slots shared with the member (friends' rows).
  * @param {any} props.owner - Member whose events these are.
  * @param {(event: Event) => void} [props.onPressEvenement] - Replaces the default tap on an event.
- * @param {boolean} [props.defilerMaintenant=true] - Scroll to the current hour on first layout.
- * @author Philip Kvaratshelya — user story 8: onPressEvenement / defilerMaintenant
- *   (invitation review screen)
+ * @param {number} [props.timelineDays=1] - Days the row holds (seven on the home screen).
+ * @param {ReactNode} [props.arrierePlan] - Drawn behind the events: the member's free
+ *   blocks, see TrousHoraire (Philip — user story 20).
+ * @author Philip — user story 8: onPressEvenement (invitation review
+ *   screen); the first-layout scroll is now Timeline's (defilerAuDemarrage)
  * @returns {JSX.Element}
  */
 export default function EventsList({
@@ -71,9 +73,10 @@ export default function EventsList({
     commonFreeSlots,
     owner,
     onPressEvenement,
-    defilerMaintenant = true,
+    timelineDays = 1,
+    arrierePlan,
 }: EventsListProps) {
-    const { offset, initialiserOffset } = useGestionScroll()
+    const { offset } = useGestionScroll()
     const { pxHeures, L_HEURES, H_HEURES } = useTimeline()
 
     const scrollViewRef = useAnimatedRef<Animated.ScrollView>()
@@ -84,10 +87,6 @@ export default function EventsList({
             scrollTo(scrollViewRef, horizontal ? offset : 0, horizontal ? 0 : offset, false)
         }
     )
-
-    useEffect(() => {
-        
-    }, [events])
 
     const s = StyleSheet.create({
         styleListe: {
@@ -125,21 +124,15 @@ export default function EventsList({
             snapToInterval={offsetSnap}
             scrollEventThrottle={16}
             ref={scrollViewRef}
-            onLayout={() => {
-                if (!defilerMaintenant) return
-                const now = DateTime.now()
-                // Also records "now" for the "back to today / now" tab (it stayed at
-                // midnight). Rectification (Philip Kvaratshelya) for a more conventional display.
-                initialiserOffset(now.hour * (pxHeures + L_HEURES), false)
-            }}
         >
             <View
             style={{
                 position: 'relative',
-                width: horizontal ? 24 * (pxHeures + L_HEURES) : '100%',
-                height: horizontal ? '100%' : 24 * (pxHeures + H_HEURES),
+                width: horizontal ? timelineDays * 24 * (pxHeures + L_HEURES) : '100%',
+                height: horizontal ? '100%' : timelineDays * 24 * (pxHeures + H_HEURES),
             }}
             >
+                {arrierePlan}
                 {events.filter(Boolean).map((item) =>
                     <ListItem
                         // Occurrences of a recurring event share the parent's id: the start
@@ -148,13 +141,14 @@ export default function EventsList({
                         event={item}
                         horizontal={horizontal}
                         displayedDate={displayedDate}
+                        timelineDays={timelineDays}
                         listOffset={offset}
                         eventsColor={eventsColor}
                         onPress={onPressEvenement}
                     />
                 )}
                 {commonFreeSlots?.map((freeSlot, index) => 
-                    <FreeSlotItem key={`${freeSlot.start}-${freeSlot.end}`} freeSlot={freeSlot} displayedDate={displayedDate} horizontal={horizontal} listOffset={offset} owner={owner}/>
+                    <FreeSlotItem key={`${freeSlot.start}-${freeSlot.end}`} freeSlot={freeSlot} displayedDate={displayedDate} horizontal={horizontal} listOffset={offset} owner={owner} timelineDays={timelineDays}/>
                 )}
             </View>
         </Animated.ScrollView>

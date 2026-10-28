@@ -1,4 +1,4 @@
-import React, { useEffect } from "react"
+import React, { useEffect, useRef } from "react"
 import { Text, View } from "react-native"
 import Animated, { scrollTo, useAnimatedReaction, useAnimatedRef } from "react-native-reanimated"
 
@@ -37,15 +37,23 @@ const heures = [
 ];
 type TimelineProps = {
     horizontal: boolean
+    windowStart?: DateTime
+    selectedDate?: DateTime
+    timelineDays?: number
+    /** Scroll to `selectedDate` (or now) on first layout (default). The invitation
+     * review screen scrolls to the event's hour itself, within its one-day bounds.
+     * Philip — user story 8 (replaces EventsList's defilerMaintenant). */
+    defilerAuDemarrage?: boolean
 }
 
-export default function Timeline({ horizontal } : TimelineProps){
+export default function Timeline({ horizontal, windowStart, selectedDate, timelineDays = 1, defilerAuDemarrage = true } : TimelineProps){
     const { colors } = usePalette()
     const {fonts} = useFont()
     const {pxHeures, L_HEURES, H_HEURES} = useTimeline()
     const { offset } = useGestionScroll()
 
     const scrollViewRef = useAnimatedRef<Animated.ScrollView>()
+    const initialisationFaite = useRef(false)
 
     useAnimatedReaction(
         () => offset.value,
@@ -57,7 +65,7 @@ export default function Timeline({ horizontal } : TimelineProps){
 
     return(
         <Animated.ScrollView
-            style={{ zIndex: 2, pointerEvents: 'none', ...(horizontal ? { paddingLeft: 4 } : { paddingTop: 16 }) }}
+            style={{ zIndex: 2, pointerEvents: 'none', ...(horizontal ? {} : { paddingTop: 16 }) }}
             contentContainerStyle={{ backgroundColor: 'transparent', flexDirection: horizontal ? 'row' : 'column' }}
             ref={scrollViewRef}
             horizontal={horizontal}
@@ -65,25 +73,38 @@ export default function Timeline({ horizontal } : TimelineProps){
             showsVerticalScrollIndicator={false}
             scrollEnabled={true}
             onLayout={() => {
-                const now = DateTime.now()
-                offset.value = now.hour * (pxHeures + L_HEURES)
+                if (initialisationFaite.current) return
+                initialisationFaite.current = true
+                if (!defilerAuDemarrage) return
+                const cible = selectedDate ?? DateTime.now()
+                const heureDansLaFenetre = windowStart
+                    ? cible.diff(windowStart.startOf('day'), 'hours').hours
+                    : cible.hour
+                offset.value = Math.max(0, heureDansLaFenetre) * (pxHeures + L_HEURES)
             }}
             >
-            {heures.map((item) => (
+            {Array.from({ length: timelineDays * 24 }, (_, index) => {
+                const dateBase = windowStart ?? DateTime.now().startOf('day').minus({ days: 3 })
+                const jour = Math.floor(index / 24)
+                const heure = index % 24
+                const now = dateBase.startOf('day').plus({ days: jour, hours: heure })
+                const item = heures[heure]
+                const minuit = heure === 0
+                return (
                 <View
-                key={item.id}
+                key={`h-${index}`}
                 style={{
                     
                     
                     alignItems: 'center',
                     justifyContent:'center',
                     backgroundColor: 'transparent',
-                    ...(horizontal ? { marginRight: pxHeures, width: L_HEURES, height:'100%' } : { marginBottom: pxHeures, height: H_HEURES, width:'100%' })
+                    ...(horizontal ? { marginRight: pxHeures, width: L_HEURES, height:'100%', borderLeftWidth: minuit ? 1 : 0, borderColor: colors.muted } : { marginBottom: pxHeures, height: H_HEURES, width:'100%' })
                 }}
                 >
-                    <Text style={{color: colors.text, fontSize:16, fontFamily:fonts.number}}>{item.heure}</Text>
+                    <Text style={{color: colors.text, fontSize:minuit ? 12 : 16, fontFamily:fonts.number}}>{minuit ? now.toFormat('ccc d') : item.heure}</Text>
                 </View>
-            ))}
+            )})}
             </Animated.ScrollView>
         
         

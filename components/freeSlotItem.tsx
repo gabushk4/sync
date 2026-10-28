@@ -5,12 +5,13 @@ import { findLeft, findWidth } from "@/functions/calculerDimensionsEvenements";
 
 import { useFont } from "@/contextes/contexteFont";
 import log from "@/functions/log";
-import { router } from "expo-router";
+import ouvrirCreationAvecAmi from "@/functions/ouvrirCreationAvecAmi";
 import { DateTime } from "luxon";
 import { StyleSheet, Text, TouchableOpacity } from "react-native";
 import { useTranslation } from 'react-i18next';
 import Animated, { SharedValue } from "react-native-reanimated";
 import useTimelineLabelOffset from "@/hooks/useTimelineLabelOffset";
+import { positionHeures } from "@/functions/positionTimeline";
 import ToastAbs from "@/abstractions/toastAbs";
 import { toastTypes } from "@/constants/toastConfig";
 
@@ -20,29 +21,37 @@ type Props = {
     horizontal: boolean;
     listOffset: SharedValue<number>
     owner: any
+    timelineDays?: number
 }
 
-export default function FreeSlotItem({ freeSlot, displayedDate, horizontal, listOffset, owner }: Props) {
+export default function FreeSlotItem({ freeSlot, displayedDate, horizontal, listOffset, owner, timelineDays = 1 }: Props) {
     const { t } = useTranslation('home')
     const { colors } = usePalette()
     const {fonts} = useFont()
     const { pxHeures, H_HEURES, L_HEURES } = useTimeline()
     
+    const debutFenetre = displayedDate?.startOf('day')
+    const finFenetre = debutFenetre?.plus({ days: timelineDays })
+    const debutVisible = debutFenetre && freeSlot.start < debutFenetre ? debutFenetre : freeSlot.start
+    const finVisible = finFenetre && freeSlot.end > finFenetre ? finFenetre : freeSlot.end
+    // Shared with ListItem / TrousHoraire (Philip — user story 20).
+    const position = (date: DateTime) => debutFenetre ? positionHeures(date, debutFenetre) : 0
     const left = horizontal
-                    ? findLeft(freeSlot.start, freeSlot.end, displayedDate as DateTime, pxHeures + L_HEURES)
+                    ? position(debutVisible) * (pxHeures + L_HEURES)
         : 0
     const top = horizontal
                     ? 0
         : findLeft(freeSlot.start, freeSlot.end, displayedDate as DateTime, pxHeures + H_HEURES)
-    const height = horizontal
+    const hauteurCalculee = horizontal
                     ? '100%'
         : findWidth(freeSlot.start, freeSlot.end, displayedDate, pxHeures + H_HEURES)
     const width = horizontal 
-                    ? findWidth(freeSlot.start, freeSlot.end, displayedDate, pxHeures + L_HEURES)
+                    ? (position(finVisible) - position(debutVisible)) * (pxHeures + L_HEURES)
         : '100%'
+    const height = hauteurCalculee
     
     // `passe`: today's hours already elapsed (see getCommonFreeSlots), shown greyed out.
-    // Rectification (Philip Kvaratshelya) for a more conventional display: past
+    // Rectification (Philip) for a more conventional display: past
     // slots stay visible instead of disappearing.
     const isInPast = !!freeSlot.passe
         || (freeSlot.start.toMillis() < DateTime.now().toMillis() && freeSlot.end.toMillis() < DateTime.now().toMillis())
@@ -59,7 +68,7 @@ export default function FreeSlotItem({ freeSlot, displayedDate, horizontal, list
         listOffset,
         inset: pxHeures,
         centerThreshold: 2 * (pxHeures + (horizontal ? L_HEURES : H_HEURES)),
-        timelineLength: 24 * (pxHeures + (horizontal ? L_HEURES : H_HEURES)),
+        timelineLength: timelineDays * 24 * (pxHeures + (horizontal ? L_HEURES : H_HEURES)),
     })
     
     const s = StyleSheet.create({
@@ -97,7 +106,7 @@ export default function FreeSlotItem({ freeSlot, displayedDate, horizontal, list
         <TouchableOpacity
             key={`fs${freeSlot.start}-${freeSlot.end}`}
             accessibilityRole="button"
-            accessibilityLabel={`${t('commonFreeSlot')} ${freeSlot.start.toFormat('t')}–${freeSlot.end.toFormat('t')}`}
+            accessibilityLabel={`${t('commonFreeSlot')} ${freeSlot.start.toFormat('ccc d t')}–${freeSlot.end.toFormat('ccc d t')}`}
             style={[s.freeSlot, {
                 position: 'absolute',
                 left: left,
@@ -117,19 +126,8 @@ export default function FreeSlotItem({ freeSlot, displayedDate, horizontal, list
                     return 
                 }
                 log("common free slot with", owner)
-                router.push({
-                    pathname: '/(tabs)/home/create',
-                    params: {
-                        start: freeSlot.start,
-                        end: freeSlot.end,
-                        friend: JSON.stringify({
-                            id: owner.id,
-                            pseudo: owner.pseudo,
-                            fp_url: owner.fp_url ?? null,
-                            privilege: 'lecteur',
-                        })
-                    }
-                })
+                // Shared with a friend's profile widget (Philip — user story 25).
+                ouvrirCreationAvecAmi({ debut: freeSlot.start, fin: freeSlot.end, ami: owner })
             }}
         >
             <Animated.View

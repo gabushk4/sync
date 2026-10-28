@@ -75,7 +75,7 @@ const minutesToTime = (date, minutes) => {
  * neither has an event (nor a do-not-disturb rule), grouped into slots of at
  * least `minDuration` minutes.
  *
- * @author Philip Kvaratshelya — rectification for a more conventional display: today's elapsed hours are kept, marked
+ * @author Philip — rectification for a more conventional display: today's elapsed hours are kept, marked
  *   `passe` (shown greyed out) instead of disappearing; a slot crossing the
  *   current hour is split in two
  * @param {Array} userEvents - Member's events (local DateTimes).
@@ -152,4 +152,48 @@ export const getCommonFreeSlots = (
     }
   }
   return resultat
+}
+
+/**
+ * Shared availability over the already-loaded sliding window (seven days on
+ * the home timeline). This is intentionally bounded: for a window from Oct 14
+ * through Oct 20, compute Oct 14 00:00 up to Oct 21 00:00, even when the member
+ * is viewing Oct 16. Adjacent daily slots are joined across midnight so the
+ * timeline presents one continuous selectable range.
+ */
+export const getCommonFreeSlotsSurPlage = (
+  userEvents,
+  friendEvents,
+  debut,
+  nombreJours = 7,
+  userDndRules = null,
+  friendDndRules = null,
+  minDuration = 60,
+) => {
+  const slots = Array.from({ length: nombreJours }, (_, index) =>
+    getCommonFreeSlots(
+      userEvents,
+      friendEvents,
+      debut.plus({ days: index }),
+      userDndRules,
+      friendDndRules,
+      minDuration,
+    )
+  ).flat().sort((a, b) => a.start.toMillis() - b.start.toMillis())
+  const maintenant = DateTime.now()
+
+  return slots.reduce((fusionnes, slot) => {
+    const precedent = fusionnes[fusionnes.length - 1]
+    const slotPasse = Boolean(slot.passe) || slot.end <= maintenant
+    const precedentPasse = Boolean(precedent?.passe) || Boolean(precedent && precedent.end <= maintenant)
+    if (precedent && precedent.end.toMillis() === slot.start.toMillis()
+        && precedentPasse === slotPasse) {
+      precedent.end = slot.end
+      precedent.duration += slot.duration
+      if (slotPasse) precedent.passe = true
+    } else {
+      fusionnes.push({ ...slot, ...(slotPasse ? { passe: true } : {}) })
+    }
+    return fusionnes
+  }, [])
 }
