@@ -20,7 +20,7 @@ import { modalEvents } from "@/events/modalEvents"
 import Ionicons from "@react-native-vector-icons/ionicons"
 import { useModal } from "@/contextes/contexteModals"
 
-export default function ModalBase({children}){
+export default function ModalBase({ children, canDismiss = true, onDismiss = () => { } }){
     const { colors } = usePalette()
     const {dismissButton} = useModal()
 
@@ -171,9 +171,10 @@ export default function ModalBase({children}){
     const optionsOpacity = useSharedValue(1)
 
     const dismissModalRoute = () => {
-        if (router.canDismiss()) {
+        if (router.canDismiss() && canDismiss) {
             router.dismiss()
         }
+        onDismiss?.()
     }
 
     const LEVELS = [0, 45, 94]; // 0 = closed, 1 = 45, 2 = fullscreen
