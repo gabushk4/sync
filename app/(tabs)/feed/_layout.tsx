@@ -6,6 +6,7 @@ export default function FeedLayout() {
     return (
         <Stack
             screenOptions={{
+                headerTransparent: false,
             }}
         >
             <Stack.Screen

@@ -223,15 +223,10 @@ export default function CreateEvent({ }) {
         }
     })
 
-    useFocusEffect(useCallback(() => { 
-        const listener = navigation.addListener('beforeRemove', () => {
-            console.log('on back')
-            resetInvites()
-        })
-        return () => {
-            navigation.removeListener('beforeRemove', listener)
-        }
-    }, []))
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('removed', () => resetInvites())
+        return () => queueMicrotask(unsubscribe)
+    }, [navigation, resetInvites])
 
     useEffect(() => {
         log("email confirme", membre.emailConfirme)

@@ -34,7 +34,7 @@ const MAX_COLORS_PER_LINE = 4;
 export default function CalendarOptions({ selectedCalendar, onSave, onClose }: Props) {
     const { colors } = usePalette();
     const { fonts } = useFont();
-    const scheme = useColorScheme()
+    const scheme = useColorScheme() ?? 'light'
     
     const [overlayVisible, setOverlayVisible] = useState(false);
     const [draftCalendar, setDraftCalendar] = useState(selectedCalendar);

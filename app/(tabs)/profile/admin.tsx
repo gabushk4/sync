@@ -15,6 +15,8 @@ type BugRapporte = {
   id_publique: string
   description: string
   cree_le: string
+  app_version?: string | null
+  appareil?: string | null
   pseudo?: string | null
 }
 
@@ -40,6 +42,7 @@ export default function DashboardAdmin() {
   const { fonts } = useFont()
   const [etat, setEtat] = useState<Etat>('verification')
   const [bugs, setBugs] = useState<BugRapporte[]>([])
+  const [bugOuvert, setBugOuvert] = useState<string | null>(null)
 
   const charger = useCallback(async () => {
     setEtat('verification')
@@ -80,6 +83,7 @@ export default function DashboardAdmin() {
     pseudo: { color: colors.text, fontFamily: fonts.title, fontSize: 16 },
     description: { color: colors.text, fontFamily: fonts.body, fontSize: 15 },
     metadonnees: { color: colors.muted, fontFamily: fonts.body, fontSize: 13 },
+    details: { color: colors.text, fontFamily: fonts.body, fontSize: 14, lineHeight: 20 },
     message: { padding: 24, color: colors.muted, fontFamily: fonts.body, fontSize: 16, textAlign: 'center' as const },
     retry: { color: colors.secondary, fontFamily: fonts.title, fontSize: 15, textAlign: 'center' as const },
     centre: { flex: 1, alignItems: 'center' as const, justifyContent: 'center' as const },
@@ -104,13 +108,27 @@ export default function DashboardAdmin() {
       ) : (
         <ScrollView contentContainerStyle={s.liste}>
           {bugs.map((bug) => (
-            <View key={bug.id_publique} style={s.carte}>
+            <TouchableOpacity
+              key={bug.id_publique}
+              style={s.carte}
+              onPress={() => setBugOuvert((id) => id === bug.id_publique ? null : bug.id_publique)}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: bugOuvert === bug.id_publique }}
+              accessibilityLabel={`${bug.pseudo || t('admin.unknown')}, ${t('admin.reportedAt', { date: new Date(bug.cree_le).toLocaleString(i18n.language) })}`}
+            >
               <Text style={s.pseudo}>@{bug.pseudo || t('admin.unknown')}</Text>
               <Text style={s.description}>
                 {extraireSection(bug.description, [t('bugReport.whatHappened', { ns: 'common' }), 'What happened']) || bug.description}
               </Text>
               <Text style={s.metadonnees}>{t('admin.reportedAt', { date: new Date(bug.cree_le).toLocaleString(i18n.language) })}</Text>
-            </View>
+              {bugOuvert === bug.id_publique && (
+                <View style={{ gap: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.border }}>
+                  <Text style={s.details}>{bug.description}</Text>
+                  <Text style={s.metadonnees}>{t('admin.appVersion', { version: bug.app_version || t('admin.unknown') })}</Text>
+                  <Text style={s.metadonnees}>{t('admin.device', { device: bug.appareil || t('admin.unknown') })}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
           ))}
         </ScrollView>
       )}
