@@ -217,6 +217,7 @@ export default function ParticipantsListe({ participantsUrl, listType, peutGerer
                             // and invited when the event is created (POST /evenements).
                             // Philip — user story 8.
                             ...(participantsUrl ? { inviterUrl: participantsUrl } : {}),
+                            excludedFriendIds: JSON.stringify(participants.map(participant => participant.id)),
                             availableFriendIds: JSON.stringify(availableFriendIds),
                             hasMoreFriends: String(friendsHasMore),
                         },

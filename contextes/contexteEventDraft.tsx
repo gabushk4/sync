@@ -23,6 +23,7 @@ type EventDraftContextType = {
     friendsSuggestions: Array<FriendIntervals>;
     friendsHasMore: boolean;
     setRequestsEnabled: Dispatch<SetStateAction<boolean>>;
+    setFriendsRequestsEnabled: Dispatch<SetStateAction<boolean>>;
 }
 
 const EventDraftContext = createContext<EventDraftContextType | undefined>(undefined)
@@ -48,6 +49,7 @@ export const EventDraftProvider = ({makeReq = true, initialStart, initialEnd, ch
     const DEBOUNCE_MS = 350
 
     const [requestsEnabled, setRequestsEnabled] = useState(makeReq)
+    const [friendsRequestsEnabled, setFriendsRequestsEnabled] = useState(makeReq)
 
     const [start, setStart] = useState<DateTime>(ceilBy5(initialStart ?? now.plus({hour:1})))
     const [end, setEnd] = useState<DateTime>(ceilBy5(initialEnd ?? start.plus({ hour: 1 })))
@@ -100,6 +102,7 @@ export const EventDraftProvider = ({makeReq = true, initialStart, initialEnd, ch
                         debut: formaterDatePourServeur(convertLocalToUTC(start)),
                         fin: formaterDatePourServeur(convertLocalToUTC(end)),
                         offset_ami: requestOffset,
+                        seuil: 0,
                         //seuil: could be specified in settings 
                     },
                     signal: friendsAvailController.current.signal
@@ -118,7 +121,9 @@ export const EventDraftProvider = ({makeReq = true, initialStart, initialEnd, ch
                     fin: convertUTCToLocal(interval.fin),
                 })),
             }))
-            friendsListOffset.current = requestOffset + fetchedFriends.length
+            friendsListOffset.current = Number.isSafeInteger(res.data.offset)
+                ? res.data.offset
+                : requestOffset + 5
 
             setFriendsSuggestions(current => {
                 if (!append) return fetchedFriends
@@ -160,7 +165,7 @@ export const EventDraftProvider = ({makeReq = true, initialStart, initialEnd, ch
     }, [getCommonAvail, requestsEnabled])
 
     useEffect(() => {
-        if (requestsEnabled) {
+        if (requestsEnabled || friendsRequestsEnabled) {
             friendsAvailController.current.abort()
             friendsAvailController.current = new AbortController()
             friendsListOffset.current = 0
@@ -177,15 +182,15 @@ export const EventDraftProvider = ({makeReq = true, initialStart, initialEnd, ch
                 friendsAvailController.current.abort()
             }
         }
-    }, [start, end, requestsEnabled])
+    }, [start, end, requestsEnabled, friendsRequestsEnabled])
 
     useEffect(() => {
-        if (!requestsEnabled) return
+        if (!requestsEnabled && !friendsRequestsEnabled) return
         return friendsAvailabilityEvents.onRequestMore(() => getFriendsAvail(true))
-    }, [getFriendsAvail, requestsEnabled])
+    }, [getFriendsAvail, requestsEnabled, friendsRequestsEnabled])
 
     return (
-        <EventDraftContext.Provider value={{invites, start, setStart, end, setEnd, slotSuggestions, friendsSuggestions, friendsHasMore, setRequestsEnabled}}>
+        <EventDraftContext.Provider value={{invites, start, setStart, end, setEnd, slotSuggestions, friendsSuggestions, friendsHasMore, setRequestsEnabled, setFriendsRequestsEnabled}}>
             {children}
         </EventDraftContext.Provider>
     )

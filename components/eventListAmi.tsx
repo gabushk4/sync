@@ -21,10 +21,10 @@ import { modalEvents } from "@/events/modalEvents";
 import { useFriendList } from "@/hooks/useFriendList";
 
 import { ListType } from "@/app/(modals)/listeAmis";
-import { useEventDraft } from "@/contextes/contexteEventDraft";
 import log from "@/functions/log";
 import { Participant } from "@/types/invites";
 import { DateTime } from "luxon";
+import { useEventDraft } from "@/contextes/contexteEventDraft";
 import FriendLine from "./friendLine";
 
 export type FriendAPIRes = {
@@ -42,13 +42,12 @@ function EventListAmiContent() {
     const { fonts } = useFont()
     const colorScheme = useColorScheme()
     const { invites } = useInvites()
-    const {start, end} = useEventDraft()
+    const {start, end, friendsSuggestions} = useEventDraft()
 
-    const { type, inviterUrl, availableFriendIds: availableFriendIdsParam, hasMoreFriends: hasMoreFriendsParam } = useLocalSearchParams() as { type: ListType; inviterUrl: string;  availableFriendIds: string[], hasMoreFriends: string}
+    const { type, inviterUrl, hasMoreFriends: hasMoreFriendsParam, excludedFriendIds: excludedFriendIdsParam } = useLocalSearchParams() as { type: ListType; inviterUrl: string; hasMoreFriends: string; excludedFriendIds?: string }
     const select = type === 'select' || type === 'event'
-    const availableFriendIds = useMemo(() => {
-        const raw = Array.isArray(availableFriendIdsParam) ? availableFriendIdsParam[0] : availableFriendIdsParam
-
+    const excludedFriendIds = useMemo(() => {
+        const raw = Array.isArray(excludedFriendIdsParam) ? excludedFriendIdsParam[0] : excludedFriendIdsParam
         if (!raw) return []
         try {
             const parsed: unknown = JSON.parse(raw)
@@ -56,13 +55,11 @@ function EventListAmiContent() {
         } catch {
             return []
         }
-    }, [availableFriendIdsParam])
-    const [currentAvailableFriendIds, setCurrentAvailableFriendIds] = useState(availableFriendIds)
+    }, [excludedFriendIdsParam])
     const [hasMoreFriends, setHasMoreFriends] = useState(
         (Array.isArray(hasMoreFriendsParam) ? hasMoreFriendsParam[0] : hasMoreFriendsParam) === 'true'
     )
     const [loadingMoreFriends, setLoadingMoreFriends] = useState(false)
-    const allAvailableFriendIds = currentAvailableFriendIds
 
     const icones = {
         profilDef: colorScheme === 'dark' ? require('@/assets/icones/profil-dark-icon.png') : require('@/assets/icones/profil-light-icon.png'),
@@ -97,11 +94,7 @@ function EventListAmiContent() {
     useEffect(() => {
         if (!select) return
 
-        const applyPage = (page: { append: boolean; hasMore: boolean; friendIds: string[] }) => {
-            setCurrentAvailableFriendIds(current => page.append
-                ? [...new Set([...current, ...page.friendIds])]
-                : page.friendIds
-            )
+        const applyPage = (page: { hasMore: boolean }) => {
             log("hasMore", page.hasMore)
             setHasMoreFriends(page.hasMore)
         }
@@ -115,13 +108,23 @@ function EventListAmiContent() {
 
     const friendSections = useMemo(() => {
         const friendsById = new Map(amis.map(friend => [friend.id, friend]))
-        const invitedIds = new Set(invites.map(invite => invite.id))
-        const availableFriends = allAvailableFriendIds
+        const invitedIds = new Set([...invites.map(invite => invite.id), ...excludedFriendIds])
+        const intervalsByFriend = new Map(friendsSuggestions.map(friend => [friend.id, friend.intervales]))
+        const disponibles = new Set<string>()
+        for (const id of intervalsByFriend.keys()) {
+            const intervals = intervalsByFriend.get(id) ?? []
+            const complet = intervals.some(interval => interval.debut.toMillis() <= start.toMillis() && interval.fin.toMillis() >= end.toMillis())
+            if (complet) disponibles.add(id)
+        }
+        const availableFriends = [...disponibles]
             .filter(id => !invitedIds.has(id))
             .map(id => friendsById.get(id))
             .filter((friend): friend is Participant => friend !== undefined)
+            .map(friend => ({ ...friend, suggestedIntervals: [] }))
         const availableIds = new Set(availableFriends.map(friend => friend.id))
-        const otherFriends = amis.filter(friend => !availableIds.has(friend.id))
+        const otherFriends = amis
+            .filter(friend => !invitedIds.has(friend.id) && !availableIds.has(friend.id))
+            .map(friend => ({ ...friend, suggestedIntervals: intervalsByFriend.get(friend.id) ?? [] }))
 
         const now = DateTime.now()
         const startDiffFromNow = Math.abs(now.startOf('day').diff(start.startOf('day'), 'days').days)
@@ -148,7 +151,7 @@ function EventListAmiContent() {
             { title: t('list.availableForSlot', {start: stringStart, end:stringEnd}), data: availableFriends, isAvailableSection: true },
             { title: t('list.otherFriends'), data: otherFriends, isAvailableSection: false },
         ]
-    }, [amis, allAvailableFriendIds, end, invites, start, t])
+    }, [amis, end, excludedFriendIds, friendsSuggestions, invites, start, t])
 
     useFocusEffect(useCallback(() => {
         getAmis()
@@ -221,7 +224,6 @@ function EventListAmiContent() {
                                         setLoadingMoreFriends(true)
                                         try {
                                             const page = await friendsAvailabilityEvents.requestMore()
-                                            setCurrentAvailableFriendIds(current => [...new Set([...current, ...page.friendIds])])
                                             setHasMoreFriends(page.hasMore)
                                         } finally {
                                             setLoadingMoreFriends(false)
@@ -240,7 +242,7 @@ function EventListAmiContent() {
                         
                         const selectionne = select && idsSelec.has(item.id)
                         return (
-                            <FriendLine friend={item} listType={type} selected={selectionne} onPress={() => {
+                            <FriendLine friend={item} listType={type} selected={selectionne} suggestedIntervals={item.suggestedIntervals ?? []} onPress={() => {
                                 if (select) {
                                     setIdsSelec(prev => {
                                         const next = new Set(prev)
