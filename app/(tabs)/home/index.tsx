@@ -330,14 +330,14 @@ export default function Home() {
   const dispoCommunesPossibles = evenementsMembreAJour && evenementsAmisAJour
   const disponibilitesAmis = useMemo(() => friends.map((ami) => ({
     ami,
-    disponibilites: dispoCommunesPossibles
+    commonFreeSlots: dispoCommunesPossibles
       ? getCommonFreeSlotsSurPlage(evenementsHoraire, ami.evenements, windowStart, JOURS_FENETRE)
       : [],
   })), [friends, dispoCommunesPossibles, evenementsHoraire, windowStart])
   const amisAvecDisponibilites = useMemo(() => {
     const maintenant = tempsClassement
-    return disponibilitesAmis.map(({ ami, disponibilites }) => {
-      const aVenir: any[] = disponibilites.filter((slot: any) => !slot.passe && slot.end > maintenant)
+    return disponibilitesAmis.map(({ ami, commonFreeSlots }) => {
+      const aVenir: any[] = commonFreeSlots.filter((slot: any) => !slot.passe && slot.end > maintenant)
       const minutesCommunes = aVenir.reduce((total: number, slot: any) => {
         const debutUtile = slot.start > maintenant ? slot.start : maintenant
         return total + Math.max(0, slot.end.diff(debutUtile, 'minutes').minutes)
@@ -345,7 +345,7 @@ export default function Home() {
       const prochaineDisponibilite = aVenir.length > 0
         ? Math.max(0, aVenir[0].start.diff(maintenant, 'minutes').minutes)
         : Number.POSITIVE_INFINITY
-      return { ami, disponibilites, minutesCommunes, prochaineDisponibilite }
+      return { ami, commonFreeSlots, minutesCommunes, prochaineDisponibilite }
     }).sort((a, b) =>
       b.minutesCommunes - a.minutesCommunes
       || a.prochaineDisponibilite - b.prochaineDisponibilite
@@ -1203,7 +1203,7 @@ export default function Home() {
                       majMaxY();
                     }}
                   >
-                    {amisAffiches.map(({ ami: friend, disponibilites }) => {
+                    {amisAffiches.map(({ ami: friend, commonFreeSlots }) => {
                       // Toujours calculer sur la fenêtre active entière, pas sur
                       // le jour actuellement visible (qui peut être le 16 dans
                       // une fenêtre chargée du 14 au 20).
@@ -1228,7 +1228,7 @@ export default function Home() {
                           {/* Événements horizontaux */}
                           <EventsList
                             owner={friend}
-                            commonFreeSlots={disponibilites}
+                            commonFreeSlots={commonFreeSlots}
                             listSize={LIST_HEIGHT}
                             horizontal={true}
                             events={friend.evenements}
