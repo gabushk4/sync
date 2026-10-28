@@ -374,6 +374,7 @@ export default function Home() {
     const minuteur = setInterval(() => setMaintenantOnglet(DateTime.now()), 30000)
     return () => clearInterval(minuteur)
   }, [ongletVisible])
+
   const surAujourdhui = !todayDateTime || todayDateTime.hasSame(maintenantOnglet, 'day')
   const dansLeMois = !todayDateTime || todayDateTime.hasSame(maintenantOnglet, 'month')
   const texteOnglet = surAujourdhui
