@@ -217,6 +217,7 @@ export default function Home() {
   // Forward scroll changes to JS only when the visible calendar day changes or
   // the window itself is rebased, never on every animation frame.
   const dernierePositionTraitee = useSharedValue('')
+  const derniereHeureTraitee = useSharedValue('')
   const fenetreEnCoursRef = useRef('')
   // Day the member's / friends' loaded events belong to. Until both match the
   // displayed day, the previous day's events are still on screen: the common free
@@ -310,19 +311,6 @@ export default function Home() {
     const finJour = debutJour.plus({ days: 1 }).minus({ minutes: 1 })
     return evenementsHoraire.find((ev: any) => ev?.debut && ev?.fin && ev.debut <= debutJour && ev.fin >= finJour)
   }, [evenementsHoraire, todayDateTime, evenementsMembreAJour])
-  // The full-day/loading card follows the scrolled content and spans only the
-  // selected calendar day. A viewport-wide overlay hid adjacent days in the
-  // seven-day timeline (especially an empty day beside an all-day event).
-  const decalageJourneeSelectionnee = todayDateTime && windowStart
-    ? Math.round(todayDateTime.startOf('day').diff(windowStart.startOf('day'), 'days').days)
-    : 0
-  const styleJourneeSelectionnee = useAnimatedStyle(() => {
-    const largeurCellule = pxHeures + L_HEURES
-    return {
-      left: decalageJourneeSelectionnee * 24 * largeurCellule - offsetX.value,
-      width: 24 * largeurCellule,
-    }
-  }, [decalageJourneeSelectionnee, pxHeures, L_HEURES])
 
   // Shared availability can be shown as soon as both full window responses are
   // loaded. A fully booked selected day must not hide availability on the other
@@ -671,7 +659,7 @@ export default function Home() {
     }
     // Keep the seven-day window moving by one calendar day at a time. This limits
     // refetches to one per 24h scrolled and preserves the visible instant.
-    if (heures < 24 || heures > 6 * 24) {
+    if (heures < 24 || heures >= 6 * 24) {
       const deltaJours = heures < 24 ? -1 : 1
       const nouveauDebut = debut.plus({ days: deltaJours })
       windowStartRef.current = nouveauDebut
@@ -799,17 +787,22 @@ export default function Home() {
 
   useAnimatedReaction(
     () => {
-      const current = offsetX.value
       const cellule = pxHeures + L_HEURES
-      const jour = Math.floor(current / (cellule * 24))
-      return { current, startMillis: windowStartMillis.value, position: `${windowStartMillis.value}:${jour}` }
+      const startMillis = windowStartMillis.value
+      const heure = Math.floor(offsetX.value / cellule)
+      const jour = Math.floor(heure / 24)
+      return { startMillis, heure, jour, position: `${startMillis}:${jour}` }
     },
     (state) => {
       if (!accueilActif.get()) return
-      onPan(state.current)
+      const heurePosition = `${state.startMillis}:${state.heure}`
+      if (derniereHeureTraitee.value !== heurePosition) {
+        derniereHeureTraitee.value = heurePosition
+        onPan(offsetX.value)
+      }
       if (dernierePositionTraitee.value === state.position) return
       dernierePositionTraitee.value = state.position
-      scheduleOnRN(traiterDefilementTimeline, state.current, state.startMillis)
+      scheduleOnRN(traiterDefilementTimeline, offsetX.value, state.startMillis)
     }
   , [pxHeures, L_HEURES])
 
@@ -1035,6 +1028,8 @@ export default function Home() {
       position: 'absolute',
       top: 0,
       bottom: 0,
+      left: 0,
+      right: 0,
       paddingVertical: RETRAIT_RANGEE,
       paddingHorizontal: 8,
       backgroundColor: colors.card,
@@ -1276,12 +1271,12 @@ export default function Home() {
                 {/* Day not loaded yet (not cached): blank row instead of the previous
                     day's timeline, until it's known whether the day is fully booked. */}
                 {!evenementsMembreAJour && (
-                  <Animated.View style={[s.journeeComplete, s.chargementMembre, styleJourneeSelectionnee]}>
+                  <View style={[s.journeeComplete, s.chargementMembre]}>
                     <Spinner size={24} color={colors.muted} />
-                  </Animated.View>
+                  </View>
                 )}
                 {evenementJourneeComplete && (
-                  <Animated.View style={[s.journeeComplete, styleJourneeSelectionnee]}>
+                  <View style={s.journeeComplete}>
                     <TouchableOpacity
                       style={s.carteJourneeComplete}
                       onPress={() => ouvrirDetailsEvenement(evenementJourneeComplete)}
@@ -1292,7 +1287,7 @@ export default function Home() {
                         {evenementJourneeComplete.titre?.trim() || t('untitledEvent')}
                       </Text>
                     </TouchableOpacity>
-                  </Animated.View>
+                  </View>
                 )}
               </View>
             </Animated.View>

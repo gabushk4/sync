@@ -141,7 +141,7 @@ export default function ListItem({ event, horizontal, displayedDate, listOffset,
             disabled={event.cliquable === false}
             onPress={() => onPress ? onPress(event) : ouvrirDetailsEvenement({ id: event.id, debut, fin })}
         >
-            <EventBloc event={event} blockColor={event.couleur ?? eventsColor} horizontal={horizontal} displayDate={displayedDate} />
+            <EventBloc event={event} blockColor={event.couleur ?? eventsColor} horizontal={horizontal} displayDate={displayedDate} size={taille} />
             <Animated.View style={[s.texte, texteAnime]}>
                 <Text style={s.heure} numberOfLines={1}>{startText}</Text>
                 {event.titre
