@@ -16,6 +16,7 @@ interface APIContextType {
 
 interface AxiosRequestConfigWithRetry extends InternalAxiosRequestConfig {
   _retry?: boolean;
+  __requestStartedAt?: number;
 }
 
 let inFlight = 0
@@ -91,6 +92,7 @@ export const APIProvider = ({ children }: { children: React.ReactNode }) => {
 
     instance.interceptors.request.use(
       async (config) => {
+        (config as AxiosRequestConfigWithRetry).__requestStartedAt = Date.now()
         track(+1)
         const token = getToken()
         if (token) config.headers.Authorization = `Bearer ${token}`
@@ -111,6 +113,9 @@ export const APIProvider = ({ children }: { children: React.ReactNode }) => {
       async error => { // si une erreur survient
         track(-1)
         const requeteOriginale: AxiosRequestConfigWithRetry = error.config;
+        if (requeteOriginale?.__requestStartedAt && Date.now() - requeteOriginale.__requestStartedAt >= 5000) {
+          error.__requeteLente = true
+        }
         console.log("error response", error.response)
 
         if (!error.response) {

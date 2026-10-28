@@ -20,6 +20,7 @@ import { Accelerometer } from 'expo-sensors';
 import * as SplashScreen from 'expo-splash-screen';
 import 'react-native-reanimated';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { View } from 'react-native';
 
 //Components
 import Toast from 'react-native-toast-message';
@@ -43,6 +44,7 @@ import { toastConfig } from '@/constants/toastConfig';
 import { EventDraftProvider } from '@/contextes/contexteEventDraft';
 import { SignalementsProvider } from '@/contextes/contexteSignalements';
 import { initLocalization } from '@/locales/initLocale';
+import RequestStatus from '@/components/requestStatus';
 
 // This is the default configuration
 configureReanimatedLogger({
@@ -211,6 +213,7 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={navTheme}>
+      <View style={{ flex: 1 }}>
       <Stack>
         {/* Modals and scanQR are only ever opened by a signed-in member, so they live
             behind the same guard as the tabs: signing out removes them all at once and
@@ -238,7 +241,9 @@ function RootLayoutNav() {
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         </Stack.Protected>
       </Stack>
+      <RequestStatus />
       <Toast config={toastConfig}/>
+      </View>
     </ThemeProvider>
   );
 }

@@ -2,13 +2,13 @@ import { useAPI } from '@/contextes/contexteAPI';
 import { useGestionScroll } from '@/contextes/contexteGestionListes';
 import { usePalette } from '@/contextes/contextePalette';
 
-import { useNavFab } from '@/hooks/useNavFAB';
-import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Ionicons from '@react-native-vector-icons/ionicons';
 import BarreRecherche from '@/components/barreRecherche';
 import normaliserRecherche from '@/functions/normaliserRecherche';
 import ouvrirDetailsEvenement from '@/functions/ouvrirDetailsEvenement';
+import { useNavFab } from '@/hooks/useNavFAB';
+import Ionicons from '@react-native-vector-icons/ionicons';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Animated, { cancelAnimation, scrollTo, useAnimatedReaction, useAnimatedRef, useAnimatedStyle, useSharedValue, withDecay, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
 
@@ -19,7 +19,7 @@ import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-g
 
 import { getCommonFreeSlotsSurPlage } from '@/functions/availability';
 import catcher from '@/functions/catcher';
-import { convertLocalToUTC, convertUTCToLocal } from '@/functions/convertirUTCenLocal';
+import { convertUTCToLocal } from '@/functions/convertirUTCenLocal';
 import log from '@/functions/log';
 
 
@@ -36,13 +36,12 @@ import { useTimeline } from '@/contextes/contexteTimeline';
 //dummy datas
 //import {seedData} from '@/seed'
 import { withSpringConfig } from '@/constants/ReanimatedConfs';
+import { calendrierEvents } from '@/events/calendrierEvents';
+import { rechercheAmiEvents } from '@/events/rechercheAmiEvents';
 import AutoRefresh from '@/functions/autoRefresh';
 import { estJourFerie, formaterEvenementsMembre, joursFeriesDuJour, paramsPlage } from '@/functions/evenementsMembre';
 import { debutCreationPourJour, estJourPasse } from '@/functions/jourCreation';
-import { calendrierEvents } from '@/events/calendrierEvents';
-import { rechercheAmiEvents } from '@/events/rechercheAmiEvents';
 import { Friend } from '@/types/calendar';
-import formaterDatePourServeur from '@/functions/formaterDatePourServeur';
 import { scheduleOnRN } from 'react-native-worklets';
 
 //Constants
@@ -1180,11 +1179,7 @@ export default function Home() {
                       majMaxY();
                     }}
                   >
-<<<<<<< HEAD
-                    {amisAvecDisponibilites.map(({ ami: friend, disponibilites: commonFreeSlots }) => {
-=======
                     {amisAffiches.map((friend) => {
->>>>>>> 9621750a293573f6f9c673a2983a2add21ee1538
                       // Toujours calculer sur la fenêtre active entière, pas sur
                       // le jour actuellement visible (qui peut être le 16 dans
                       // une fenêtre chargée du 14 au 20).
