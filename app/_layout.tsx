@@ -3,6 +3,7 @@ import '../i18n';
 
 //Providers
 import { APIProvider } from '@/contextes/contexteAPI';
+import { FabProvider } from '@/contextes/contexteFAB';
 import { FontProvider, useFont } from '@/contextes/contexteFont';
 import { MembreProvider } from '@/contextes/contexteMembre';
 import { ModalProvider } from '@/contextes/contexteModals';
@@ -10,7 +11,6 @@ import { PaletteProvider, usePalette } from '@/contextes/contextePalette';
 import { RouteAbsProvider } from '@/contextes/contexteRoute';
 import { AccessTokenProvider } from '@/contextes/contexteToken';
 import { ThemeProvider } from "expo-router/react-navigation";
-import { FabProvider } from '@/contextes/contexteFAB';
 
 //Contexts
 
@@ -18,9 +18,9 @@ import { FabProvider } from '@/contextes/contexteFAB';
 import { router, Stack, usePathname } from 'expo-router';
 import { Accelerometer } from 'expo-sensors';
 import * as SplashScreen from 'expo-splash-screen';
-import 'react-native-reanimated';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import 'react-native-reanimated';
 
 //Components
 import Toast from 'react-native-toast-message';
@@ -28,23 +28,23 @@ import Toast from 'react-native-toast-message';
 //Functions
 import ChargementEcran from '@/components/chargementEcran';
 import { AuthProvider, useAuth } from '@/contextes/contexteAuth';
+import { ConversationsProvider } from '@/contextes/contexteConversations';
 import { GestionScrollProvider } from '@/contextes/contexteGestionListes';
 import { InvitesProvider } from '@/contextes/contexteInvites';
-import { ConversationsProvider } from '@/contextes/contexteConversations';
 import { MockModeProvider } from '@/contextes/contexteMockMode';
 import { NotificationProvider } from '@/contextes/contexteNotifications';
 import { SettingsProvider, useSettings } from '@/contextes/contexteSettings';
 import { TimelineProvider } from '@/contextes/contexteTimeline';
 import {
-    configureReanimatedLogger,
-    ReanimatedLogLevel,
+  configureReanimatedLogger,
+  ReanimatedLogLevel,
 } from 'react-native-reanimated';
 
+import RequestStatus from '@/components/requestStatus';
 import { toastConfig } from '@/constants/toastConfig';
 import { EventDraftProvider } from '@/contextes/contexteEventDraft';
 import { SignalementsProvider } from '@/contextes/contexteSignalements';
 import { initLocalization } from '@/locales/initLocale';
-import RequestStatus from '@/components/requestStatus';
 
 // This is the default configuration
 configureReanimatedLogger({
