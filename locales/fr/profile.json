@@ -33,9 +33,6 @@
 		"retry": "Réessayer",
 		"accessDenied": "Accès refusé.",
 		"reportedAt": "Date : {{date}}",
-		"appVersion": "Version de l’app : {{version}}",
-		"device": "Appareil : {{device}}",
-		"reporter": "Membre : @{{pseudo}}",
 		"unknown": "Inconnue"
 	},
 	"friendMood": "État d'âme",

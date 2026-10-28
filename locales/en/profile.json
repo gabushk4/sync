@@ -33,9 +33,6 @@
 		"retry": "Try again",
 		"accessDenied": "Access denied.",
 		"reportedAt": "Date: {{date}}",
-		"appVersion": "App version: {{version}}",
-		"device": "Device: {{device}}",
-		"reporter": "Member: @{{pseudo}}",
 		"unknown": "Unknown"
 	},
 	"friendMood": "Mood",

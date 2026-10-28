@@ -15,19 +15,21 @@ type BugRapporte = {
   id_publique: string
   description: string
   cree_le: string
-  app_version?: string | null
-  appareil?: string | null
   pseudo?: string | null
 }
 
 type Etat = 'verification' | 'chargement' | 'pret' | 'erreur'
 
-function valeurTechnique(description: string, labels: string[]): string | null {
+function extraireSection(description: string, labels: string[]): string | null {
   const lignes = description.split(/\r?\n/)
-  const ligne = lignes.find((texte) => labels.some((label) => texte.trim().toLocaleLowerCase().startsWith(`${label.toLocaleLowerCase()}:`)))
-  if (!ligne) return null
-  const separateur = ligne.indexOf(':')
-  return ligne.slice(separateur + 1).trim() || null
+  const debut = lignes.findIndex((ligne) => labels.some((label) => ligne.trim().toLocaleLowerCase() === `${label.toLocaleLowerCase()}:`))
+  if (debut < 0) return null
+  const contenu: string[] = []
+  for (const ligne of lignes.slice(debut + 1)) {
+    if (!ligne.trim()) break
+    contenu.push(ligne)
+  }
+  return contenu.join('\n').trim() || null
 }
 
 /** Admin-only dashboard. The API also enforces admin access on the bug endpoint. */
@@ -75,6 +77,7 @@ export default function DashboardAdmin() {
     titreOnglet: { color: colors.text, fontFamily: fonts.title, fontSize: 16 },
     liste: { padding: 16, paddingBottom: 32, gap: 12 },
     carte: { padding: 16, borderRadius: 12, backgroundColor: colors.card, gap: 8 },
+    pseudo: { color: colors.text, fontFamily: fonts.title, fontSize: 16 },
     description: { color: colors.text, fontFamily: fonts.body, fontSize: 15 },
     metadonnees: { color: colors.muted, fontFamily: fonts.body, fontSize: 13 },
     message: { padding: 24, color: colors.muted, fontFamily: fonts.body, fontSize: 16, textAlign: 'center' as const },
@@ -102,11 +105,11 @@ export default function DashboardAdmin() {
         <ScrollView contentContainerStyle={s.liste}>
           {bugs.map((bug) => (
             <View key={bug.id_publique} style={s.carte}>
-              <Text style={s.description}>{bug.description}</Text>
+              <Text style={s.pseudo}>@{bug.pseudo || t('admin.unknown')}</Text>
+              <Text style={s.description}>
+                {extraireSection(bug.description, [t('bugReport.whatHappened', { ns: 'common' }), 'What happened']) || bug.description}
+              </Text>
               <Text style={s.metadonnees}>{t('admin.reportedAt', { date: new Date(bug.cree_le).toLocaleString(i18n.language) })}</Text>
-              <Text style={s.metadonnees}>{t('admin.appVersion', { version: bug.app_version || valeurTechnique(bug.description, [t('bugReport.appVersion', { ns: 'common' }), 'App version']) || t('admin.unknown') })}</Text>
-              <Text style={s.metadonnees}>{t('admin.device', { device: bug.appareil || valeurTechnique(bug.description, [t('bugReport.device', { ns: 'common' }), 'Device']) || t('admin.unknown') })}</Text>
-              {bug.pseudo ? <Text style={s.metadonnees}>{t('admin.reporter', { pseudo: bug.pseudo })}</Text> : null}
             </View>
           ))}
         </ScrollView>
