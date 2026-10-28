@@ -25,6 +25,8 @@ export type Event = {
   // whether tapping the block does anything. Philip — user story 8.
   couleur?: string;
   cliquable?: boolean;
+  nom_calendrier?: string;
+  compte_origine?: string;
 };
 
 export const defaultEvent = <Event>{

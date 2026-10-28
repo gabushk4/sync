@@ -7,11 +7,12 @@ import Icon from '@react-native-vector-icons/ionicons'
 import ouvrirDetailsEvenement from '@/functions/ouvrirDetailsEvenement'
 import { DateTime } from 'luxon'
 import React from 'react'
-import { StyleSheet, Text, TouchableOpacity } from 'react-native'
+import { StyleSheet, Text, TouchableOpacity, useColorScheme } from 'react-native'
 import Animated, { SharedValue } from 'react-native-reanimated'
 import useTimelineLabelOffset from '@/hooks/useTimelineLabelOffset'
 import { positionHeures } from '@/functions/positionTimeline'
 import EventBloc from './eventBloc'
+import RenderCalendarColor from '@/functions/renderCalendarColor'
 
 type Props = {
     event: Event;
@@ -44,6 +45,7 @@ const PAD = 6
 export default function ListItem({ event, horizontal, displayedDate, listOffset, eventsColor, textColor, onPress, timelineDays = 1 }:Props) {
     const { fonts } = useFont()
     const { colors } = usePalette()
+    const scheme = useColorScheme() 
     const { L_HEURES, H_HEURES, pxHeures } = useTimeline()
 
     const debut = event?.debut
@@ -141,7 +143,7 @@ export default function ListItem({ event, horizontal, displayedDate, listOffset,
             disabled={event.cliquable === false}
             onPress={() => onPress ? onPress(event) : ouvrirDetailsEvenement({ id: event.id, debut, fin })}
         >
-            <EventBloc event={event} blockColor={event.couleur ?? eventsColor} horizontal={horizontal} displayDate={displayedDate} />
+            <EventBloc event={event} blockColor={event.couleur ? RenderCalendarColor(parseInt(event.couleur), scheme) : eventsColor} horizontal={horizontal} displayDate={displayedDate} />
             <Animated.View style={[s.texte, texteAnime]}>
                 <Text style={s.heure} numberOfLines={1}>{startText}</Text>
                 {event.titre
