@@ -54,9 +54,13 @@ export const EventDraftProvider = ({makeReq = true, initialStart, initialEnd, ch
     const [start, setStart] = useState<DateTime>(ceilBy5(initialStart ?? now.plus({hour:1})))
     const [end, setEnd] = useState<DateTime>(ceilBy5(initialEnd ?? start.plus({ hour: 1 })))
     
-    const [slotSuggestions, setSlotSuggestions] = useState<Array<Interval>>([])
-    const [friendsSuggestions, setFriendsSuggestions] = useState<Array<FriendIntervals>>([])
-    const [friendsHasMore, setFriendsHasMore] = useState(false)
+    const [slotSuggestionsState, setSlotSuggestionsState] = useState<{ key: string; values: Interval[] }>({ key: '', values: [] })
+    const [friendsAvailabilityState, setFriendsAvailabilityState] = useState<{ key: string; values: FriendIntervals[]; hasMore: boolean }>({ key: '', values: [], hasMore: false })
+    const rangeKey = `${start.toMillis()}/${end.toMillis()}`
+    const commonSlotsKey = `${rangeKey}/${invites.map(invite => invite.id).sort().join(',')}`
+    const slotSuggestions = slotSuggestionsState.key === commonSlotsKey ? slotSuggestionsState.values : []
+    const friendsSuggestions = friendsAvailabilityState.key === rangeKey ? friendsAvailabilityState.values : []
+    const friendsHasMore = friendsAvailabilityState.key === rangeKey && friendsAvailabilityState.hasMore
 
     const getCommonAvail = useCallback(async (signal: AbortSignal) => {
         try {
@@ -79,13 +83,16 @@ export const EventDraftProvider = ({makeReq = true, initialStart, initialEnd, ch
             log("getCommonAvail:", res.data)
             if (res.data.disponibilites && res.status === 200) {
                 // Shared with a friend's profile widget (Philip — user story 25).
-                setSlotSuggestions(versCreneauxLocaux(res.data.disponibilites))
+                setSlotSuggestionsState({
+                    key: commonSlotsKey,
+                    values: versCreneauxLocaux(res.data.disponibilites),
+                })
             }
         } catch (err) {
             if (axios.isCancel(err) || signal.aborted || (err as any)?.code === 'ERR_CANCELED') return
             catcher(err, "Impossible de suggérer des créneaux")
         }
-    }, [api, end, invites, start])
+    }, [api, commonSlotsKey, end, invites, start])
 
     const getFriendsAvail = useCallback(async (append = false) => {
         try {
@@ -125,14 +132,13 @@ export const EventDraftProvider = ({makeReq = true, initialStart, initialEnd, ch
                 ? res.data.offset
                 : requestOffset + 5
 
-            setFriendsSuggestions(current => {
-                if (!append) return fetchedFriends
-                const merged = new Map(current.map(friend => [friend.id, friend]))
-                fetchedFriends.forEach(friend => merged.set(friend.id, friend))
-                return [...merged.values()]
-            })
             const hasMore = Boolean(res.data.has_more)
-            setFriendsHasMore(hasMore)
+            setFriendsAvailabilityState(current => {
+                const existing = append && current.key === rangeKey ? current.values : []
+                const merged = new Map(existing.map(friend => [friend.id, friend]))
+                fetchedFriends.forEach(friend => merged.set(friend.id, friend))
+                return { key: rangeKey, values: [...merged.values()], hasMore }
+            })
             const friendIds = fetchedFriends.map(friend => friend.id)
             const page = { append, hasMore, friendIds }
             friendsAvailabilityEvents.publishPage(page)
@@ -142,7 +148,7 @@ export const EventDraftProvider = ({makeReq = true, initialStart, initialEnd, ch
             catcher(error, "Impossible de suggérer des amis")
             return { append, hasMore: true, friendIds: [] }
         }
-    }, [api, end, start])
+    }, [api, end, rangeKey, start])
 
     useEffect(() => {
         commonAvailController.current?.abort()
@@ -150,7 +156,6 @@ export const EventDraftProvider = ({makeReq = true, initialStart, initialEnd, ch
         if (!requestsEnabled) return
 
         suggestionsOffset.current = 0
-        setSlotSuggestions([])
         if (invites.length === 0) return
 
         const controller = new AbortController()
@@ -169,8 +174,6 @@ export const EventDraftProvider = ({makeReq = true, initialStart, initialEnd, ch
             friendsAvailController.current.abort()
             friendsAvailController.current = new AbortController()
             friendsListOffset.current = 0
-            setFriendsSuggestions([])
-            setFriendsHasMore(false)
             friendsAvailabilityEvents.publishPage({ append: false, hasMore: false, friendIds: [] })
 
             const timeout = setTimeout(() => {
