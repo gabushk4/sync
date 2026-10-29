@@ -109,7 +109,7 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
     const { fonts } = useFont()
     const { ajouterInvite } = useInvites()    
     const { start, end, setStart, setEnd, setRequestsEnabled , setFriendsRequestsEnabled} = useEventDraft()
-    const scheme = useColorScheme()
+    const scheme = useColorScheme() ?? 'dark'
         
     // Parenthesized explicitly: `? :` binds looser than `||`, so without the
     // parens this would evaluate as `(constraints?.minimumStart || mode ===

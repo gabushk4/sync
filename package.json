@@ -92,6 +92,7 @@
     "baseline-browser-mapping": "^2.9.14",
     "eslint": "^9.39.5",
     "eslint-config-expo": "~58.0.4",
+    "expo-modules-core": "58.0.27",
     "jest": "~30.5.2",
     "jest-expo": "~58.0.12",
     "typescript": "~6.0.3"
