@@ -15,7 +15,7 @@ import { useFocusEffect } from 'expo-router'
 import { DateTime } from 'luxon'
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, View } from 'react-native'
 
 import SwitchAbs from '@/abstractions/switchAbs'
 import { useEventDraft } from '@/contextes/contexteEventDraft'
@@ -26,6 +26,8 @@ import Animated from 'react-native-reanimated'
 import DateTimeSelecteur from './datetimeSelecteurs'
 import MenuDeroulant from './menuDeroulant'
 import ParticipantsListe from './participantsListe'
+import RenderCalendarColor from '@/functions/renderCalendarColor'
+import catcher from '@/functions/catcher'
 
 const MAX_LONG_TITLE = 50
 const MAX_LONG_DESC = 2000
@@ -73,6 +75,17 @@ type Props = {
 
 const dtNow = DateTime.now()
 
+const redirigerVersLaSource = async (url: string) => {
+    log('eventForm: redirigerVersLaSource: ' + url)
+    const canOpen = await Linking.canOpenURL(url)
+    if (canOpen) {
+        Linking.openURL(url)
+    } else {
+        const err = new Error(`Cannot open URL: ${url}`)        
+        catcher(err)
+    }
+}
+
 /**
  * Form for creating, editing, or viewing an event: title, description,
  * start/end date-time, recurrence, visibility, and participants.
@@ -95,7 +108,8 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
     const { colors } = usePalette()
     const { fonts } = useFont()
     const { ajouterInvite } = useInvites()    
-    const {start, end, setStart, setEnd, setRequestsEnabled, setFriendsRequestsEnabled} = useEventDraft()
+    const { start, end, setStart, setEnd, setRequestsEnabled , setFriendsRequestsEnabled} = useEventDraft()
+    const scheme = useColorScheme()
         
     // Parenthesized explicitly: `? :` binds looser than `||`, so without the
     // parens this would evaluate as `(constraints?.minimumStart || mode ===
@@ -397,6 +411,28 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
                     />
                 </View>
             )}
+            {/* Extern calendar infos */}
+            {event.source !== 'sync' && event.couleur &&
+                <TouchableOpacity
+                    style={[s.champ, { backgroundColor: RenderCalendarColor(event.couleur, scheme), gap: 8 }]}
+                    onPress={() => {
+                        if(event.url_externe)
+                            redirigerVersLaSource(event.url_externe)
+                    }}
+                >
+                    <View style={ { flexDirection:'row', justifyContent:'space-between', alignItems:'center',  }}>
+                        <Text style={s.label}>
+                            Source : 
+                        </Text>
+                        <Text style={{color: colors.text, fontSize:16}}>
+                            {event.nom_calendrier} ({event.source})
+                        </Text>
+                    </View>
+                    {event.url_externe && <Text style={{ color: colors.muted, width: '100%', textAlign: 'center', fontSize: 12 }}>
+                        {t('details.clickSource', { source: event.source })}</Text>
+                    }
+                </TouchableOpacity>
+            }
             {/* Reccurence (none for an unavailability) */}
             {!indisponibilite && <View style={{ gap: 8 }}>
                 <View style={[s.champ, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 4 }]}>

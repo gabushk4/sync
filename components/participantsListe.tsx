@@ -88,7 +88,7 @@ export default function ParticipantsListe({ participantsUrl, listType, peutGerer
 
 
 
-    log("friend ids:", availableFriendIds.length, availableFriendIds)
+    log("friend ids:", availableFriendIds.length, availableFriendIds, friendsSuggestions)
 
     // Ce que le SERVEUR dit. Vide en mode création (pas d'URL).
     const [participantsServeur, setParticipantsServeur] = useState<Array<Participant>>([])
@@ -182,6 +182,7 @@ export default function ParticipantsListe({ participantsUrl, listType, peutGerer
 
     // useFocusEffect s'exécute aussi au montage : plus besoin d'un useEffect en plus.
     useFocusEffect(useCallback(() => {
+        log(availableFriendIds)
         getParticipants()
     }, [getParticipants]))
 

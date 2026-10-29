@@ -1,10 +1,11 @@
+import Spinner from '@/components/spinner'
 import { useFont } from '@/contextes/contexteFont'
 import { usePalette } from '@/contextes/contextePalette'
 import { convertirTimestampHeure } from '@/functions/convertirTimestamp'
 import { dernierInstant, estJourFerie } from '@/functions/evenementsMembre'
 import ouvrirDetailsEvenement from '@/functions/ouvrirDetailsEvenement'
+import RenderCalendarColor from '@/functions/renderCalendarColor'
 import { Event } from '@/types/calendar'
-import Spinner from '@/components/spinner'
 import Ionicons from '@react-native-vector-icons/ionicons'
 import * as Haptics from 'expo-haptics'
 import { DateTime } from 'luxon'
@@ -81,6 +82,7 @@ type SegmentPlageProps = {
  * @returns {JSX.Element}
  */
 function SegmentPlage({ rangee, colonneDebut, colonneFin, tailleCase, couleur }: SegmentPlageProps) {
+
     const gauche = useSharedValue(colonneDebut * tailleCase + RETRAIT_SEGMENT)
     const largeur = useSharedValue((colonneFin - colonneDebut + 1) * tailleCase - 2 * RETRAIT_SEGMENT)
     const apparition = useSharedValue(0)
@@ -213,18 +215,27 @@ export default function CalendarMonthView({
     // event spans gets a dot (it used to mark only the start day of multi-day events).
     // A Set: every day cell looks itself up (it was an array scanned per cell).
     const datesAvecEvenements = useMemo(() => {
-        const dates = new Set<string>()
+        const dates = new Map<string, Event[]>()
+
         for (const evenement of events) {
             if (!evenement?.debut) continue
-            // Same rule as the list (dernierInstant): an event ending exactly at
-            // midnight doesn't get a dot on the next day.
+
             const dernierJour = dernierInstant(evenement).startOf('day')
-            // Capped at 62 days so a malformed range can't loop for long.
-            for (let jour = evenement.debut.startOf('day'), n = 0; jour <= dernierJour && n < 62; jour = jour.plus({ days: 1 }), n++) {
+
+            for (
+                let jour = evenement.debut.startOf('day'), n = 0;
+                jour <= dernierJour && n < 62;
+                jour = jour.plus({ days: 1 }), n++
+            ) {
                 const dateTexte = jour.toISODate()
-                if (dateTexte) dates.add(dateTexte)
+                if (!dateTexte) continue
+
+                const evenementsDuJour = dates.get(dateTexte) ?? []
+                evenementsDuJour.push(evenement)
+                dates.set(dateTexte, evenementsDuJour)
             }
         }
+
         return dates
     }, [events])
 
@@ -663,6 +674,12 @@ export default function CalendarMonthView({
             borderRadius: 2,
             backgroundColor: colors.secondary,
         },
+        pointsEvenements: {
+            minHeight: 4,
+            flexDirection: 'row',
+            justifyContent: 'center',
+            gap: 2,
+        },
         // Selected day's (or range's) events, in the space under the grid.
         liste: {
             flex: 1,
@@ -836,7 +853,26 @@ export default function CalendarMonthView({
                             // A tapped day is circled; a range is boxed instead.
                             const estSelectionne = !plageAffichee && !enTrainDeSelectionner
                                 && !!selectedDate && jour.hasSame(selectedDate, 'day')
-                            const aUnEvenement = datesAvecEvenements.has(jour.toISODate() ?? '')
+                            //Modified by Gabriel to add a colored dot if an external event is present
+                            const dateTexte = jour.toISODate() ?? ''
+                            const evenementsDuJour = datesAvecEvenements.get(dateTexte) ?? []
+                            // Sync events keep their usual dot; imported events get their own colors.
+                            const evenementsInternes = evenementsDuJour.filter(evenement => !evenement.source || evenement.source === 'sync')
+                            // Multiple events from one calendar shouldn't create a row of identical dots.
+                            const calendriersExternes = new Map<string, Event>()
+                            evenementsDuJour.forEach(evenement => {
+                                if (!evenement.source || evenement.source === 'sync') return
+                                // The source alone isn't enough: two accounts can have calendars with the same name.
+                                const cleCalendrier = [
+                                    evenement.source,
+                                    evenement.compte_origine ?? '',
+                                    evenement.nom_calendrier ?? '',
+                                    evenement.couleur ?? '',
+                                ].join('|')
+                                if (!calendriersExternes.has(cleCalendrier)) {
+                                    calendriersExternes.set(cleCalendrier, evenement)
+                                }
+                            })
 
                             return (
                                 <TouchableOpacity
@@ -855,7 +891,23 @@ export default function CalendarMonthView({
                                             {jour.day}
                                         </Text>
                                     </View>
-                                    {aUnEvenement && <View style={s.dot} />}
+
+                                    <View style={s.pointsEvenements}>
+                                        {/* One regular dot summarizes all Sync events for the day. */}
+                                        {evenementsInternes.length > 0 && <View style={s.dot} />}
+                                        {/* One colored dot per external calendar, using the color provided by its source. */}
+                                        {Array.from(calendriersExternes.entries()).map(([cleCalendrier, evenement]) => (
+                                            <View
+                                                key={cleCalendrier}
+                                                style={[
+                                                    s.dot,
+                                                    evenement.couleur != null && {
+                                                        backgroundColor: RenderCalendarColor(evenement.couleur, colorScheme),
+                                                    },
+                                                ]}
+                                            />
+                                        ))}
+                                    </View>
                                 </TouchableOpacity>
                             )
                         })}
@@ -988,7 +1040,7 @@ export default function CalendarMonthView({
                                 <TouchableOpacity
                                     // Occurrences of a recurring event share the parent's id: the start makes the key unique.
                                     key={`${evenement.id}-${evenement.debut?.toMillis()}`}
-                                    style={s.carteEvenement}
+                                    style={[s.carteEvenement, { ...(evenement.couleur ? { backgroundColor: RenderCalendarColor(evenement.couleur, colorScheme) } : {})}]}
                                     activeOpacity={0.7}
                                     accessibilityRole="button"
                                     // Same navigation as tapping the event on the timeline (ListItem).

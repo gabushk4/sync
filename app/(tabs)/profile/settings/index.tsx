@@ -151,16 +151,10 @@ export default function Settings(){
             titleKey: 'imports',
             settings: [
                 {
-                    id:'systemCalendar',
+                    id: 'localCalendar',
                     type: 'link',
-                    href: '/(tabs)/profile/importCalendar',
-                    titleKey: 'calendarImports.system'
-                },
-                {
-                    id: 'fileCalendar',
-                    type: 'link',
-                    href: '/(tabs)/profile/',
-                    titleKey:'calendarImports.file'
+                    href: '/(tabs)/profile/settings/calendars/local',
+                    titleKey:'calendarImports.local'
                 },
                 {
                     id: 'googleCalendar',

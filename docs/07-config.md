@@ -40,6 +40,10 @@
 - `POST /calendriers/syncroniser/{id}` - Relance l'import d'un calendrier → `202 {job_id}`
 - `GET /calendriers/imports/{id}` - Progression d'un import (repli polling)
 - `GET /calendriers/imports/{id}/events` - Progression d'un import en flux SSE (`text/event-stream`)
+- `GET /comptes/outlook/config` - Configuration OAuth Microsoft publique (client_id, redirect_uri, portées, authority, authorize_url)
+- `GET /calendriers/outlook` - Comptes + calendriers Outlook du membre
+- `PUT /calendriers/outlook` - Sélection des calendriers Outlook (idempotent) → `202 {job_id}`
+- `POST /calendriers/syncroniser/{id}` - Relance l'import d'un calendrier Outlook → `202 {job_id}`
 
 ## Configuration des couleurs :
 Thème dynamique HSL : `generateTheme(hue, scheme)` (`themes/generateTheme.ts`).

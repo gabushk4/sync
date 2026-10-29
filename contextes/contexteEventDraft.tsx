@@ -1,11 +1,13 @@
 import { friendsAvailabilityEvents } from "@/events/friendsAvailabilityEvents"
 import catcher from "@/functions/catcher"
+import ceilBy5 from "@/functions/ceilBy5"
 import { convertLocalToUTC, convertUTCToLocal } from "@/functions/convertirUTCenLocal"
 import formaterDatePourServeur from "@/functions/formaterDatePourServeur"
 import log from "@/functions/log"
+import versCreneauxLocaux from "@/functions/versCreneauxLocaux"
 import { FriendIntervals, Interval } from "@/types/availabilities"
 import { Participant } from "@/types/invites"
-import axios from "axios"
+import { isCancel } from "axios"
 import { DateTime } from "luxon"
 import { createContext, Dispatch, ReactNode, SetStateAction, useCallback, useContext, useEffect, useRef, useState } from "react"
 import { useAPI } from "./contexteAPI"
@@ -172,7 +174,8 @@ export const EventDraftProvider = ({makeReq = true, initialStart, initialEnd, ch
     useEffect(() => {
         if (requestsEnabled || friendsRequestsEnabled) {
             friendsAvailController.current.abort()
-            friendsAvailController.current = new AbortController()
+            const controller = new AbortController()
+            friendsAvailController.current = controller
             friendsListOffset.current = 0
             friendsAvailabilityEvents.publishPage({ append: false, hasMore: false, friendIds: [] })
 
@@ -182,7 +185,7 @@ export const EventDraftProvider = ({makeReq = true, initialStart, initialEnd, ch
 
             return () => {
                 clearTimeout(timeout)
-                friendsAvailController.current.abort()
+                controller.abort()
             }
         }
     }, [start, end, requestsEnabled, friendsRequestsEnabled])

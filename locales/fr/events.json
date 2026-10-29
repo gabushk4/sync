@@ -13,7 +13,8 @@
     "editSeries": "la série",
     "editOccurrence": "celui-ci",
     "deletedTitle": "effacé",
-    "deletedMessage": "on l'a bien rangé là où personne ne regarde; rangé quoi? aucune idée"
+    "deletedMessage": "on l'a bien rangé là où personne ne regarde; rangé quoi? aucune idée",
+    "clickSource": "clique ici pour afficher dans {{source}}"
   },
   "edit": {
     "defaultError": "impossible d'éditer l'évènement",

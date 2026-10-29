@@ -13,7 +13,8 @@
     "editSeries": "The series",
     "editOccurrence": "This occurrence",
     "deletedTitle": "Deleted",
-    "deletedMessage": "It has been filed away where nobody looks; what was filed? No idea."
+    "deletedMessage": "It has been filed away where nobody looks; what was filed? No idea.",
+    "clickSource": "clic here to show in {source}"
   },
   "edit": {
     "defaultError": "Unable to edit the event",
