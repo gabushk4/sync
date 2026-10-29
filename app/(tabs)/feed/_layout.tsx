@@ -1,4 +1,3 @@
-import RequestStatus from "@/components/requestStatus";
 import { Stack } from "expo-router";
 import { useTranslation } from 'react-i18next';
 
@@ -7,7 +6,7 @@ export default function FeedLayout() {
     return (
         <Stack
             screenOptions={{
-                headerRight: () => <RequestStatus />,                
+                headerTransparent: false,
             }}
         >
             <Stack.Screen

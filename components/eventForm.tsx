@@ -108,7 +108,7 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
     const { colors } = usePalette()
     const { fonts } = useFont()
     const { ajouterInvite } = useInvites()    
-    const { start, end, setStart, setEnd, setRequestsEnabled } = useEventDraft()
+    const { start, end, setStart, setEnd, setRequestsEnabled , setFriendsRequestsEnabled} = useEventDraft()
     const scheme = useColorScheme()
         
     // Parenthesized explicitly: `? :` binds looser than `||`, so without the
@@ -122,6 +122,13 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
     const refDescription = useRef<TextInput>(null)
     const dateTimesCalculated = useRef(false)
     const prefilledParticipantsApplied = useRef(false)
+
+    const dateLocaleEvenement = (date?: DateTime): DateTime => {
+        if (!date) return dtNow
+        // Details already contains a Luxon DateTime in the member's timezone;
+        // edit routes receive ISO strings after JSON serialization.
+        return DateTime.isDateTime(date) ? date : convertUTCToLocal(date as unknown as string)
+    }
 
     const [dateTimeDisabled, setDateTimeDisabled] = useState<boolean>(false)
     const [titleLen, setTitleLen] = useState<number>(0)
@@ -165,8 +172,8 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
             return {start, end}
         }
 
-        let start = ceilBy5(convertUTCToLocal(event.debut ?? dtNow) ?? dtNow)
-        let end = ceilBy5(convertUTCToLocal(event.fin ?? dtNow) ?? dtNow)        
+        let start = dateLocaleEvenement(event.debut)
+        let end = dateLocaleEvenement(event.fin)
 
         return {start, end}
     }
@@ -202,8 +209,12 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
 
     useEffect(() => {
         setRequestsEnabled(mode !== 'details')
-        return () => setRequestsEnabled(false)
-    }, [mode, setRequestsEnabled])
+        setFriendsRequestsEnabled(!indisponibilite)
+        return () => {
+            setRequestsEnabled(false)
+            setFriendsRequestsEnabled(false)
+        }
+    }, [mode, indisponibilite, setRequestsEnabled, setFriendsRequestsEnabled])
 
     useEffect(() => {
         setFinRecurrence(start.startOf('day'))
@@ -215,6 +226,17 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
         if (event.id)
             setEventParicipantsControlUrl(`/evenements/${event.id}/participants`)
     }, [event])
+
+    // Details arrive asynchronously: replace the placeholder dates as soon as the
+    // actual event is loaded, so friend availability is searched on its real range.
+    useEffect(() => {
+        if (mode === 'create' || !event.debut || !event.fin) return
+        const debut = dateLocaleEvenement(event.debut)
+        const fin = dateLocaleEvenement(event.fin)
+        dateTimesCalculated.current = true
+        setStart(debut)
+        setEnd(fin)
+    }, [event.debut, event.fin, mode, setEnd, setStart])
 
     useImperativeHandle(ref, () => ({
         getValues: (): EventFormValues => ({

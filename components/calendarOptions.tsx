@@ -31,7 +31,7 @@ const CALENDAR_COLORS = [
 export default function CalendarOptions<TCalendrier extends CalendrierImport>({ selectedCalendar, onSave, onClose }: Props<TCalendrier>) {
     const { colors } = usePalette();
     const { fonts } = useFont();
-    const scheme = useColorScheme()
+    const scheme = useColorScheme() ?? 'light'
     
     const [overlayVisible, setOverlayVisible] = useState(false);
     const [draftCalendar, setDraftCalendar] = useState(selectedCalendar);

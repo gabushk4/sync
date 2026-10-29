@@ -1,6 +1,5 @@
 import { usePalette } from '@/contextes/contextePalette'
 import { useTimeline } from '@/contextes/contexteTimeline'
-import { findWidth } from '@/functions/calculerDimensionsEvenements'
 import { BlurView } from 'expo-blur'
 import { DateTime } from 'luxon'
 import React from 'react'
@@ -15,6 +14,8 @@ type Props = {
   displayDate?: DateTime
   timezone?: string
   horizontal?: boolean
+  /** Clipped length computed by the parent timeline item. */
+  size?: number
 }
 
 /**
@@ -28,7 +29,7 @@ type Props = {
  * @param {boolean} [props.horizontal=false] - Hours laid out left to right.
  * @returns {JSX.Element}
  */
-export default function EventBloc({ event, blockColor, displayDate, horizontal = false } : Props) {
+export default function EventBloc({ event, blockColor, displayDate, horizontal = false, size } : Props) {
   const { pxHeures, L_HEURES, H_HEURES } = useTimeline() as any
   const { colors } = usePalette() 
   
@@ -36,7 +37,7 @@ export default function EventBloc({ event, blockColor, displayDate, horizontal =
 
   // largeur/hauteur calculée
   const heureOffset = horizontal ? pxHeures + L_HEURES : pxHeures + H_HEURES
-  const eventSize = findWidth(event.debut, event.fin, displayDate as DateTime, heureOffset)
+  const eventSize = size ?? Math.max(0, ((event.fin?.toMillis?.() ?? 0) - (event.debut?.toMillis?.() ?? 0)) / 3600000 * heureOffset)
 
   const backgroundColor = blockColor
   

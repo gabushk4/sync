@@ -5,6 +5,8 @@
 		"availableForSlot": "available between {{start}} and {{end}}",
 		"noAvailableFriends": "no friends available during this time",
 		"otherFriends": "other friends",
+		"suggestedAvailability": "common availability: {{range}}",
+		"moreSuggestions": "+ {{count}} more time slots",
 		"loadMore": "load more available friends",
 		"friendSince": "friend since {{date}}",
 		"emptyState": "add friends using the option:"

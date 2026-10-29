@@ -8,18 +8,20 @@ import { useTranslation } from "react-i18next"
 import { convertirTimestampDateLongue } from "@/functions/convertirTimestamp"
 import log from "@/functions/log"
 import { ListType } from "@/app/(modals)/listeAmis"
+import { Interval } from "@/types/availabilities"
 
 type Props = {
     friend: Participant;
     onPress: TouchableOpacityProps['onPress'];
     listType: ListType;
     selected: boolean;
+    suggestedIntervals?: Interval[];
 }
 
-export default function FriendLine({ friend, onPress, listType, selected }: Props) {
+export default function FriendLine({ friend, onPress, listType, selected, suggestedIntervals = [] }: Props) {
     const { fonts } = useFont();
     const { colors } = usePalette();
-    const { t } = useTranslation('friends');
+    const { t, i18n } = useTranslation('friends');
 
     const dateAmitie = convertirTimestampDateLongue(friend.temps_amitie)
 
@@ -31,6 +33,16 @@ export default function FriendLine({ friend, onPress, listType, selected }: Prop
                 <View style={{ flex: 1, justifyContent: 'center', minWidth: 0 }}>
                     <Text numberOfLines={1} style={{ fontFamily: fonts.body, color: colors.text, fontSize: 17 }}>{friend.pseudo}</Text>
                     <Text numberOfLines={1} style={{ fontFamily: fonts.body, color: colors.muted, fontSize: 13 }}>{t('list.friendSince', { date: dateAmitie.substring(dateAmitie.indexOf('.') + 2) })}</Text>
+                    {suggestedIntervals.slice(0, 2).map((interval) => (
+                        <Text key={interval.id} numberOfLines={1} style={{ fontFamily: fonts.body, color: colors.primary, fontSize: 12 }}>
+                            {t('list.suggestedAvailability', { range: `${interval.debut.setLocale(i18n.language).toFormat('ccc d LLL HH:mm')}–${interval.fin.setLocale(i18n.language).toFormat('ccc d LLL HH:mm')}` })}
+                        </Text>
+                    ))}
+                    {suggestedIntervals.length > 2 && (
+                        <Text numberOfLines={1} style={{ fontFamily: fonts.body, color: colors.muted, fontSize: 12 }}>
+                            {t('list.moreSuggestions', { count: suggestedIntervals.length - 2 })}
+                        </Text>
+                    )}
                 </View>
                 <View style={{ width: 40, height: '100%', justifyContent: 'center', alignItems: 'center' }}>
                     {listType === 'consult' &&
