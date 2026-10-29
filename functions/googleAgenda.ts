@@ -1,19 +1,18 @@
 import type { AxiosInstance } from 'axios';
 
-import { extraireProgression, modifierPreferencesCalendrier, suivreImport } from '@/functions/imports';
 import type { CalendrierImport, CompteImport, ReponseCalendriers } from '@/functions/imports';
+import { extraireProgression, modifierPreferencesCalendrier, suivreImport } from '@/functions/imports';
+
+import { PlatformOAuth } from '@/types/calendar';
 
 // Outil partagé Google / Outlook : types, suivi d'import, modification de préférences.
-export { extraireProgression, modifierPreferencesCalendrier, suivreImport };
 export type {
-    StatutCompte,
-    StatutImport,
-    JobImport,
-    ProgressionImport,
-    CompteImport,
-    CalendrierImport,
-    ReponseCalendriers,
+    CalendrierImport, CompteImport, JobImport,
+    ProgressionImport, ReponseCalendriers, StatutCompte,
+    StatutImport
 } from '@/functions/imports';
+export { extraireProgression, modifierPreferencesCalendrier, suivreImport };
+    
 
 /** Statut d'un compte Google lié au membre. */
 export type CompteGoogle = CompteImport;
@@ -24,8 +23,8 @@ export type CalendrierGoogle = CalendrierImport & { source: 'google' };
 /** La réponse de GET /calendriers/google. */
 export type ReponseCalendriersGoogle = ReponseCalendriers;
 
-/** Plateformes pour lesquelles la console Google a un client OAuth dédié. */
-export type PlateformeOAuth = 'ios' | 'android';
+
+
 
 /** La configuration OAuth publique, servie par l'API. */
 export type ConfigOAuthGoogle = {
@@ -38,10 +37,10 @@ export type ConfigOAuthGoogle = {
 /** Récupère la configuration OAuth publique (client_id, redirect_uri, portées). */
 export async function chargerConfigGoogle(
     api: AxiosInstance,
-    plateforme?: PlateformeOAuth,
+    platform?: PlatformOAuth,
 ): Promise<ConfigOAuthGoogle> {
     const { data } = await api.get<ConfigOAuthGoogle>('/comptes/google/config', {
-        params: plateforme ? { platform: plateforme } : undefined,
+        params: platform ? { platform: platform } : undefined,
     });
     return data;
 }

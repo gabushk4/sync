@@ -8,6 +8,8 @@ import { toastTypes } from '@/constants/toastConfig';
 import catcher from '@/functions/catcher';
 import type { CalendrierImport, CompteImport, ProgressionImport } from '@/functions/imports';
 import { suivreImport } from '@/functions/imports';
+import { PlatformOAuth } from '@/types/calendar';
+import { Platform } from 'react-native';
 
 /**
  * Outil partagé des écrans Google / Outlook — gestion du cycle de vie d'un
@@ -42,7 +44,7 @@ export type UseAgendaImportOptions<TCompte extends CompteImport = CompteImport, 
     /** OAuth : obtient le code d'autorisation (ou null si l'utilisateur annule). */
     obtenirCode: () => Promise<{ code: string; code_verifier?: string; client_id?: string } | null>;
     /** OAuth : envoie le code au serveur (échange + stockage). */
-    connecterCompte: (api: AxiosInstance, code: string, codeVerifier?: string, clientId?: string) => Promise<void>;
+    connecterCompte: (api: AxiosInstance, code: string, {codeVerifier, clientId, platform} : { codeVerifier?: string, clientId?: string, platform?: PlatformOAuth }) => Promise<void>;
 };
 
 export function useAgendaImport<TCompte extends CompteImport, TCalendrier extends CalendrierImport>(options: UseAgendaImportOptions<TCompte, TCalendrier>) {
@@ -215,8 +217,9 @@ export function useAgendaImport<TCompte extends CompteImport, TCalendrier extend
         setAction('connexion');
         try {
             const code = await optionsRef.current.obtenirCode();
+            const plateforme = Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : Platform.OS === 'web' ? 'web' : undefined
             if (!code) return; // l'utilisateur a annulé
-            await optionsRef.current.connecterCompte(api, code.code, code.code_verifier, code.client_id);
+            await optionsRef.current.connecterCompte(api, code.code, { clientId: code.client_id, codeVerifier: code.code_verifier, platform: plateforme});
             ToastAbs.show({ type: toastTypes.success, text2: t(`${prefixe}.connected`) });
             await charger();
         } catch (error) {

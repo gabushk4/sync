@@ -181,7 +181,7 @@ export function suivreImport(
         if (progression.statut && progression.statut !== 'en_cours') finir(progression);
     };
 
-    /** Repli : on interroge l'API toutes les 2 secondes. */
+    /** on interroge l'API toutes les 2 secondes. */
     const suivreParPolling = async () => {
         while (!annule) {
             try {
@@ -197,7 +197,7 @@ export function suivreImport(
         }
     };
 
-    /** Bascule sur le polling, une seule fois. */
+    // Bascule sur le polling, une seule fois.
     const basculerSurPolling = () => {
         if (annule || repliLance) return;
         repliLance = true;
@@ -232,5 +232,5 @@ export async function modifierPreferencesCalendrier(
     idPublique: string,
     modifications: { nom?: string; couleur?: number | null },
 ): Promise<void> {
-    await api.patch(`/calendriers/preferences/${idPublique}`, modifications);
+    await api.patch(`/calendriers/${idPublique}`, modifications);
 }

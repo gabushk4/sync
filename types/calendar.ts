@@ -57,3 +57,6 @@ export type UserEvent = {
 };
 
 export type Recurrence = { title: string; value: string | null }
+
+/** Plateformes pour lesquelles la console Google et Outlook ont un client OAuth dédié. */
+export type PlatformOAuth = 'ios' | 'android' | 'web';

@@ -1,18 +1,15 @@
 import type { AxiosInstance } from 'axios';
 
-import { suivreImport } from '@/functions/imports';
 import type { CalendrierImport, CompteImport, ProgressionImport, ReponseCalendriers } from '@/functions/imports';
+import { suivreImport } from '@/functions/imports';
+import { PlatformOAuth } from '@/types/calendar';
 
 // Outil partagé Google / Outlook : types, suivi d'import, modification de préférences.
 export { extraireProgression, modifierPreferencesCalendrier, suivreImport } from '@/functions/imports';
 export type {
-    StatutCompte,
-    StatutImport,
-    JobImport,
-    ProgressionImport,
-    CompteImport,
-    CalendrierImport,
-    ReponseCalendriers,
+    CalendrierImport, CompteImport, JobImport,
+    ProgressionImport, ReponseCalendriers, StatutCompte,
+    StatutImport
 } from '@/functions/imports';
 
 /** Statut d'un compte Outlook lié au membre. */
@@ -31,11 +28,12 @@ export type ConfigOAuthOutlook = {
     scopes: string[];
     authority: string;
     authorize_url: string;
+    platform: PlatformOAuth;
 };
 
 /** Configuration OAuth publique (client_id, redirect_uri, portées) fournie par l'API. */
-export async function chargerConfigOutlook(api: AxiosInstance): Promise<ConfigOAuthOutlook> {
-    const { data } = await api.get<ConfigOAuthOutlook>('/comptes/outlook/config');
+export async function chargerConfigOutlook(api: AxiosInstance, platform?: PlatformOAuth): Promise<ConfigOAuthOutlook> {
+    const { data } = await api.get<ConfigOAuthOutlook>('/comptes/outlook/config', { params: {platform: platform ? platform : undefined } });
     return data;
 }
 
@@ -46,8 +44,8 @@ export async function chargerComptesOutlook(api: AxiosInstance): Promise<CompteO
 }
 
 /** Liste les comptes et les calendriers Outlook du membre. */
-export async function chargerCalendriersOutlook(api: AxiosInstance): Promise<ReponseCalendriersOutlook> {
-    const { data } = await api.get<ReponseCalendriersOutlook>('/calendriers/outlook');
+export async function chargerCalendriersOutlook(api: AxiosInstance): Promise<ReponseCalendriersOutlook & { calendriers: CalendrierOutlook[] }> {
+    const { data } = await api.get<ReponseCalendriersOutlook & { calendriers: CalendrierOutlook[] }>('/calendriers/outlook');
     return data;
 }
 
@@ -86,10 +84,11 @@ export async function deconnecterCompteOutlook(api: AxiosInstance, idPublique: s
  * Le code est lié au client qui l'a émis : l'API en déduit le client_secret
  * correspondant. Le secret ne transite jamais par l'app.
  */
-export async function connecterCompteOutlook(api: AxiosInstance, code: string, codeVerifier?: string): Promise<void> {
+export async function connecterCompteOutlook(api: AxiosInstance, code: string, plateforme: PlatformOAuth | undefined, codeVerifier: string | undefined): Promise<void> {
     await api.post('/comptes/outlook/connexion', {
         code,
         code_verifier: codeVerifier,
+        platform: plateforme
     });
 }
 
