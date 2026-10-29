@@ -7,11 +7,10 @@ import { toastTypes } from '@/constants/toastConfig';
 import { useAPI } from '@/contextes/contexteAPI';
 import { useFont } from '@/contextes/contexteFont';
 import { usePalette } from '@/contextes/contextePalette';
+import { useAgendaImport } from '@/hooks/useAgendaImport';
 import catcher from '@/functions/catcher';
 import {
     type CalendrierGoogle,
-    type CompteGoogle,
-    type ProgressionImport,
     chargerCalendriersGoogle,
     chargerComptesGoogle,
     chargerConfigGoogle,
@@ -20,18 +19,17 @@ import {
     modifierCalendriersGoogle,
     resynchroniserCalendrierGoogle,
     selectionnerCalendriersGoogle,
-    suivreImportGoogle,
 } from '@/functions/googleAgenda';
-import { ConfigurationOAuthInvalide, demanderCodeGoogle } from '@/functions/googleOAuth';
+import { demanderCodeGoogle } from '@/functions/googleOAuth';
 import Icon from '@react-native-vector-icons/ionicons';
-import { useFocusEffect } from 'expo-router';
-import { JSX, useCallback, useEffect, useRef, useState } from 'react';
+import { JSX, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 
-import { L, S } from '@/constants/EventsSL';
+import { convertToWhen } from '@/functions/convertirTimestamp';
 import log from '@/functions/log';
 import RenderCalendarColor from '@/functions/renderCalendarColor';
+import { convertUTCToLocal } from '@/functions/convertirUTCenLocal';
 
 /**
  * Écran « Google Agenda » : linker un compte Google, choisir les calendriers à
@@ -53,26 +51,50 @@ export default function GoogleAgendaScreen() : JSX.Element  {
     const { fonts } = useFont();
     const scheme = useColorScheme();
 
-    const [chargement, setChargement] = useState(true);
-    const [comptes, setComptes] = useState<CompteGoogle[]>([]);
-    const [calendriers, setCalendriers] = useState<CalendrierGoogle[]>([]);
-    const [selection, setSelection] = useState<Set<string>>(new Set());
-    const [action, setAction] = useState<null | 'connexion' | 'enregistrement' | 'deconnexion'>(null);
-    const [progression, setProgression] = useState<ProgressionImport | null>(null);
     const [selectedCalendar, setSelectedCalendar] = useState<CalendrierGoogle>();
     const [optionsModalVisible, setOptionsModalVisible] = useState<boolean>(false);
-
-    // permet d'arrêter le suivi de l'import quand on quitte l'écran
-    const arreterSuivi = useRef<(() => void) | null>(null);
-
-    // calendriers que l'utilisateur peut cocher (un calendrier déjà lié à un
-    // autre compte reste importé mais n'est pas re sélectionnable ici)
-    const selectionnables = calendriers.filter(c => c.disponible);
-    const toutCoche = selectionnables.length > 0 && selectionnables.every(c => selection.has(c.id_externe));
+    const {
+        chargement,
+        comptes,
+        calendriers,
+        selection,
+        action,
+        progression,
+        occupe,
+        toutCoche,
+        basculer,
+        toutBasculer,
+        enregistrer,
+        resynchroniser,
+        deconnecter,
+        connecter,
+        mettreAJourCalendrier,
+    } = useAgendaImport({
+        api,
+        prefixe: 'google',
+        chargerComptesEtCalendriers: async () => {
+            const [listeComptes, reponse] = await Promise.all([
+                chargerComptesGoogle(api),
+                chargerCalendriersGoogle(api),
+            ]);
+            return { comptes: listeComptes, calendriers: reponse.calendriers };
+        },
+        selectionner: (idsExternes) => selectionnerCalendriersGoogle(api, idsExternes),
+        relancerImport: (idPublique) => resynchroniserCalendrierGoogle(api, idPublique),
+        deconnecterCompte: (idPublique) => deconnecterCompteGoogle(api, idPublique),
+        obtenirCode: async () => {
+            const plateforme = Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : undefined;
+            const config = await chargerConfigGoogle(api, plateforme);
+            const code = await demanderCodeGoogle(config);
+            return code ? { ...code, client_id: config.client_id } : null;
+        },
+        connecterCompte: (api, code, codeVerifier, clientId) =>
+            connecterCompteGoogle(api, code, codeVerifier, clientId),
+    });
 
     const styles = StyleSheet.create({
-        content: { paddingHorizontal: 16, paddingBottom: 32 },
-        heading: { color: colors.text, fontFamily: fonts.title, fontSize: 22, marginBottom: 8 },
+        content: { paddingBottom: 32 },
+        heading: { color: colors.text, fontFamily: fonts.title, fontSize: 22, marginVertical: 8 },
         body: { color: colors.muted, fontFamily: fonts.body, fontSize: 16, lineHeight: 23 },
         section: { marginTop: 28, marginBottom: 6, color: colors.text, fontFamily: fonts.title, fontSize: 18 },
         row: {
@@ -91,6 +113,17 @@ export default function GoogleAgendaScreen() : JSX.Element  {
         rowDisabled: { opacity: 0.5 },
         rowText: { flex: 1, color: colors.text, fontFamily: fonts.body, fontSize: 16, justifyContent:'center' },
         rowSubText: { color: colors.muted, fontFamily: fonts.body, fontSize: 13, marginTop: 2 },
+        syncBadge: {
+            maxWidth: 132,
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+            borderRadius: Radius.sm,
+            backgroundColor: colors.primary,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+        },
+        syncBadgeText: { color: colors.muted, fontFamily: fonts.body, fontSize: 11 },
         action: {
             minHeight: 52,
             paddingHorizontal: 16,
@@ -139,164 +172,11 @@ export default function GoogleAgendaScreen() : JSX.Element  {
         hint: { color: colors.muted, fontFamily: fonts.body, fontSize: 13, marginTop: 6 },
     });
 
-    /**
-     *  recharge les comptes et les calendriers, et pré-sélectionne ce qui est déjà importé
-     **/
-    const charger = useCallback(async () => {
-        try {
-            const [listeComptes, reponse] = await Promise.all([
-                chargerComptesGoogle(api),
-                chargerCalendriersGoogle(api),
-            ]);
-            setComptes(listeComptes);
-            setCalendriers(reponse.calendriers);
-            setSelection(new Set(reponse.calendriers.filter(c => c.actif).map(c => c.id_externe)));
-        } catch (error) {
-            catcher(error, t('google.loadFailed'));
-        } finally {
-            setChargement(false);
-        }
-    }, [api, t]);
-
-    useFocusEffect(useCallback(() => {
-        void charger();
-    }, [charger]));
-
-    // on ne laisse pas un flux SSE ouvert derrière l'écran
-    useEffect(() => () => {
-        arreterSuivi.current?.();
-        arreterSuivi.current = null;
-    }, []);
-
-    const suiviEnCours = progression !== null && progression.statut === 'en_cours';
-    const occupe = action !== null || suiviEnCours;
-
-    const basculer = (idExterne: string) => {
-        setSelection(current => {
-            const suivant = new Set(current);
-            if (suivant.has(idExterne)) suivant.delete(idExterne);
-            else suivant.add(idExterne);
-            return suivant;
-        });
-    };
-
-    /**
-     * Coche/décoche tous les calendriers sélectionnables.
-     * Les calendriers déjà importés mais liés à un autre compte ne sont pas
-     * sélectionnables : on ne les retire pas de la sélection (sinon le serveur
-     * les désactiverait).
-     */
-    const toutBasculer = () => {
-        const ids = selectionnables.map(c => c.id_externe);
-        setSelection(current => {
-            const suivant = new Set(current);
-            const toutCocheLocal = ids.length > 0 && ids.every(id => suivant.has(id));
-            for (const id of ids) {
-                if (toutCocheLocal) suivant.delete(id);
-                else suivant.add(id);
-            }
-            return suivant;
-        });
-    };
-
-    /** Démarre le suivi d'un import et rafraîchit la liste à la fin. */
-    const suivre = (jobId: string) => {
-        arreterSuivi.current?.();
-        setProgression({ groupId: jobId, total: 0, done: 0, statut: 'en_cours', jobs: [] });
-        arreterSuivi.current = suivreImportGoogle(api, jobId, {
-            onProgression: setProgression,
-            onFin: (final) => {
-                setProgression(final);
-                arreterSuivi.current = null;
-                if (final.statut === 'erreur') {
-                    ToastAbs.show({ type: toastTypes.error, text2: t('google.importFailed') });
-                } else {
-                    ToastAbs.show({ type: toastTypes.success, text2: t('google.importDone') });
-                }
-                void charger();
-            },
-        });
-    };
-
-    /** Connecte un compte Google : consentement OAuth puis envoi du code à l'API. */
-    const connecter = async () => {
-        setAction('connexion');
-        try {
-            const plateforme = Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : undefined;
-            const config = await chargerConfigGoogle(api, plateforme);
-            const code = await demanderCodeGoogle(config);
-            if (!code) return; // l'utilisateur a annulé
-            // le client_id repart avec le code : l'API en déduit le secret
-            await connecterCompteGoogle(api, code.code, code.code_verifier, config.client_id);
-            ToastAbs.show({ type: toastTypes.success, text2: t('google.connected') });
-            await charger();
-        } catch (error) {
-            if (error instanceof ConfigurationOAuthInvalide) {
-                ToastAbs.show({ type: toastTypes.error, text2: t('google.misconfigured') });
-                return;
-            }
-            catcher(error, t('google.connectFailed'));
-        } finally {
-            setAction(null);
-        }
-    };
-
-    /** Envoie la sélection : le serveur active/désactive et lance l'import. */
-    const enregistrer = async () => {
-        setAction('enregistrement');
-        try {
-            const { jobId, calendriersDesactives } = await selectionnerCalendriersGoogle(api, Array.from(selection));
-            if (!jobId) {
-                // rien à importer : la sélection a bien été enregistrée (des
-                // calendriers ont pu être retirés).
-                ToastAbs.show({
-                    type: toastTypes.success,
-                    text2: calendriersDesactives > 0
-                        ? t('google.calendarsRemoved', { count: calendriersDesactives })
-                        : t('google.selectionSaved'),
-                });
-                await charger();
-                return;
-            }
-            suivre(jobId);
-        } catch (error) {
-            if ((error as { response?: { data?: { code?: string } } })?.response?.data?.code === 'google_reauth') {
-                ToastAbs.show({ type: toastTypes.warning, text2: t('google.needsReconnect') });
-                return;
-            }
-            catcher(error, t('google.importFailed'));
-        } finally {
-            setAction(null);
-        }
-    };
-
-    /** Relance l'import d'un seul calendrier. */
-    const resynchroniser = async (calendrier: CalendrierGoogle) => {
-        if (!calendrier.id_publique) return;
-        setAction('enregistrement');
-        try {
-            const jobId = await resynchroniserCalendrierGoogle(api, calendrier.id_publique);
-            suivre(jobId);
-        } catch (error) {
-            if ((error as { response?: { data?: { code?: string } } })?.response?.data?.code === 'google_reauth') {
-                ToastAbs.show({ type: toastTypes.warning, text2: t('google.needsReconnect') });
-                return;
-            }
-            catcher(error, t('google.importFailed'));
-        } finally {
-            setAction(null);
-        }
-    };
-
     const enregistrerModificationsCalendrier = async (
         calendrier: CalendrierGoogle,
         modifications: Partial<CalendrierGoogle>,
     ) => {
-        setCalendriers(current => current.map(item =>
-            item.id_publique === calendrier.id_publique
-                ? { ...item, ...modifications }
-                : item,
-        ));
+        if (calendrier.id_publique) mettreAJourCalendrier(calendrier.id_publique, modifications);
 
         if (calendrier.id_publique) {
             try {
@@ -318,26 +198,11 @@ export default function GoogleAgendaScreen() : JSX.Element  {
         setOptionsModalVisible(false);
     };
 
-    /** Déconnecte un compte : ses calendriers sont désactivés et ses événements retirés. */
-    const deconnecter = async (compte: CompteGoogle) => {
-        setAction('deconnexion');
-        try {
-            await deconnecterCompteGoogle(api, compte.id);
-            ToastAbs.show({ type: toastTypes.success, text2: t('google.disconnected') });
-            await charger();
-        } catch (error) {
-            catcher(error, t('google.disconnectFailed'));
-        } finally {
-            setAction(null);
-        }
-    };
-
     const comptesActifs = comptes.filter(c => c.statut === 'actif');
 
     return (
-        <Container style={{ backgroundColor: colors.background }}>
+        <Container style={{ backgroundColor: colors.background, paddingVertical:8, paddingHorizontal:16 }}>
             <ScrollView contentContainerStyle={styles.content}>
-                <Text style={styles.heading}>{t('google.title')}</Text>
                 <Text style={styles.body}>{t('google.description')}</Text>
 
                 {/* Comptes liés */}
@@ -437,7 +302,7 @@ export default function GoogleAgendaScreen() : JSX.Element  {
                                                     color={coche ? colors.secondary : colors.muted}
                                                 />
                                                 <View style={styles.rowText}>
-                                                    <Text style={styles.rowText}>{calendrier.nom}</Text>
+                                                    <Text numberOfLines={1} style={styles.rowText}>{calendrier.nom}</Text>
                                                     {calendrier.suggere ? (
                                                         <Text style={styles.rowSubText}>{t('google.suggested')}</Text>
                                                     ) : null}
@@ -445,6 +310,18 @@ export default function GoogleAgendaScreen() : JSX.Element  {
                                                         <Text style={styles.rowSubText}>{t('google.linkedElsewhere')}</Text>
                                                     ) : null}
                                                 </View>
+                                                {calendrier.derniere_synchro ? (
+                                                    <View style={styles.syncBadge}>
+                                                        <Icon
+                                                            name='time'
+                                                            color={colors.secondary}
+                                                            size={16}
+                                                        />
+                                                        <Text numberOfLines={1} style={styles.syncBadgeText}>
+                                                            {convertToWhen(convertUTCToLocal(calendrier.derniere_synchro))}
+                                                        </Text>
+                                                    </View>
+                                                ) : null}
                                                 {calendrier.actif && calendrier.id_publique &&
                                                     <TouchableOpacity
                                                         onPress={() => {

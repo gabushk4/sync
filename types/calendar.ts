@@ -23,8 +23,10 @@ export type Event = {
   source?: 'sync' | 'ics' | 'google' | 'outlook' | 'device';
   // Timeline display overrides (invitation review screen): block color, and
   // whether tapping the block does anything. Philip — user story 8.
-  couleur?: string;
+  
   cliquable?: boolean;
+  couleur?: number;
+  url_externe?: string;
   nom_calendrier?: string;
   compte_origine?: string;
 };

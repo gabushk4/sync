@@ -832,3 +832,81 @@ ios       → client …qkd2ulqk…   secret: AUCUN          (public client)
 ```
 Les deux clients acceptent `com.alkemist.sync:/oauth2redirect` (vérifié via
 `/tmp/opencode/check_redirect.js`).
+
+---
+
+# HANDOFF — Écran Outlook (`outlook.tsx`) + client API Outlook (28/10/2026)
+
+## Fait
+- `sync/functions/outlookAgenda.ts` (nouveau) : client de l'intégration Outlook —
+  `chargerConfigOutlook` (`GET /comptes/outlook/config`),
+  `chargerComptesOutlook` (`GET /comptes/?fournisseur=outlook`),
+  `chargerCalendriersOutlook` (`GET /calendriers/outlook`),
+  `selectionnerCalendriersOutlook` (`PUT /calendriers/outlook` `{calendar_ids}`),
+  `resynchroniserCalendrierOutlook` (`POST /calendriers/syncroniser/:idPublique`),
+  `deconnecterCompteOutlook` (`POST /comptes/deconnexion/:idPublique`),
+  `connecterCompteOutlook` (`POST /comptes/outlook/connexion` `{code, code_verifier}`),
+  `suivreImportOutlook` (délègue au suivi SSE générique `suivreImportGoogle`).
+- `sync/functions/outlookOAuth.ts` (nouveau) : `demanderCodeOutlook(config)` —
+  `expo-auth-session` (`AuthSession.loadAsync` + `AuthRequest.promptAsync`),
+  PKCE S256 par défaut, `prompt: AuthSession.Prompt.Consent` (refresh_token MS),
+  discovery partiel `{ authorizationEndpoint: config.authorize_url }` (source de
+  vérité côté serveur). `ConfigurationOAuthInvalide` identique au flux Google.
+- `sync/app/(tabs)/profile/settings/calendars/outlook.tsx` (rempli) : miroir de
+  l'écran Google — comptes liés (statut, « accès révoqué », déconnexion),
+  connexion OAuth, liste des calendriers (coche/décocher, calendrier principal,
+  déjà lié à un autre compte, dernière synchro), sélection, resynchronisation,
+  progression d'import SSE + toast. Pas de modal de personnalisation (nom/couleur) :
+  **aucun endpoint `PATCH /calendriers/outlook/:idPublique` n'existe** côté API
+  (seul `PATCH /calendriers/google/:idPublique` existe) → resync inline uniquement.
+- `locales/{fr,en}/calendar.json` : section `outlook` ajoutée (35 clés, même shape que
+  `google`, clés `_one`/`_other` pour `calendarsRemoved`).
+
+## Décisions / écarts vs Google (volontaires)
+- `suivreImportOutlook` délègue à `suivreImportGoogle` : le suivi SSE/polling est
+  partagé (endpoint `GET /calendriers/imports/:id/events` générique). Pas de doublon.
+
+## Vérifications
+- `npx tsc --noEmit` : 5 erreurs préexistantes (touches `abstractions/` + `app/(tabs)/home|inbox`),
+  **aucune nouvelle** (les nouveaux fichiers sont propres).
+- `npx eslint` sur les 3 fichiers créés/touchés : 0 erreur (1 warning `no-unused-expressions`
+  sur la ternary de déconnexion — **préexistant et identique** dans `google.tsx:382`).
+- `npx jest` : 3 suites / 12 tests passent (inchangé).
+- JSON locales : validés (python json.load).
+
+## Reste / à faire
+- **API** : ajouter `PATCH /calendriers/outlook/:idPublique` (nom / couleur) si la
+  personnalisation doit être offerte pour Outlook — aujourd'hui l'écran n'y accède pas.
+- **Console Microsoft** : client_id/secret/tenant/redirect côté `sync_api/.env`
+  (cf. section Google : client public, PKCE, refresh token) ; flow OAuth non testé
+  sur appareil (comme pour Google).
+- **Docs** : `docs/03-fonctions.md` / `docs/07-config.md` n'ont **pas** encore été
+  étendus pour les endpoints Outlook (`GET /comptes/outlook/config`, `GET /calendriers/outlook`,
+  `PUT /calendriers/outlook`, `POST /calendriers/syncroniser/:idPublique`,
+  `POST /comptes/outlook/connexion`, `POST /comptes/deconnexion/:idPublique`).
+- Non fait (hors périmètre) : `file.tsx` / `system.tsx` (import .ics / calendriers système).
+
+## Note technique
+- Le screen utilise `t('outlook.…')` (namespace `calendar`), icône `logo-microsoft`
+  (Ionicons), `RenderCalendarColor(couleur ?? 275, scheme)`.
+
+### Complément (28/10/2026) — convergence des logiques Google / Outlook
+- `hooks/useAgendaImport.ts` est maintenant utilisé par **les deux écrans** pour
+  charger comptes/calendriers, gérer la sélection, suivre les imports SSE/polling,
+  resynchroniser, connecter et déconnecter les comptes.
+- Le hook garde les adaptateurs du fournisseur dans une ref synchronisée par effet
+  afin que les callbacks de chargement restent stables pour `useFocusEffect` ; ses
+  types génériques préservent les discriminants `source: 'google' | 'outlook'`.
+- Google conserve son modal de personnalisation : la mise à jour optimiste locale
+  passe désormais par `mettreAJourCalendrier` du hook, puis par son endpoint Google.
+- Le hook transporte aussi `client_id` facultatif dans le résultat OAuth et dans
+  le callback de connexion : Google le renvoie à l'API comme avant, Outlook ne le
+  fournit pas. Les flux OAuth eux-mêmes partagent `functions/oauth.ts`.
+- Vérifications : Jest 3 suites / 12 tests passent ; ESLint ciblé 0 erreur (deux
+  warnings `no-unused-expressions` sur les ternaires de déconnexion des deux écrans) ;
+  `tsc` reste à 5 erreurs, toutes préexistantes et hors des fichiers Agenda
+  (`abstractions/touchableOpacityAbs.tsx`, `app/(tabs)/home/edit/[event].tsx`,
+  `app/(tabs)/inbox/index.tsx`).
+- Suites restantes inchangées : ajouter l'endpoint de préférences Outlook si cette
+  fonction doit être offerte, compléter `docs/03-fonctions.md` et `docs/07-config.md`
+  pour Outlook, et tester les flux OAuth sur appareil avec la configuration Microsoft.
