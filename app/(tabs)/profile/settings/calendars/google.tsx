@@ -7,7 +7,6 @@ import { toastTypes } from '@/constants/toastConfig';
 import { useAPI } from '@/contextes/contexteAPI';
 import { useFont } from '@/contextes/contexteFont';
 import { usePalette } from '@/contextes/contextePalette';
-import { useAgendaImport } from '@/hooks/useAgendaImport';
 import catcher from '@/functions/catcher';
 import {
     type CalendrierGoogle,
@@ -21,15 +20,16 @@ import {
     selectionnerCalendriersGoogle,
 } from '@/functions/googleAgenda';
 import { demanderCodeGoogle } from '@/functions/googleOAuth';
+import { useAgendaImport } from '@/hooks/useAgendaImport';
 import Icon from '@react-native-vector-icons/ionicons';
 import { JSX, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 
 import { convertToWhen } from '@/functions/convertirTimestamp';
+import { convertUTCToLocal } from '@/functions/convertirUTCenLocal';
 import log from '@/functions/log';
 import RenderCalendarColor from '@/functions/renderCalendarColor';
-import { convertUTCToLocal } from '@/functions/convertirUTCenLocal';
 
 /**
  * Écran « Google Agenda » : linker un compte Google, choisir les calendriers à
