@@ -12,8 +12,6 @@ import { DateTime } from "luxon"
 import { createContext, Dispatch, ReactNode, SetStateAction, useCallback, useContext, useEffect, useRef, useState } from "react"
 import { useAPI } from "./contexteAPI"
 import { useInvites } from "./contexteInvites"
-import ceilBy5 from "@/functions/ceilBy5"
-import versCreneauxLocaux from "@/functions/versCreneauxLocaux"
 
 type EventDraftContextType = {
     invites: Participant[];
@@ -91,7 +89,7 @@ export const EventDraftProvider = ({makeReq = true, initialStart, initialEnd, ch
                 })
             }
         } catch (err) {
-            if (axios.isCancel(err) || signal.aborted || (err as any)?.code === 'ERR_CANCELED') return
+            if (isCancel(err) || signal.aborted || (err as any)?.code === 'ERR_CANCELED') return
             catcher(err, "Impossible de suggérer des créneaux")
         }
     }, [api, commonSlotsKey, end, invites, start])
@@ -146,7 +144,7 @@ export const EventDraftProvider = ({makeReq = true, initialStart, initialEnd, ch
             friendsAvailabilityEvents.publishPage(page)
             return page
         } catch (error) {
-            if (axios.isCancel(error)) return { append, hasMore: true, friendIds: [] }
+            if (isCancel(error)) return { append, hasMore: true, friendIds: [] }
             catcher(error, "Impossible de suggérer des amis")
             return { append, hasMore: true, friendIds: [] }
         }
