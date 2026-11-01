@@ -10,12 +10,14 @@ permissions:
 concurrency:
   group: cd-preview
   cancel-in-progress: true
-
+  
 jobs:
   deploy:
     name: Preview (${{ matrix.platform }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
     strategy:
       fail-fast: false
       matrix:
