@@ -31,7 +31,7 @@ export default function ExternalCalendarRow<TCalendrier extends CalendrierImport
     const { t } = useTranslation('calendar');
     const { colors } = usePalette();
     const { fonts } = useFont();
-    const scheme = useColorScheme();
+    const scheme = useColorScheme() ?? 'light';
     const indisponible = !calendrier.disponible;
 
     const styles = StyleSheet.create({
