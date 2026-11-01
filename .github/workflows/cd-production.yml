@@ -15,6 +15,7 @@ jobs:
   deploy:
     name: Deploy (${{ matrix.platform }})
     runs-on: ubuntu-latest
+    environment: production        # nécessaire si le secret est dans l'Environment
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -32,19 +33,27 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
+      - name: Vérifier l'authentification
+        run: eas whoami
+
       - name: Un build correspond-il au fingerprint local ?
         id: check
         env:
           PLATFORM: ${{ matrix.platform }}
           PROFILE: production
         run: |
+          set -euo pipefail
           LOCAL=$(npx expo-updates fingerprint:generate --platform "$PLATFORM" | jq -r '.hash')
-          RUNTIMES=$(eas build:list \
+          echo "Fingerprint local: $LOCAL"
+
+          eas build:list \
             --platform "$PLATFORM" \
             --build-profile "$PROFILE" \
             --status finished \
             --limit 20 \
-            --json --non-interactive | jq -r '.[].runtimeVersion')
+            --json --non-interactive > builds.json
+
+          RUNTIMES=$(jq -r '.[].runtimeVersion' builds.json)
 
           if echo "$RUNTIMES" | grep -qx "$LOCAL"; then
             echo "has_build=true" >> "$GITHUB_OUTPUT"
@@ -54,8 +63,10 @@ jobs:
 
       - name: Natif inchangé -> update OTA
         if: steps.check.outputs.has_build == 'true'
-        run: eas update --channel production --platform ${{ matrix.platform }} --message "${{ github.event.head_commit.message }}" --non-interactive
+        env:
+          MSG: ${{ github.event.head_commit.message }}
+        run: eas update --channel production --platform ${{ matrix.platform }} --message "$MSG" --non-interactive
 
-      - name: Natif changé -> nouveau build
+      - name: Natif changé -> nouveau build + soumission
         if: steps.check.outputs.has_build == 'false'
-        run: eas build --platform ${{ matrix.platform }} --profile production --non-interactive --no-wait
+        run: eas build --platform ${{ matrix.platform }} --profile production --non-interactive --no-wait --auto-submit
