@@ -1,4 +1,4 @@
-import { DateTime } from 'luxon';
+import { DateTime, Settings } from 'luxon';
 import { getCommonFreeSlots } from '../functions/availability.js';
 
 const zone = 'America/Montreal';
