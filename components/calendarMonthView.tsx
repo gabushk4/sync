@@ -202,7 +202,7 @@ export default function CalendarMonthView({
     const { t } = useTranslation('calendar')
     const { colors } = usePalette()
     const { fonts } = useFont()
-    const colorScheme = useColorScheme()
+    const colorScheme = useColorScheme() ?? 'light'
 
     let iconeGauche = require('@/assets/icones/fleche-g-light-icon.png')
     let iconeDroite = require('@/assets/icones/fleche-d-light-icon.png')
