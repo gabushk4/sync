@@ -165,8 +165,8 @@ class AutoRefresh {
             const status = error?.response?.status
             if (this.errorCount === 0) this.onError?.(error)
             if (status === 401 || status === 403 || status === 404) {
-            this.kill()
-            return
+                this.kill()
+                return
             }
             this.errorCount++
             this.intervalMs = this.getBackoffDelay()

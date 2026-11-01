@@ -40,7 +40,7 @@ function getApiBaseUrl() {
   if (hostUri) {
     const ip = hostUri.split(':')[0]; //prendre lip seulement [ip, port]
     return process.env.EXPO_PUBLIC_USING_REMOTE === 'true'
-      ? 'https://dev.syncalkemy.ca'
+      ? 'https://syncalkemy.ca'
       : `http://${ip}:3100`;
   }
   

@@ -24,7 +24,7 @@ export default function ProfileLayout() {
                 name="admin" options={{ headerTitle: t('admin.title') }}
             />
             <Stack.Screen
-                name="importCalendar" options={{ headerTitle: t('navigation.importCalendar')}}
+                name="settings/calendars/local" options={{ headerTitle: t('navigation.localCalendar')}}
             />
             <Stack.Screen
                 name="settings/calendars/google" options={{ headerTitle: 'Google Agenda' }}

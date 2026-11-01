@@ -308,7 +308,6 @@ export default function Settings(){
                 {!hydrated ? (
                     <ActivityIndicator color={c.secondary} />
                 ) : settings.map((setting, i) => {
-                    console.log("title key", setting.titleKey)
                     return (
                         <View key={setting.id}>
                             {setting.type === 'section' && (

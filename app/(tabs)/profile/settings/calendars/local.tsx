@@ -227,7 +227,6 @@ export default function ImportCalendarScreen() {
     return (
         <Container style={{ backgroundColor: colors.background }}>
             <ScrollView contentContainerStyle={styles.content}>
-                <Text style={styles.heading}>{t('import.title')}</Text>
                 <Text style={styles.body}>{t('import.description')}</Text>
 
                 {/* ---------- Depuis le téléphone ---------- */}

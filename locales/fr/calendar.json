@@ -37,7 +37,7 @@
 		"cancelImport": "Annuler l’import"
 	},
 	"google": {
-		"title": "Google Agenda",
+		"title": "google agenda",
 		"description": "Connectez votre compte Google pour importer vos événements dans Sync. Sync ne lit que vos calendriers : il ne modifie rien chez Google.",
 		"accountsSection": "Comptes connectés",
 		"noAccount": "Aucun compte Google n'est connecté pour l'instant.",
@@ -75,7 +75,7 @@
 		"calendarsRemoved_other": "{{count}} calendriers retirés de Sync."
 	},
 	"outlook": {
-		"title": "Outlook Calendar",
+		"title": "outlook calendar",
 		"description": "Connectez votre compte Outlook pour importer vos événements dans Sync. Sync ne lit que vos calendriers : il ne modifie rien chez Microsoft.",
 		"accountsSection": "Comptes connectés",
 		"noAccount": "Aucun compte Outlook n'est connecté pour l'instant.",
@@ -120,5 +120,8 @@
 		"allDay": "Journée",
 		"today": "Aujourd'hui",
 		"dayOf": "Jour {{n}} sur {{total}}"
+	},
+	"local":{
+		"title": "calendrier local"
 	}
 }

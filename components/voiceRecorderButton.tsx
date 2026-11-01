@@ -1,14 +1,14 @@
+import { AudioModule, RecordingPresets, setAudioModeAsync, useAudioRecorder } from 'expo-audio'
 import { useRef, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
-import { AudioModule, RecordingPresets, setAudioModeAsync, useAudioRecorder } from 'expo-audio'
 
 import Icon from "@react-native-vector-icons/ionicons"
 
-import { usePalette } from '@/contextes/contextePalette'
 import Haptics from '@/abstractions/haptics'
 import ToastAbs from '@/abstractions/toastAbs'
 import { toastTypes } from '@/constants/toastConfig'
+import { usePalette } from '@/contextes/contextePalette'
 import log from '@/functions/log'
 
 const DUREE_MAX_SECONDES = 60
@@ -58,6 +58,8 @@ export default function VoiceRecorderButton ({onEnregistrementTermine} : Props){
         }
 
         enCoursRef.current = true
+        // Gesture callbacks run later on the JS thread; this timestamp is event-time state.
+        // eslint-disable-next-line react-hooks/purity
         debutRef.current = Date.now()
         setEnregistrement(true)
         Haptics.modalDebut()
@@ -79,6 +81,7 @@ export default function VoiceRecorderButton ({onEnregistrementTermine} : Props){
         setEnregistrement(false)
         Haptics.modalFin()
 
+        // eslint-disable-next-line react-hooks/purity
         const dureeSecondes = Math.min(Math.round((Date.now()- debutRef.current)/1000), DUREE_MAX_SECONDES)
 
         try {
@@ -109,15 +112,18 @@ export default function VoiceRecorderButton ({onEnregistrementTermine} : Props){
         .runOnJS(true)
         .minDuration(150)
         .maxDistance(10000) // ne pas annuler le geste quand on glisse pour annuler
+        // eslint-disable-next-line react-hooks/refs
         .onStart(() => {
             demarrer()
         })
+        // eslint-disable-next-line react-hooks/refs
         .onFinalize((_event, succes) => {
             arreter(!succes)
         })
 
     const pan = Gesture.Pan()
         .runOnJS(true)
+        // eslint-disable-next-line react-hooks/refs
         .onUpdate((event) => {
             if (event.translationY < -60) {
                 // Glissement vers le haut

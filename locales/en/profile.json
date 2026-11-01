@@ -3,7 +3,7 @@
 		"profile": "profile",
 		"edit": "edit profile",
 		"settings": "settings",
-		"importCalendar": "import calendar"
+		"localCalendar": "local calendar"
 	},
 	"edit": {
 		"usernameLabel": "username",
