@@ -16,6 +16,7 @@ jobs:
     name: Preview (${{ matrix.platform }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    environment: preview
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
     strategy:
