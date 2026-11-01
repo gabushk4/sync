@@ -45,7 +45,7 @@ const PAD = 6
 export default function ListItem({ event, horizontal, displayedDate, listOffset, eventsColor, textColor, onPress, timelineDays = 1 }:Props) {
     const { fonts } = useFont()
     const { colors } = usePalette()
-    const scheme = useColorScheme() 
+    const scheme = useColorScheme() ?? 'light'
     const { L_HEURES, H_HEURES, pxHeures } = useTimeline()
 
     const debut = event?.debut

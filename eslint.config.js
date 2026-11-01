@@ -9,7 +9,13 @@ module.exports = defineConfig([
   },
   {
     // Jest globals (describe/test/expect) for test files
-    files: ["tests/**/*", "**/__tests__/**/*", "**/*.test.*"],
+    files: ["tests/**/*", "**/__tests__/**/*", "**/*.test.*", '**/*.{ts,tsx}'],
+    rules: {
+      'import/namespace': 'off',
+      'import/named': 'off',
+      'import/default': 'off',
+      'import/no-named-as-default-member': 'off',
+    },
     languageOptions: {
       globals: {
         describe: "readonly",

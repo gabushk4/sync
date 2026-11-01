@@ -3,7 +3,7 @@
 		"profile": "profil",
 		"edit": "éditer le profil",
 		"settings": "paramètres",
-		"importCalendar": "importer le calendrier"
+		"localCalendar": "calendrier local"
 	},
 	"edit": {
 		"usernameLabel": "pseudo",
