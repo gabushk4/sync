@@ -10,6 +10,7 @@ import { usePalette } from '@/contextes/contextePalette'
 import ToastAbs from '@/abstractions/toastAbs'
 import { toastTypes } from '@/constants/toastConfig'
 import catcher from '@/functions/catcher'
+import DemandesLoi25 from '@/components/demandesLoi25'
 
 type BugRapporte = {
   id_publique: string
@@ -21,6 +22,9 @@ type BugRapporte = {
 }
 
 type Etat = 'verification' | 'chargement' | 'pret' | 'erreur'
+
+// Stories #29 et #30 (loi 25) : demandes d'export et de suppression des données
+type Onglet = 'bugs' | 'exports' | 'suppressions'
 
 function extraireSection(description: string, labels: string[]): string | null {
   const lignes = description.split(/\r?\n/)
@@ -43,6 +47,12 @@ export default function DashboardAdmin() {
   const [etat, setEtat] = useState<Etat>('verification')
   const [bugs, setBugs] = useState<BugRapporte[]>([])
   const [bugOuvert, setBugOuvert] = useState<string | null>(null)
+  const [onglet, setOnglet] = useState<Onglet>('bugs')
+
+  const sortirAccesRefuse = useCallback(() => {
+    ToastAbs.show({ type: toastTypes.error, text1: t('admin.accessDenied') })
+    router.replace('/(tabs)/profile')
+  }, [t])
 
   const charger = useCallback(async () => {
     setEtat('verification')
@@ -75,9 +85,11 @@ export default function DashboardAdmin() {
 
   const s = StyleSheet.create({
     page: { flex: 1, backgroundColor: colors.background },
-    onglets: { flexDirection: 'row', paddingHorizontal: 20, paddingTop: 12 },
-    onglet: { paddingVertical: 10, paddingHorizontal: 16, borderBottomWidth: 2, borderBottomColor: colors.secondary },
-    titreOnglet: { color: colors.text, fontFamily: fonts.title, fontSize: 16 },
+    onglets: { flexDirection: 'row', paddingHorizontal: 12, paddingTop: 12, paddingRight: 52, borderBottomWidth: 1, borderBottomColor: colors.border },
+    onglet: { paddingVertical: 10, paddingHorizontal: 10, borderBottomWidth: 2, borderBottomColor: 'transparent' },
+    ongletActif: { borderBottomColor: colors.secondary },
+    titreOnglet: { color: colors.muted, fontFamily: fonts.title, fontSize: 15 },
+    titreOngletActif: { color: colors.text },
     liste: { padding: 16, paddingBottom: 32, gap: 12 },
     carte: { padding: 16, borderRadius: 12, backgroundColor: colors.card, gap: 8 },
     pseudo: { color: colors.text, fontFamily: fonts.title, fontSize: 16 },
@@ -92,11 +104,29 @@ export default function DashboardAdmin() {
   return (
     <View style={s.page}>
       <View style={s.onglets} accessibilityRole="tablist">
-        <View style={s.onglet} accessibilityRole="tab" accessibilityState={{ selected: true }}>
-          <Text style={s.titreOnglet}>{t('admin.bugsTab')}</Text>
-        </View>
+        {([
+          ['bugs', t('admin.bugsTab')],
+          ['exports', t('admin.exportsTab')],
+          ['suppressions', t('admin.deletionsTab')],
+        ] as [Onglet, string][]).map(([cle, titre]) => (
+          <TouchableOpacity
+            key={cle}
+            style={[s.onglet, onglet === cle && s.ongletActif]}
+            onPress={() => setOnglet(cle)}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: onglet === cle }}
+          >
+            <Text style={[s.titreOnglet, onglet === cle && s.titreOngletActif]}>{titre}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
-      {etat === 'verification' || etat === 'chargement' ? (
+      {etat === 'verification' ? (
+        <View style={s.centre}><ActivityIndicator color={colors.secondary} /></View>
+      ) : onglet === 'exports' ? (
+        <DemandesLoi25 type="export" onAccesRefuse={sortirAccesRefuse} />
+      ) : onglet === 'suppressions' ? (
+        <DemandesLoi25 type="suppression" onAccesRefuse={sortirAccesRefuse} />
+      ) : etat === 'chargement' ? (
         <View style={s.centre}><ActivityIndicator color={colors.secondary} /></View>
       ) : etat === 'erreur' ? (
         <TouchableOpacity onPress={() => void charger()} accessibilityRole="button">
@@ -132,7 +162,7 @@ export default function DashboardAdmin() {
           ))}
         </ScrollView>
       )}
-      {etat === 'pret' && (
+      {etat === 'pret' && onglet === 'bugs' && (
         <TouchableOpacity onPress={() => void charger()} accessibilityRole="button" accessibilityLabel={t('admin.retry')} style={{ position: 'absolute', top: 12, right: 20 }}>
           <Icon name="refresh" size={22} color={colors.text} />
         </TouchableOpacity>
