@@ -14,7 +14,8 @@
     "editOccurrence": "celui-ci",
     "deletedTitle": "effacé",
     "deletedMessage": "on l'a bien rangé là où personne ne regarde; rangé quoi? aucune idée",
-    "clickSource": "clique ici pour afficher dans {{source}}"
+    "clickSource": "clique ici pour afficher dans {{source}}",
+    "openConversation": "Ouvrir la conversation de l'évènement"
   },
   "edit": {
     "defaultError": "impossible d'éditer l'évènement",
@@ -31,7 +32,11 @@
     "pastDate": "Impossible de créer dans le passé.",
     "pastRange": "La sélection commence avant aujourd'hui.",
     "pastStart": "Le début est déjà passé.",
-    "titleRequired": "L'évènement doit avoir un nom."
+    "titleRequired": "L'évènement doit avoir un nom.",
+    "conversationTitle": "Conversation de groupe",
+    "conversationMessage": "Créer une conversation avec les participants de cet évènement ? Chaque invité y sera ajouté quand il accepte.",
+    "conversationYes": "Créer",
+    "conversationNo": "Non merci"
   },
   "form": {
     "titlePlaceholder": "titre...",
