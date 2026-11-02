@@ -1,5 +1,5 @@
 import ModalBase from "@/components/modalBase";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useTranslation } from 'react-i18next';
 import { Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native';
 
@@ -15,7 +15,7 @@ import AddFriendForm from "@/components/addFriendForm";
 import DemandeConfirmerCourriel from "@/components/demandeConfirmerCourriel";
 import { useLocalSearchParams } from "expo-router";
 import { ScrollView } from "react-native-gesture-handler";
-import Animated, { interpolate, useAnimatedStyle, useSharedValue } from "react-native-reanimated";
+import Animated, { interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 
 
 const PAGES_DEF = [
@@ -31,7 +31,7 @@ const PAGES_DEF = [
     }
 ]
 
-export default function ajouterAmi() {
+export default function AjouterAmi() {
     const { t } = useTranslation('friends')
     const { colors } = usePalette();
     const { fonts } = useFont();    
@@ -44,13 +44,21 @@ export default function ajouterAmi() {
 
     const scrollViewRef = useRef<ScrollView>(null)
 
-    const [pages, setPages] = useState<Array<any>>(PAGES_DEF)
+    const pages = contexte === 'qrCode'
+    ? [...PAGES_DEF].reverse()
+    : PAGES_DEF;
     
     const contentOffset = useSharedValue(0)
 
     const animatedTab = useAnimatedStyle(() => {
         return {
-            left: interpolate(contentOffset.value, [0, WIN_W], [0, WIN_W/2])
+            left: interpolate(contentOffset.get(), [0, WIN_W], [0, WIN_W/2])
+        }
+    })
+
+    const scrollHandler = useAnimatedScrollHandler({
+        onScroll: (e) => {
+            contentOffset.set(e.contentOffset.x)
         }
     })
 
@@ -81,21 +89,10 @@ export default function ajouterAmi() {
     })
 
     useEffect(() => {
-        log("contexte", contexte)
-        if (contexte === 'qrCode') {
-            // don't mutate the original PAGES_DEF (reverse() mutates in-place)
-            setPages([...PAGES_DEF].reverse())
-        } else {
-            // set a fresh copy so React sees a new reference and re-renders
-            setPages([...PAGES_DEF])
-        }
-    }, [contexte])
-
-    useEffect(() => {
         log('email confirme', membre.emailConfirme);
         if (!membre.emailConfirme)
             getMembre()
-    }, [membre.emailConfirme]);
+    }, [membre.emailConfirme, getMembre]);
 
     return membre.emailConfirme ? (
         <ModalBase>
@@ -122,9 +119,7 @@ export default function ajouterAmi() {
                     snapToInterval={PAGE_W}
                     decelerationRate={'fast'}
                     showsHorizontalScrollIndicator={false}
-                    onScroll={(e) => {
-                        contentOffset.value = e.nativeEvent.contentOffset.x
-                    }}
+                    onScroll={scrollHandler}
                     onMomentumScrollEnd={(e) => {
                         console.log("ended", e.nativeEvent.contentOffset)
                     }}

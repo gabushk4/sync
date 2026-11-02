@@ -1,6 +1,6 @@
 import { convertUTCToLocal } from '@/functions/convertirUTCenLocal'
 import log from '@/functions/log'
-import { createContext, useContext, useState } from 'react'
+import { createContext, useCallback, useContext, useState } from 'react'
 import { useAPI } from './contexteAPI'
 import { useAccessToken } from './contexteToken'
 
@@ -52,28 +52,28 @@ export const MembreProvider = ({ children }: { children: React.ReactNode }) => {
 
     const [membre, setMembre] = useState<Membre>(membreInitial)
 
-    const getMembre = async () => {
-        try {
-            const response = await api.get('/membres')
-            log('get membre', response.data)
-            const data = response.data
-            setMembre((prev) => ({
-                ...prev,
-                idPublique: data.id_publique ?? null,
-                pseudo: data.pseudo ?? null,
-                bio: data.bio ? data.bio : "cette personne n'a rien à dire",
-                etatAme: data.etat_ame ?? '',
-                fp: data.fp_url ?? null,
-                admin: data.role === 'admin',
-                emailConfirme: data.email_confirme ?? false,
-                email: data.courriel,
-                tempsCreation: convertUTCToLocal(data.temps_creation)
-            }))            
+    const getMembre = useCallback(async () => {
+            try {
+                const response = await api.get('/membres')
+                log('get membre', response.data)
+                const data = response.data
+                setMembre((prev) => ({
+                    ...prev,
+                    idPublique: data.id_publique ?? null,
+                    pseudo: data.pseudo ?? null,
+                    bio: data.bio ? data.bio : "cette personne n'a rien à dire",
+                    etatAme: data.etat_ame ?? '',
+                    fp: data.fp_url ?? null,
+                    admin: data.role === 'admin',
+                    emailConfirme: data.email_confirme ?? false,
+                    email: data.courriel,
+                    tempsCreation: convertUTCToLocal(data.temps_creation)
+                }))
             
-        } catch (error : any) {
-            throw error
-        }
-    }
+            } catch (error: any) {
+                throw error
+            }
+        }, [api])
 
     const setMockMembre = () => {
         setMembre({

@@ -6,7 +6,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "sync",
+    "scheme": ["sync", "com.alkemist.sync"],
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
@@ -21,7 +21,15 @@
         "backgroundColor": "#ffffff"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.alkemist.sync"
+      "package": "com.alkemist.sync",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.READ_CALENDAR",
+        "android.permission.WRITE_CALENDAR"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -29,7 +37,12 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router",
+      [
+        "expo-router",
+        {
+          "apiRoutes": true
+        }
+      ],
       "expo-web-browser",
       "@react-native-vector-icons/ionicons",
       "@react-native-community/datetimepicker",
@@ -65,6 +78,12 @@
       "eas": {
         "projectId": "fe3f4558-dddc-4c02-b7b9-602491460326"
       }
+    },
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/fe3f4558-dddc-4c02-b7b9-602491460326"
     }
   }
 }

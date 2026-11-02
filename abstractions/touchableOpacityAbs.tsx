@@ -1,8 +1,10 @@
-import { StyleSheet, TouchableOpacity, TouchableOpacityProps} from "react-native";
+import { StyleSheet, Text, TouchableOpacity, TouchableOpacityProps} from "react-native";
 import { usePalette } from "@/contextes/contextePalette";
+import { useFont } from "@/contextes/contexteFont";
 
 export default function SecondaryBtn({onPress, children} : TouchableOpacityProps) {
     const {colors} = usePalette()
+    const {fonts} = useFont()
 
     const s = StyleSheet.create({
         bouton:{

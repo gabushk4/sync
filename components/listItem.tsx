@@ -7,10 +7,12 @@ import Icon from '@react-native-vector-icons/ionicons'
 import ouvrirDetailsEvenement from '@/functions/ouvrirDetailsEvenement'
 import { DateTime } from 'luxon'
 import React from 'react'
-import { StyleSheet, Text, TouchableOpacity } from 'react-native'
+import { StyleSheet, Text, TouchableOpacity, useColorScheme } from 'react-native'
 import Animated, { SharedValue } from 'react-native-reanimated'
 import useTimelineLabelOffset from '@/hooks/useTimelineLabelOffset'
+import { positionHeures } from '@/functions/positionTimeline'
 import EventBloc from './eventBloc'
+import RenderCalendarColor from '@/functions/renderCalendarColor'
 
 type Props = {
     event: Event;
@@ -43,6 +45,7 @@ const PAD = 6
 export default function ListItem({ event, horizontal, displayedDate, listOffset, eventsColor, textColor, onPress, timelineDays = 1 }:Props) {
     const { fonts } = useFont()
     const { colors } = usePalette()
+    const scheme = useColorScheme() 
     const { L_HEURES, H_HEURES, pxHeures } = useTimeline()
 
     const debut = event?.debut
@@ -54,14 +57,16 @@ export default function ListItem({ event, horizontal, displayedDate, listOffset,
     const windowEnd = windowStart?.plus({ days: timelineDays })
     const visibleStart = windowStart && debut ? (debut > windowStart ? debut : windowStart) : undefined
     const visibleEnd = windowEnd && fin ? (fin < windowEnd ? fin : windowEnd) : undefined
+    // Shared with FreeSlotItem / TrousHoraire (Philip — user story 20).
+    const position = (date: DateTime) => positionHeures(date, windowStart!)
     const left = valide && horizontal && visibleStart
-        ? ((visibleStart.toMillis() - windowStart!.toMillis()) / 3600000) * heureOffset : 0
+        ? position(visibleStart) * heureOffset : 0
     const top = valide && !horizontal && visibleStart
-        ? ((visibleStart.toMillis() - windowStart!.toMillis()) / 3600000) * heureOffset : 0
+        ? position(visibleStart) * heureOffset : 0
     // Clip event blocks at the loaded window edges while preserving their actual
     // timestamps for labels and event details.
     const taille = valide && visibleStart && visibleEnd
-        ? Math.max(((visibleEnd.toMillis() - visibleStart.toMillis()) / 3600000) * heureOffset, pxHeures) : 0
+        ? Math.max((position(visibleEnd) - position(visibleStart)) * heureOffset, pxHeures) : 0
     const longueurTimeline = timelineDays * 24 * heureOffset
 
     // Label size along the scroll axis: at most 3 hours wide, never wider than the block.
@@ -132,13 +137,13 @@ export default function ListItem({ event, horizontal, displayedDate, listOffset,
         <TouchableOpacity
             style={s.bloc}
             activeOpacity={0.7}
-            // Same navigation as the month calendar's events list (user story 5, Philip Kvaratshelya).
+            // Same navigation as the month calendar's events list (user story 5, Philip).
             // `onPress` / `cliquable` / `couleur`: overrides of the invitation review
-            // screen (Philip Kvaratshelya — user story 8).
+            // screen (Philip — user story 8).
             disabled={event.cliquable === false}
             onPress={() => onPress ? onPress(event) : ouvrirDetailsEvenement({ id: event.id, debut, fin })}
         >
-            <EventBloc event={event} blockColor={event.couleur ?? eventsColor} horizontal={horizontal} displayDate={displayedDate} />
+            <EventBloc event={event} blockColor={event.couleur ? RenderCalendarColor(event.couleur, scheme) : eventsColor} horizontal={horizontal} displayDate={displayedDate} />
             <Animated.View style={[s.texte, texteAnime]}>
                 <Text style={s.heure} numberOfLines={1}>{startText}</Text>
                 {event.titre

@@ -158,9 +158,12 @@ export default function EditEvent() {
         }
     }
 
-    useActionFab({
+    useActionFab("eventEdit", {
         action: verifAvantPatch,
-        icon: <Icon name="checkmark" color={colors.text} size={28} />,
+        config: {
+            visible: true,
+            icon: <Icon name="checkmark" color={colors.text} size={28} />,
+        },
     })
 
     return (

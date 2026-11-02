@@ -101,6 +101,7 @@ function convertirTimestampHeure(timestamp) {
 /**
  *
  * @param {DateTime} timestamp
+ * @returns {string} 
  */
 function convertToWhen(timestamp) {
     const diff = DateTime.now().diff(timestamp, 'minutes').minutes

@@ -11,6 +11,8 @@ export type Event = {
   prive: 0 | 1;
   privilege_membre: "lecteur" | "editeur" | null;
   type?: "recurrence" | "exception";
+  // 'indisponibilite': a busy stretch the member declared (Philip — user story 20).
+  nature?: "evenement" | "indisponibilite";
   regle_recurrence?: string;
   id_parent?: string;
   debut_occurence?: DateTime;
@@ -20,11 +22,15 @@ export type Event = {
   // de la même colonne côté serveur pour savoir où réimporter depuis.
   source?: 'sync' | 'ics' | 'google' | 'outlook' | 'device';
   // Timeline display overrides (invitation review screen): block color, and
-  // whether tapping the block does anything. Philip Kvaratshelya — user story 8.
-  couleur?: string;
+  // whether tapping the block does anything. Philip — user story 8.
+  
   cliquable?: boolean;
   // Story #21: public id of the shared event's group conversation, when the member is in it.
   conversation_id?: string | null;
+  couleur?: number;
+  url_externe?: string;
+  nom_calendrier?: string;
+  compte_origine?: string;
 };
 
 export const defaultEvent = <Event>{
@@ -53,3 +59,6 @@ export type UserEvent = {
 };
 
 export type Recurrence = { title: string; value: string | null }
+
+/** Plateformes pour lesquelles la console Google et Outlook ont un client OAuth dédié. */
+export type PlatformOAuth = 'ios' | 'android' | 'web';

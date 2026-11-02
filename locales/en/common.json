@@ -26,6 +26,7 @@
 		"errorOccured": "impossible to register for the anonymisation of your data"
 	},
 	"loading": "Loading",
+	"loadingLong": "Still loading…",
 	"serverWaking": "Please wait; the server is taking a while to wake up",
 	"returnToLogin": "Return to login",
 	"serverStatus": "Server status",

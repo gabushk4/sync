@@ -15,7 +15,7 @@ import { useFocusEffect } from 'expo-router'
 import { DateTime } from 'luxon'
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, View } from 'react-native'
 
 import SwitchAbs from '@/abstractions/switchAbs'
 import { useEventDraft } from '@/contextes/contexteEventDraft'
@@ -26,6 +26,8 @@ import Animated from 'react-native-reanimated'
 import DateTimeSelecteur from './datetimeSelecteurs'
 import MenuDeroulant from './menuDeroulant'
 import ParticipantsListe from './participantsListe'
+import RenderCalendarColor from '@/functions/renderCalendarColor'
+import catcher from '@/functions/catcher'
 
 const MAX_LONG_TITLE = 50
 const MAX_LONG_DESC = 2000
@@ -62,12 +64,27 @@ type Props = {
     }
     /** Hides the participants section (the invitation decision page shows its own list). */
     masquerParticipants?: boolean
+    /** 'indisponibilite': unavailability form — optional title (the reason), no
+     * recurrence nor participants, and the privacy switch tells whether friends see
+     * the reason. Philip — user story 20. */
+    nature?: 'evenement' | 'indisponibilite'
     // setEvent n'est plus utilisé pour la synchronisation continue.
     // Garde-le seulement si un autre écran en dépend pour un aperçu readonly.
     setEvent?: React.Dispatch<React.SetStateAction<Event>>
 }
 
 const dtNow = DateTime.now()
+
+const redirigerVersLaSource = async (url: string) => {
+    log('eventForm: redirigerVersLaSource: ' + url)
+    const canOpen = await Linking.canOpenURL(url)
+    if (canOpen) {
+        Linking.openURL(url)
+    } else {
+        const err = new Error(`Cannot open URL: ${url}`)        
+        catcher(err)
+    }
+}
 
 /**
  * Form for creating, editing, or viewing an event: title, description,
@@ -78,17 +95,21 @@ const dtNow = DateTime.now()
  * @param {'create' | 'edit' | 'details'} props.mode - Controls which fields are editable vs read-only.
  * @param {Props['prefills']} [props.prefills] - Initial start/end/participants to pre-fill in 'create' mode.
  * @param {Props['constraints']} [props.constraints] - Min/max bounds for the date-time pickers.
+ * @param {'evenement' | 'indisponibilite'} [props.nature='evenement'] - Unavailability form
+ *   (Philip — user story 20).
  * @param {React.Ref<EventFormHandle>} ref - Exposes `getValues()` to the parent screen.
  * @returns {JSX.Element}
  */
 const EventForm = forwardRef<EventFormHandle, Props>(
 
-function EventForm({ event, prefills, constraints, mode, masquerParticipants = false }, ref) {
+function EventForm({ event, prefills, constraints, mode, masquerParticipants = false, nature = 'evenement' }, ref) {
     const { t } = useTranslation('events')
+    const indisponibilite = nature === 'indisponibilite'
     const { colors } = usePalette()
     const { fonts } = useFont()
     const { ajouterInvite } = useInvites()    
-    const {start, end, setStart, setEnd, setRequestsEnabled} = useEventDraft()
+    const { start, end, setStart, setEnd, setRequestsEnabled , setFriendsRequestsEnabled} = useEventDraft()
+    const scheme = useColorScheme() ?? 'dark'
         
     // Parenthesized explicitly: `? :` binds looser than `||`, so without the
     // parens this would evaluate as `(constraints?.minimumStart || mode ===
@@ -101,6 +122,13 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
     const refDescription = useRef<TextInput>(null)
     const dateTimesCalculated = useRef(false)
     const prefilledParticipantsApplied = useRef(false)
+
+    const dateLocaleEvenement = (date?: DateTime): DateTime => {
+        if (!date) return dtNow
+        // Details already contains a Luxon DateTime in the member's timezone;
+        // edit routes receive ISO strings after JSON serialization.
+        return DateTime.isDateTime(date) ? date : convertUTCToLocal(date as unknown as string)
+    }
 
     const [dateTimeDisabled, setDateTimeDisabled] = useState<boolean>(false)
     const [titleLen, setTitleLen] = useState<number>(0)
@@ -144,8 +172,8 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
             return {start, end}
         }
 
-        let start = ceilBy5(convertUTCToLocal(event.debut ?? dtNow) ?? dtNow)
-        let end = ceilBy5(convertUTCToLocal(event.fin ?? dtNow) ?? dtNow)        
+        let start = dateLocaleEvenement(event.debut)
+        let end = dateLocaleEvenement(event.fin)
 
         return {start, end}
     }
@@ -181,8 +209,12 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
 
     useEffect(() => {
         setRequestsEnabled(mode !== 'details')
-        return () => setRequestsEnabled(false)
-    }, [mode, setRequestsEnabled])
+        setFriendsRequestsEnabled(!indisponibilite)
+        return () => {
+            setRequestsEnabled(false)
+            setFriendsRequestsEnabled(false)
+        }
+    }, [mode, indisponibilite, setRequestsEnabled, setFriendsRequestsEnabled])
 
     useEffect(() => {
         setFinRecurrence(start.startOf('day'))
@@ -195,6 +227,17 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
             setEventParicipantsControlUrl(`/evenements/${event.id}/participants`)
     }, [event])
 
+    // Details arrive asynchronously: replace the placeholder dates as soon as the
+    // actual event is loaded, so friend availability is searched on its real range.
+    useEffect(() => {
+        if (mode === 'create' || !event.debut || !event.fin) return
+        const debut = dateLocaleEvenement(event.debut)
+        const fin = dateLocaleEvenement(event.fin)
+        dateTimesCalculated.current = true
+        setStart(debut)
+        setEnd(fin)
+    }, [event.debut, event.fin, mode, setEnd, setStart])
+
     useImperativeHandle(ref, () => ({
         getValues: (): EventFormValues => ({
             titre: title,
@@ -202,7 +245,7 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
             prive: eventPrivate,
             start,
             end,
-            regleRecurrence: creerRegle(),
+            regleRecurrence: indisponibilite ? null : creerRegle(),
         }),
     }))
 
@@ -281,8 +324,9 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
                             }
                         }}
                         maxLength={MAX_LONG_TITLE}
-                        autoFocus={mode === 'create'}
-                        placeholder={t('form.titlePlaceholder')}
+                        // An unavailability's reason is optional: no keyboard on opening.
+                        autoFocus={mode === 'create' && !indisponibilite}
+                        placeholder={indisponibilite ? t('unavailability.reasonPlaceholder') : t('form.titlePlaceholder')}
                         placeholderTextColor={colors.muted}
                         returnKeyType="next"
                         onSubmitEditing={() => refDescription.current?.focus()}
@@ -367,8 +411,30 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
                     />
                 </View>
             )}
-            {/* Reccurence */}
-            <View style={{ gap: 8 }}>
+            {/* Extern calendar infos */}
+            {event.source !== 'sync' && event.couleur &&
+                <TouchableOpacity
+                    style={[s.champ, { backgroundColor: RenderCalendarColor(event.couleur, scheme), gap: 8 }]}
+                    onPress={() => {
+                        if(event.url_externe)
+                            redirigerVersLaSource(event.url_externe)
+                    }}
+                >
+                    <View style={ { flexDirection:'row', justifyContent:'space-between', alignItems:'center',  }}>
+                        <Text style={s.label}>
+                            Source : 
+                        </Text>
+                        <Text style={{color: colors.text, fontSize:16}}>
+                            {event.nom_calendrier} ({event.source})
+                        </Text>
+                    </View>
+                    {event.url_externe && <Text style={{ color: colors.muted, width: '100%', textAlign: 'center', fontSize: 12 }}>
+                        {t('details.clickSource', { source: event.source })}</Text>
+                    }
+                </TouchableOpacity>
+            }
+            {/* Reccurence (none for an unavailability) */}
+            {!indisponibilite && <View style={{ gap: 8 }}>
                 <View style={[s.champ, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 4 }]}>
                     <Text style={s.label}>{t('form.recurrenceLabel')}</Text>
                     <MenuDeroulant
@@ -434,10 +500,14 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
                         )}
                     </View>
                 )}
-            </View>
-            {/* Visibility */}
+            </View>}
+            {/* Visibility (for an unavailability: whether friends see the reason) */}
             <View style={[s.champ, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', alignSelf: 'flex-end' }]}>
-                <Animated.Text style={s.label}>{eventPrivate ? t('form.private') : t('form.public')}</Animated.Text>
+                <Animated.Text style={s.label}>
+                    {indisponibilite
+                        ? (eventPrivate ? t('unavailability.reasonPrivate') : t('unavailability.reasonShared'))
+                        : (eventPrivate ? t('form.private') : t('form.public'))}
+                </Animated.Text>
                 {mode != 'details'
                     ?   <View style={{ alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }}>                    
                             <Icon name='lock-open' color={eventPrivate ? colors.muted : colors.text} size={24}/>
@@ -457,8 +527,8 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
                 
             </View>
 
-            {/* masquerParticipants: invitation decision page (Philip Kvaratshelya — user story 8). */}
-            {!masquerParticipants && <View style={[s.champ, {height:'auto', paddingBottom:0}]}>
+            {/* masquerParticipants: invitation decision page (Philip — user story 8). */}
+            {!masquerParticipants && !indisponibilite && <View style={[s.champ, {height:'auto', paddingBottom:0}]}>
                 <ParticipantsListe
                     participantsUrl={eventParticipantsControlUrl}
                     listType='event'

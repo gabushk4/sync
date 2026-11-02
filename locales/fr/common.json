@@ -26,6 +26,7 @@
 		"errorOccured": "impossible de vous enregistrer pour anonymiser vos données"
 	},
 	"loading": "chargement",
+	"loadingLong": "Chargement en cours…",
 	"serverWaking": "merci de patienter; le serveur prend du temps à se réveiller",
 	"returnToLogin": "Retour à la connexion",
 	"serverStatus": "Statut du serveur",

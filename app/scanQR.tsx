@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { Camera, CameraView, } from 'expo-camera';
-import { useFocusEffect, useNavigation, } from "expo-router/react-navigation";
+import { useFocusEffect, useNavigation } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, Image, Linking, Text, TouchableOpacity, useColorScheme, View } from 'react-native';

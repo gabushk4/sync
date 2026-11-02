@@ -106,7 +106,11 @@ export default function ReportBug() {
     }
 
     try {
-      await api.post('/signalements/bugs', { description: descriptionFinale })
+      await api.post('/signalements/bugs', {
+        description: descriptionFinale,
+        app_version: Constants.expoConfig?.version ?? null,
+        appareil: Device.modelName ?? null,
+      })
       retirerErreursCapturees(erreursAJoindre.map((erreur) => erreur.id))
       ToastAbs.show({ type: toastTypes.success, text1: t('bugReport.successTitle'), text2: t('bugReport.successMessage') })
       router.back()

@@ -104,12 +104,7 @@ export default function Settings(){
     }
 
     const settings: Setting[] = [
-        {
-            id: 'importCalendar',
-            titleKey: 'importCalendar',
-            type: 'link',
-            href: '/(tabs)/profile/importCalendar',
-        },
+        
         {
             id: 'timezone',
             titleKey: 'timezone',
@@ -149,6 +144,31 @@ export default function Settings(){
             onChangeText(text) {
                 setLocalHue(Number(text))                
             }
+        },
+        {
+            id: 'imports',
+            type: 'section',
+            titleKey: 'imports',
+            settings: [
+                {
+                    id: 'localCalendar',
+                    type: 'link',
+                    href: '/(tabs)/profile/settings/calendars/local',
+                    titleKey:'calendarImports.local'
+                },
+                {
+                    id: 'googleCalendar',
+                    type: 'link',
+                    href: '/(tabs)/profile/settings/calendars/google',
+                    titleKey: 'calendarImports.google'
+                },
+                {
+                    id: 'outlookCalendar',
+                    type: 'link',
+                    href: '/(tabs)/profile/settings/calendars/outlook',
+                    titleKey: 'calendarImports.outlook'
+                }
+            ]
         },
         {
             id: 'permissions',

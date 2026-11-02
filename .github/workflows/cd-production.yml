@@ -1,0 +1,61 @@
+name: Deploy
+
+on:
+  push:
+    branches: [prod]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy (${{ matrix.platform }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ios, android]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Un build correspond-il au fingerprint local ?
+        id: check
+        env:
+          PLATFORM: ${{ matrix.platform }}
+          PROFILE: production
+        run: |
+          LOCAL=$(npx expo-updates fingerprint:generate --platform "$PLATFORM" | jq -r '.hash')
+          RUNTIMES=$(eas build:list \
+            --platform "$PLATFORM" \
+            --build-profile "$PROFILE" \
+            --status finished \
+            --limit 20 \
+            --json --non-interactive | jq -r '.[].runtimeVersion')
+
+          if echo "$RUNTIMES" | grep -qx "$LOCAL"; then
+            echo "has_build=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_build=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Natif inchangé -> update OTA
+        if: steps.check.outputs.has_build == 'true'
+        run: eas update --channel production --platform ${{ matrix.platform }} --message "${{ github.event.head_commit.message }}" --non-interactive
+
+      - name: Natif changé -> nouveau build
+        if: steps.check.outputs.has_build == 'false'
+        run: eas build --platform ${{ matrix.platform }} --profile production --non-interactive --no-wait

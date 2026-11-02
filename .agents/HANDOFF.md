@@ -187,7 +187,7 @@
 
 ---
 
-# HANDOFF — Philip Kvaratshelya (branche `philip-dev-s1`, 10-11/10/2026) : calendrier (US5), conflits / invitations (US8), rectifications d'affichage
+# HANDOFF — Philip (branche `philip-dev-s1`, 10-11/10/2026) : calendrier (US5), conflits / invitations (US8), rectifications d'affichage
 
 Branche : `philip-dev-s1` (à jour avec `origin/main` au début du travail, commit `3df9b0a`).
 
@@ -316,7 +316,7 @@ Non corrigé (noté) :
   (création + modale de conflit).
 - Retirés : `getEventDateRangeParams` (mort, doublon de `paramsJour`) et le paramètre
   `existant` de la modale de conflit (plus envoyé).
-- Commentaires JSDoc avec `@author Philip Kvaratshelya — user story 5` (calendrier),
+- Commentaires JSDoc avec `@author Philip — user story 5` (calendrier),
   `— user story 8` (conflit, app + API) et `— rectification for a more conventional
   display` (accueil, toasts, FAB, dispo communes, validations, API titre / date passée).
 - Vérifié : `tsc` (aucune nouvelle erreur), API locale (201 / 400 titre / 400 passé /
@@ -395,7 +395,7 @@ Non corrigé (noté) :
 - DRY : `functions/couleurStatutInvitation.ts` (revue + panneau), `bornesLocales` dans
   `types/invitation.ts`, `useDecisionInvitation` : accepter / refuser → `repondre(statut)`,
   `ouvrirDecisionInvitation` partagé (fil + revue). Confirmation « Attention » avant de
-  retirer des conflits. JSDoc `@author Philip Kvaratshelya — user story 8` partout.
+  retirer des conflits. JSDoc `@author Philip — user story 8` partout.
 - Retestés en local : 409 / 200 à l'acceptation, 403 non-participant, horaires 200 / 404,
   création 201.
 
@@ -475,7 +475,7 @@ Non corrigé (noté) :
 - Tester les changements du calendrier dans l'app (le bundle compile maintenant).
 - Rien n'est commité ni poussé sur `philip-dev-s1`.
 
-## État final (11/10/2026) — Philip Kvaratshelya
+## État final (11/10/2026) — Philip
 - Tout est commité sur `philip-dev-s1` (app) et `philip_dev` (API), `origin/main` fusionné
   dans les deux, PR ouvertes vers `main` pour revue du superviseur.
 - Vérifié : `tsc` → seules les erreurs préexistantes (T3, T4, T13 sauf `details/[eventId]`
@@ -489,7 +489,7 @@ Non corrigé (noté) :
   plus haut (exceptions récurrentes, fenêtre récurrente de `verifierDisponibilite`,
   énumération de comptes sur `/recuperation/demande`, erreurs de l'app non journalisées).
 
-## « Jour entier » : dates d'une plage du calendrier conservées (13/10/2026) — Philip Kvaratshelya
+## « Jour entier » : dates d'une plage du calendrier conservées (13/10/2026) — Philip
 - `components/datetimeSelecteurs.tsx` (`basculerJourEntier`) : désactiver Jour entier sur une
   plage du calendrier gardait « aujourd'hui + 1 h → début + 1 h » ; les jours sont maintenant
   conservés (début = 1er jour à l'heure suivante, fin = dernier jour une heure plus tard).
@@ -498,3 +498,415 @@ Non corrigé (noté) :
 - Doc : `docs/12-jour-entier.md` (lien dans `docs/README.md`).
 - Bug hors sujet noté (non corrigé, T13) : `app/(tabs)/home/edit/[event].tsx:161` appelle
   `useActionFab` avec l'ancienne signature → l'écran de modification devrait planter.
+
+## Plages libres de l'horaire du membre — sélection (20/10/2026) — Philip
+- Fait : sur la rangée du membre (accueil), chaque trou sans évènement est un bloc bleu pâle
+  (`colors.disponible`, ajouté à `themes/generateTheme.ts`), grisé s'il est passé.
+  Appui long (350 ms) puis glisser = sélection au pas de 15 min, bornée au trou de départ ;
+  au relâchement : menu « Créer un évènement » (ouvre `create` avec `start`/`end`) ou
+  « Ajouter une indisponibilité » (toast « bientôt » pour l'instant). Relâcher sur un
+  évènement existant → toast d'erreur. Trou passé → toast « dans le passé ».
+- Fichiers : `functions/trousHoraire.ts` (calcul pur + conversions position ↔ heure),
+  `components/trousHoraire.tsx`, prop `arrierePlan` de `components/eventsList.tsx`,
+  `app/(tabs)/home/index.tsx`, `locales/{fr,en}/home.json` (`plageLibre`),
+  `tests/trousHoraire.test.js` (4/4).
+- Reste : tester sur appareil (cohabitation de l'appui long avec le défilement horizontal
+  et le tap sur les évènements) ; brancher « Ajouter une indisponibilité » (API + stockage).
+- Mise à jour (20/10/2026) : les trous sont maintenant au style des dispos communes (contour
+  bleu `colors.disponible`, fond transparent, libellé collant « Disponible » / « Date passée »).
+- Mise à jour (20/10/2026) : défilement auto quand le doigt est tenu près d'un bord de la rangée
+  (56 px, 60→260 px/s, s'arrête au bout du trou) ; le libellé du trou sélectionné est masqué.
+  Limite : une sélection ne dépasse pas la fenêtre chargée au début de l'appui (7 jours).
+
+## Indisponibilités — page de création (20/10/2026) — Philip
+- Stockage : un évènement de `nature = 'indisponibilite'` (colonne enum ajoutée à `evenements`,
+  pas `type` qui entrerait en collision avec le `type` récurrence/exception de formaterEvenement).
+  Mêmes conflits, même affichage ; `prive` = raison non partagée avec les amis.
+- API (sync_api, philip_dev, non commité) : migration `20261020000000_ADD_nature_to_evenements.js`
+  (appliquée sur syncdb_dev), `bd/schema.sql`, middleware `lireNature` sur POST /evenements
+  (titre optionnel → « Indisponible », pas de participants ni de récurrence), `creerEvenement`
+  (nature), `formaterEvenement` / `retourConflit` / `trouverConflits` renvoient `nature`.
+  Testé en local dans une transaction annulée (insertion, conflit, format).
+- App : écran `app/(tabs)/home/indisponibilite.tsx` (EventForm `nature="indisponibilite"` :
+  sans récurrence ni participants, raison optionnelle, partage de la raison, jour entier) ;
+  route dans `home/_layout.tsx` ; le menu des plages libres l'ouvre avec la plage.
+  Conflit (409) au moment de confirmer → toast d'erreur listant ce qui gêne
+  (« Tu as déjà quelque chose cette journée-là » en jour entier).
+- Reste : test sur appareil ; affichage distinct des indisponibilités sur la timeline et dans
+  les détails (l'écran de détails les montre comme un évènement) ; modification / suppression.
+- Mise à jour (20/10/2026) : menu de choix partagé `components/menuCreation.tsx` (« Créer un
+  évènement » en bouton plein, « Ajouter une indisponibilité » en lien discret). Le « + » de
+  l'accueil et du calendrier l'ouvre d'abord (`FabConfig.menuCreation`, géré dans `customTabBar`),
+  avec les mêmes params pour les deux écrans ; la sélection d'une plage libre l'utilise aussi.
+- Mise à jour (20/10/2026) : indisponibilités en rouge sur la rangée du membre (`colors.indisponible`,
+  via `couleur` de ListItem). Rectification `create.tsx` (`retour`) : le profil de l'ami s'affiche
+  d'abord, puis la création est retirée de la pile de l'accueil (l'horaire apparaissait entre les deux).
+- Mise à jour (20/10/2026) : tout ce travail est la user story 20 (étiquettes @author mises à jour, app + API).
+  Répétition retirée : `functions/positionTimeline.ts` (positionHeures / heuresVersDate, partagé par
+  ListItem, FreeSlotItem, TrousHoraire) ; `plagePreremplie` / `debutDejaPasse` dans `functions/jourCreation.ts`
+  (create.tsx + indisponibilite.tsx) ; `components/voileEnvoi.tsx`. Jest 7/7 ; ESLint home/index : 13 erreurs
+  comme avant (T11), aucune nouvelle.
+- Correction (20/10/2026) : le retour via `beforeRemove` + `preventDefault` de create.tsx plantait sur iOS
+  (« removed natively but didn't get removed from JS state », non supporté par native-stack). Remplacé :
+  depuis le profil d'un ami, la création s'ouvre dans la pile du profil (`app/(tabs)/profile/create.tsx`,
+  ré-export de home/create, param `depuis: 'profil'`) ; le retour natif revient au profil, et après création
+  `goBack()`. Param `retour` supprimé (create.tsx, ouvrirCreationAvecAmi, widgetDisposCommunes).
+
+---
+
+# HANDOFF — Écran Google Agenda (21/10/2026)
+
+Branche : `US-18` (les 2 repos `sync` et `sync_api` sont sur `US-18`).
+
+## Contexte determinations (à lire avant de coder)
+- Le client OAuth Google configuré dans `sync_api/.env` (`219177665566-…apps.googleusercontent.com`)
+  est de type **WEB** : l'authorization endpoint répond
+  `Custom scheme URIs are not allowed for 'WEB' client type` pour tout schéma personnalisé,
+  et `redirect_uri_mismatch` pour les URI https testées (`auth.expo.io`, `dev.syncalkemy.ca`…).
+  → pour que l'app obtienne un code, il faut un client **Android/iOS/Desktop** acceptant
+  `sync://oauth2redirect` (cf. `GOOGLE_REDIRECT_URI` dans `sync_api/.env`).
+- `expo-auth-session` v57 n'a plus de proxy `auth.expo.io` câblé (`getStartUrl` n'est appelé
+  nulle part) → pas de repli https possible depuis l'app.
+- `makeClient()` envoyait `redirect_uri=` **vide** ; Google l'acceptait (l'erreur remontait
+  ensuite sur le code), mais `getToken(code, options)` ignore le 2e argument (c'est le
+  callback) : il faut passer un **objet** d'options pour fournir `redirect_uri` + `code_verifier`.
+
+## App (`sync`)
+- `functions/googleAgenda.ts` (nouveau) : client API de l'intégration Google —
+  `chargerConfigGoogle`, `chargerComptesGoogle`, `chargerCalendriersGoogle`,
+  `selectionnerCalendriersGoogle`, `resynchroniserCalendrierGoogle`, `deconnecterCompteGoogle`,
+  `connecterCompteGoogle`, `suivreImportGoogle` (SSE + repli polling), `extraireProgression`.
+  ⚠️ RN n'expose pas `Response.body` (le polyfill de `fetch` passe par XHR) → le flux SSE est
+  lu via `xhr.responseText` dans `onprogress`, en ne traitant que les blocs terminés par `\n\n`.
+- `functions/googleOAuth.ts` (nouveau) : `demanderCodeGoogle(config)` — `expo-auth-session`
+  (`loadAsync` + `promptAsync`), PKCE par défaut, `access_type=offline` + `prompt=consent`
+  (sans ça Google ne renvoie pas de refresh_token). Renvoie `{ code, code_verifier }`.
+- `app/(tabs)/profile/settings/calendars/google.tsx` : écran complet — comptes liés
+  (statut, « accès révoqué », déconnexion), connexion OAuth, liste des calendriers
+  (sélection, calendrier principal, déjà lié à un autre compte), enregistrement de la
+  sélection, resynchronisation d'un calendrier, progression de l'import en direct.
+- `locales/{fr,en}/calendar.json` : section `google` (31 clés, same in both languages).
+- `package.json` : `moduleNameMapper` `^@/(.*)$` ajouté au bloc `jest` (les modules de
+  `functions/` importent via l'alias `@/`).
+- `tests/googleAgenda.test.js` (nouveau) : 5 tests sur le parseur SSE.
+- Docs : `docs/03-fonctions.md` (2 entrées + 4 signatures), `docs/07-config.md` (9 endpoints).
+
+## API (`sync_api`)
+- `GET /comptes/google/config` (nouveau, public) : `client_id`, `redirect_uri`, `scopes`.
+- `GET /comptes/` : **réparé** (la version en cours de travail visait la table `comptes` au
+  lieu de `comptes_externes`, `pool.query()` sans argument, JSON tronqué, et une injection
+  SQL sur `fournisseur`). Retourne maintenant `{ comptes: [...] }` + `a_reconnecter`.
+- `POST /comptes/google/connexion` : échange du code via `exchangeCode` (redirect_uri + PKCE),
+  **upsert** du compte (avant : INSERT → violation de la contrainte unique en reconnexion),
+  conservation du refresh_token existant si Google n'en renvoie pas.
+- `POST /comptes/deconnexion/:idPublique` : **implémenté** — calendriers désactivés,
+  événements supprimés en douceur (`deleted_at`), jeton neutralisé (la colonne est NOT NULL).
+- `PUT /calendriers/google` : **corrigé** — le jeton était pris du *premier* compte du membre
+  (le calendrier pouvait être d'un autre compte) et l'INSERT ne renseignait pas `id_compte`
+  (le calendrier n'était rattaché à aucun compte). Résolution par calendrier, `id_compte`
+  renseigné, `compte_origine` = le compte (et non l'id du calendrier), `label` du job.
+- `POST /calendriers/syncroniser/:idPublique` : **implémenté** (resync d'un calendrier).
+- `POST /calendriers/activer|desactiver` : 501 explicite (le PUT est idempotent et fait foi) —
+  avant, ces stubs ne répondaient jamais et laissaient la requête en suspens.
+- `src/jobs/events_imports.js` : `label` dans le snapshot du job (progression par calendrier).
+- `src/functions/google.js` : `scopes`, `exchangeCode(code, codeVerifier)`, `makeClient()`
+  avec le vrai `redirect_uri`.
+- `src/config/env.js` : `googleRedirectUri` (nouvelle var d'env `GOOGLE_REDIRECT_URI`).
+
+## Vérifications
+- API testée en local (MySQL docker :3307, API :3100) : `GET /comptes` (200),
+  `GET /comptes/?fournisseur=google` (200), `GET /calendriers/google` (200),
+  `POST /comptes/google/connexion` sans code (400), `POST /comptes/deconnexion/:id` (200 :
+  compte `deconnecte`, calendrier `actif=0`, 3 événements en `deleted_at`),
+  `PUT /calendriers/google` sans compte (409) / sélection invalide (400),
+  `POST /calendriers/syncroniser/:id` inconnu (404), `activer|desactiver` (501).
+- Chemin « jeton révoqué » : jeton factice → Google `invalid_grant` → compte marqué
+  `erreur` + `a_reconnecter: true` → l'app affiche « reconnectez ce compte ».
+- App : `tsc` → 5 erreurs, **exactement les 5 préexistantes** (T3 + T13), aucune nouvelle ;
+  `eslint` → 0 erreur sur les 4 fichiers touchés ; `jest` → 8/8 (2 suites) ;
+  `npx expo export -p android` → exit 0 (les fichiers de route vides `file.tsx` /
+  `system.tsx` / `outlook.tsx` ne cassent pas le build).
+
+## Reste / à faire
+- **Console Google** : créer un client Android/iOS/Desktop, y enregistrer
+  `sync://oauth2redirect`, et mettre son `client_id`/`client_secret` dans `sync_api/.env`
+  (`GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_SECRET`). Tant que le client WEB actuel est
+  utilisé, Google refuse le schéma personnalisé → la connexion OAuth ne peut pas aboutir.
+- **Non testé sur appareil** : le flux OAuth (consentement, retour, échange du code) et le
+  suivi SSE en conditions réelles.
+- `sync_api` : le TODO `TODO_IMPORT_SYNCHRONISATION.md` n'est pas à jour (voir le commit
+  correspondant) ; l'état des jobs reste en RAM (pas de table de jobs), pas de
+  synchronisation incrémentale (`sync_token` jamais écrit).
+- Non fait (hors périmètre choisi) : `file.tsx` / `system.tsx` (import .ics et calendriers
+  système) restent vides ; `outlook.tsx` reste vide.
+
+## Bugs hors sujet (notés, non corrigés)
+- `sync_api/src/routes/evenements.js` : `DELETE /evenements/exceptions/:id` cible la table
+  `exceptions` alors que la table s'appelle `evenements_exceptions` (déjà signalé).
+- `sync_api/src/functions/google.js` : `importCalendar` stocke l'id Google brut dans
+  `evenements.uuid_externe` (varchar 64) alors que l'import .ics y met un sha256 ; un id
+  Google long tronquerait l'insertion.
+- `sync_api/src/routes/calendriers.js` (`GET /google`) : le `commit()` est appelé même
+  quand aucune transaction n'a été ouverte (sans conséquence avec MySQL, mais trompeur).
+
+### Complément (21/10/2026) — contrat d'erreur affine
+- `PUT /calendriers/google` distingue maintenant les deux cas de 409 :
+  `409 {message:'aucun compte Google lié'}` (aucun compte du tout) vs
+  `409 {message:'compte Google à reconnecter', code:'google_reauth'}` (compte existant
+  mais jeton invalide). L'app affiche un toast « reconnectez ce compte » sur `google_reauth`.
+- Contrat rejoué contre l'API locale (`tests` manuels, `/tmp/opencode/contrat_app.js`) :
+  `GET /comptes/google/config`, `GET /comptes/`, `GET /calendriers/google`,
+  `PUT /calendriers/google` (409 `google_reauth` avec un jeton factice) et
+  `POST /comptes/deconnexion/:id` → toutes les formes de réponse correspondent aux types
+  TypeScript de `functions/googleAgenda.ts`. Le `400 'calendrier inconnu'` n'est atteignable
+  qu'avec un vrai jeton Google (non testé ici).
+
+### Complément (21/10/2026) — désactivation d'un calendrier = suppression douce
+Décision user : « quand on désactive un calendrier, on ne doit pas supprimer les
+événements, mais mettre un `deleted_at` ».
+
+**API (`sync_api`)**
+- `PUT /calendriers/google` : la désactivation ne fait plus
+  `DELETE FROM calendriers` (qui déclenchait le `ON DELETE CASCADE` sur
+  `evenements.calendrier_id` → suppression physique). Elle fait désormais :
+  `UPDATE evenements SET deleted_at = NOW() WHERE calendrier_id IN (...)` puis
+  `UPDATE calendriers SET actif = 0`. Le calendrier est **conservé** (désactivé),
+  il pourra être réactivé et réimporté plus tard.
+- `GET /calendriers/google` (prune : calendrier disparu de Google) : même traitement
+  (suppression douce + `actif = 0`), plus la transaction qui était ouverte/fermée
+  incohéremment (`commit()` appelé même sans `beginTransaction()`).
+- `PUT /calendriers/google` restructuré : **Google n'est plus contacté que pour les
+  calendriers *nouveaux***. Conséquence : le membre peut **retirer** un calendrier
+  même si son accès Google a été révoqué (sinon il était coincé avec des
+  calendriers qu'il ne pouvait plus enlever). La réactivation, elle, exige un compte
+  `actif` → `409 {code:'google_reauth'}`.
+- `PUT /calendriers/google` renvoie `calendriers_desactives` (nombre de calendriers
+  retirés) en plus de `job_id`.
+- `verifierAccesEvenement` (`src/functions/authenticate.js`) et
+  `GET /evenements/:idevenement` filtrent désormais `deleted_at IS NULL` : un
+  événement en suppression douce n'est plus accessible par son id (403).
+  ⚠️ C'était une fuite : les routes de détail ne filtraient pas `deleted_at`
+  (donc un événement supprimé en douce restait lisible et modifiable).
+- `POST /comptes/deconnexion/:idPublique` : inchangé (déjà en suppression douce).
+
+**App**
+- `selectionnerCalendriersGoogle` renvoie `{ jobId, calendriersDesactives }`.
+- Toast « Sélection enregistrée. » / « N calendrier(s) retiré(s) de Sync. » au lieu de
+  l'avertissement trompeur « aucun nouveau calendrier à importer » (l'app ne pouvait
+  pas distinguer « rien n'a changé » de « j'ai retiré des calendriers »).
+- i18n : `selectionSaved`, `calendarsRemoved_one/_other` (fr + en).
+
+**Vérifié** (contrat rejoué contre l'API locale) : à la désactivation, l'événement
+est **toujours en base** avec `deleted_at` renseigné, le calendrier est conservé avec
+`actif = 0`, `GET /evenements/<id>` → 403, la désactivation fonctionne avec un compte
+en erreur, la réactivation avec un compte en erreur → 409 `google_reauth`.
+
+### Complément (21/10/2026) — import Google : upsert + restauration
+Demande user : « les événements qui sont retrouvés soient un soft delete, les nouveaux
+simplement créés ; un ON DUPLICATE UPDATE avec `deleted_at = NULL` ».
+
+**`sync_api/src/functions/google.js`**
+- L'import ne détruit plus pour reconstruire. `importCalendar` est scindé en
+  `fetchEvents` (appel Google) + `appliquerImport` (écriture en base), ce qui rend le
+  second testable **sans compte Google** (`tests/import_google_check.js`).
+- `appliquerImport` fait, dans une seule transaction :
+  1. `UPDATE evenements SET deleted_at = NOW() WHERE calendrier_id = ? AND fenêtre`
+     → tout ce que Google a dans la fenêtre passe en suppression douce ;
+  2. `INSERT … ON DUPLICATE KEY UPDATE debut=…, fin=…, titre=…, deleted_at = NULL`
+     → les événements **retrouvés** sont restaurés et mis à jour, les **nouveaux** sont
+     créés.
+  L'ordre (soft delete puis upsert) évite d'avoir à distinguer « vu » / « pas vu » à la
+  seconde près — une première version avec un marqueur `updated_at` avait ce défaut
+  (le marqueur était en millisecondes alors que la colonne est en secondes : les
+  événements juste restaurés étaient supprimés dans la foulée).
+- Le conflit porte sur `(createur_id, uuid_externe)` (l'identité stable de l'événement
+  chez Google). `id_publique` et `slug` ne sont pas touchés → **ils restent stables d'un
+  import à l'autre** (un lien partagé vers un événement importé ne casse plus).
+- Optimisation : un nouvel `id_publique` n'est généré que pour les événements vraiment
+  nouveaux (avant : une requête d'unicité par événement, y compris pour ceux qui
+  existaient déjà).
+
+**🐞 Bug trouvé au passage (l'import Google n'a jamais fonctionné)**
+- Le code utilisait `id_calendrier` alors que la colonne s'appelle **`calendrier_id`**
+  (dans le `DELETE` et l'`INSERT`). L'import levait `ER_BAD_FIELD_ERROR` → le job
+  échouait à chaque fois, la progression SSE affichait toujours une erreur. Corrigé.
+
+**Comportement différé avec l'import `.ics`** (volontaire)
+- `POST /evenements/import` ne ressuscite **jamais** un événement supprimé en douce
+  (« on ne le recrée pas ») : un fichier `.ics` ne porte pas l'information de
+  suppression, le ressusciter annulerait les suppressions faites par l'utilisateur.
+- L'import Google, lui, ressuscite : Google est la source de vérité d'un calendrier
+  connecté, et c'est ce qui fait que **réactiver** un calendrier désactivé rend ses
+  événements visibles à nouveau.
+
+**Vérifié** : `node tests/import_google_check.js` → 12/12 (A retrouve son id et son
+nouvel horaire, B est restauré, C est supprimé en douceur et reste en base, D est
+créé, aucun doublon). `tsc` 5 erreurs (préexistantes), `eslint` 0, `jest` 8/8.
+
+### Complément (21/10/2026) — URI de redirection OAuth : contrainte de la console Google
+La nouvelle console Google n'expose une section « Authorized redirect URIs » que pour
+le client **WEB**. Pour les clients Android/iOS, Google **génère** l'URI à partir du
+package / bundle id et elle n'est pas modifiable.
+
+Comme le package Android et le bundle id iOS valent tous deux `com.alkemist.sync`,
+l'URI auto-générée est la même pour les deux clients : `com.alkemist.sync:/oauth2redirect`.
+
+Conséquences :
+- `app.json` : `expo.scheme` passe de `"sync"` à `["sync", "com.alkemist.sync"]`
+  (`expo.scheme` accepte un tableau) → l'app continue de gérer les liens `sync://`
+  existants et reçoit en plus le retour OAuth de Google.
+- `sync_api/.env` : `GOOGLE_REDIRECT_URI=com.alkemist.sync:/oauth2redirect`.
+- `sync_api/src/routes/comptes.js` : `GET /comptes/google/config` sert cette URI —
+  l'app ne la duplique jamais.
+- ⚠️ `expo run:android` / `run:ios` ne rejouent `prebuild` que si le dossier natif est
+  absent (`ensureNativeProject.js` → `if (!existsSync(platform))`). Comme `android/` et
+  `ios/` existent ici, il faut **lancer `npx expo prebuild` avant le run**, sinon le
+  nouveau scheme n'est pas dans le `AndroidManifest` / `Info.plist`.
+- Vérificateur : `node /tmp/opencode/check_redirect.js <client_id>` interroge
+  l'authorization endpoint et dit si l'URI est acceptée (et distingue « client WEB »
+  de « URI non enregistrée »).
+
+### Complément (21/10/2026) — un client OAuth Google par plateforme
+Décision user : « le client envoie son OS et je prends la bonne clé ».
+
+**`sync_api/src/config/googleClients.js` (nouveau)** — registre des clients :
+- variables : `GOOGLE_OAUTH_CLIENT_ID|SECRET|REDIRECT_URI` (défaut) +
+  `..._ANDROID` / `..._IOS` ;
+- `get(plateforme)`, `parClientId(clientId)`, `parClientEnregistre(clientId)` ;
+- garde-fou : une plateforme dont le `client_id` est posé mais pas le secret retombe
+  **entièrement** sur le client par défaut (sinon l'échange utiliserait le secret
+  d'un autre client et échouerait de façon incompréhensible).
+
+**Règle Google qui a dicté l'architecture** : un `refresh_token` est lié au client
+qui l'a émis. D'où la migration `20261021153000_ADD_oauth_client_id_to_comptes_externes.js`
+(colonne `comptes_externes.oauth_client_id`, appliquée en base : batch 13) : l'API
+mémorise le `client_id` ayant servi à lier le compte, et rafraîchit avec ce client.
+
+**Modifications**
+- `src/functions/google.js` : `makeClient(client)` et `exchangeCode(code, verifier, client)`
+  prennent le client du registre ; `importCalendar` reçoit `client` (le refresh
+  doit utiliser le bon client_id).
+- `src/routes/comptes.js` : `GET /comptes/google/config?platform=ios|android` renvoie
+  le client de la plateforme (+ `plateforme`) ; `POST /comptes/google/connexion` résout
+  le client par le `client_id` envoyé par l'app (le code est lié à ce client) et
+  enregistre `oauth_client_id` sur le compte.
+- `src/routes/calendriers.js` : les requêtes de comptes sélectionnent `oauth_client_id`
+  ; le client est résolu pour `listCalendars` et pour chaque job d'import.
+- App : `chargerConfigGoogle(api, plateforme)` (`?platform=ios|android`) et
+  `connecterCompteGoogle(api, code, verifier, clientId)` — le `client_id` repart avec
+  le code, le secret ne quitte jamais le serveur.
+
+**Le client par défaut reste le client WEB** : le compte déjà lié en base (membre 13)
+a été obtenu avec lui, son refresh continue de fonctionner (`oauth_client_id` NULL →
+repli sur le défaut). Les comptes nouveaux, eux, mémorisent leur client.
+
+**Vérifié** : migration appliquée, `GET /comptes/google/config` et `?platform=…`
+répondent, garde-fou du secret vide OK, `tsc` 5 (préexistantes), `eslint` 0, `jest` 8/8.
+
+### Complément (21/10/2026) — clients installés = « public clients » (pas de secret)
+Vérifié empiriquement contre le token endpoint de Google :
+
+| client_id + secret | réponse Google |
+|---|---|
+| Android + **secret du client WEB** | ❌ `invalid_client — The provided client secret is invalid.` |
+| Android + **aucun secret** | ✅ `invalid_grant — Malformed auth code.` (client accepté) |
+| WEB + son secret | ✅ accepté |
+
+→ Le `client_secret` est lié à son client : celui du client WEB ne peut **pas** servir
+avec le client Android/iOS. Un client installé (Android/iOS) est un *public client* :
+Google ne lui donne pas de secret et l'échange du code se fait **sans secret** — c'est
+le rôle du `code_verifier` PKCE.
+
+**`src/config/googleClients.js`** : un client de plateforme n'a besoin que de son
+`client_id` ; son secret est optionnel (vide → public client). Le secret du client par
+défaut n'est **jamais** hérité par un client de plateforme (sinon `invalid_client`).
+Garde-fou révisé : une plateforme est configurée dès qu'elle a un `client_id`.
+
+**`sync_api/.env`** : `GOOGLE_OAUTH_SECRET_ANDROID` / `_IOS` à laisser **vides**.
+
+**État vérifié** :
+```
+défaut    → client …brire8uvr…  secret: présent        (compte déjà lié en base)
+android   → client …jarvpnekm…  secret: AUCUN          (public client)
+ios       → client …qkd2ulqk…   secret: AUCUN          (public client)
+```
+Les deux clients acceptent `com.alkemist.sync:/oauth2redirect` (vérifié via
+`/tmp/opencode/check_redirect.js`).
+
+---
+
+# HANDOFF — Écran Outlook (`outlook.tsx`) + client API Outlook (28/10/2026)
+
+## Fait
+- `sync/functions/outlookAgenda.ts` (nouveau) : client de l'intégration Outlook —
+  `chargerConfigOutlook` (`GET /comptes/outlook/config`),
+  `chargerComptesOutlook` (`GET /comptes/?fournisseur=outlook`),
+  `chargerCalendriersOutlook` (`GET /calendriers/outlook`),
+  `selectionnerCalendriersOutlook` (`PUT /calendriers/outlook` `{calendar_ids}`),
+  `resynchroniserCalendrierOutlook` (`POST /calendriers/syncroniser/:idPublique`),
+  `deconnecterCompteOutlook` (`POST /comptes/deconnexion/:idPublique`),
+  `connecterCompteOutlook` (`POST /comptes/outlook/connexion` `{code, code_verifier}`),
+  `suivreImportOutlook` (délègue au suivi SSE générique `suivreImportGoogle`).
+- `sync/functions/outlookOAuth.ts` (nouveau) : `demanderCodeOutlook(config)` —
+  `expo-auth-session` (`AuthSession.loadAsync` + `AuthRequest.promptAsync`),
+  PKCE S256 par défaut, `prompt: AuthSession.Prompt.Consent` (refresh_token MS),
+  discovery partiel `{ authorizationEndpoint: config.authorize_url }` (source de
+  vérité côté serveur). `ConfigurationOAuthInvalide` identique au flux Google.
+- `sync/app/(tabs)/profile/settings/calendars/outlook.tsx` (rempli) : miroir de
+  l'écran Google — comptes liés (statut, « accès révoqué », déconnexion),
+  connexion OAuth, liste des calendriers (coche/décocher, calendrier principal,
+  déjà lié à un autre compte, dernière synchro), sélection, resynchronisation,
+  progression d'import SSE + toast. Pas de modal de personnalisation (nom/couleur) :
+  **aucun endpoint `PATCH /calendriers/outlook/:idPublique` n'existe** côté API
+  (seul `PATCH /calendriers/google/:idPublique` existe) → resync inline uniquement.
+- `locales/{fr,en}/calendar.json` : section `outlook` ajoutée (35 clés, même shape que
+  `google`, clés `_one`/`_other` pour `calendarsRemoved`).
+
+## Décisions / écarts vs Google (volontaires)
+- `suivreImportOutlook` délègue à `suivreImportGoogle` : le suivi SSE/polling est
+  partagé (endpoint `GET /calendriers/imports/:id/events` générique). Pas de doublon.
+
+## Vérifications
+- `npx tsc --noEmit` : 5 erreurs préexistantes (touches `abstractions/` + `app/(tabs)/home|inbox`),
+  **aucune nouvelle** (les nouveaux fichiers sont propres).
+- `npx eslint` sur les 3 fichiers créés/touchés : 0 erreur (1 warning `no-unused-expressions`
+  sur la ternary de déconnexion — **préexistant et identique** dans `google.tsx:382`).
+- `npx jest` : 3 suites / 12 tests passent (inchangé).
+- JSON locales : validés (python json.load).
+
+## Reste / à faire
+- **API** : ajouter `PATCH /calendriers/outlook/:idPublique` (nom / couleur) si la
+  personnalisation doit être offerte pour Outlook — aujourd'hui l'écran n'y accède pas.
+- **Console Microsoft** : client_id/secret/tenant/redirect côté `sync_api/.env`
+  (cf. section Google : client public, PKCE, refresh token) ; flow OAuth non testé
+  sur appareil (comme pour Google).
+- **Docs** : `docs/03-fonctions.md` / `docs/07-config.md` n'ont **pas** encore été
+  étendus pour les endpoints Outlook (`GET /comptes/outlook/config`, `GET /calendriers/outlook`,
+  `PUT /calendriers/outlook`, `POST /calendriers/syncroniser/:idPublique`,
+  `POST /comptes/outlook/connexion`, `POST /comptes/deconnexion/:idPublique`).
+- Non fait (hors périmètre) : `file.tsx` / `system.tsx` (import .ics / calendriers système).
+
+## Note technique
+- Le screen utilise `t('outlook.…')` (namespace `calendar`), icône `logo-microsoft`
+  (Ionicons), `RenderCalendarColor(couleur ?? 275, scheme)`.
+
+### Complément (28/10/2026) — convergence des logiques Google / Outlook
+- `hooks/useAgendaImport.ts` est maintenant utilisé par **les deux écrans** pour
+  charger comptes/calendriers, gérer la sélection, suivre les imports SSE/polling,
+  resynchroniser, connecter et déconnecter les comptes.
+- Le hook garde les adaptateurs du fournisseur dans une ref synchronisée par effet
+  afin que les callbacks de chargement restent stables pour `useFocusEffect` ; ses
+  types génériques préservent les discriminants `source: 'google' | 'outlook'`.
+- Google conserve son modal de personnalisation : la mise à jour optimiste locale
+  passe désormais par `mettreAJourCalendrier` du hook, puis par son endpoint Google.
+- Le hook transporte aussi `client_id` facultatif dans le résultat OAuth et dans
+  le callback de connexion : Google le renvoie à l'API comme avant, Outlook ne le
+  fournit pas. Les flux OAuth eux-mêmes partagent `functions/oauth.ts`.
+- Vérifications : Jest 3 suites / 12 tests passent ; ESLint ciblé 0 erreur (deux
+  warnings `no-unused-expressions` sur les ternaires de déconnexion des deux écrans) ;
+  `tsc` reste à 5 erreurs, toutes préexistantes et hors des fichiers Agenda
+  (`abstractions/touchableOpacityAbs.tsx`, `app/(tabs)/home/edit/[event].tsx`,
+  `app/(tabs)/inbox/index.tsx`).
+- Suites restantes inchangées : ajouter l'endpoint de préférences Outlook si cette
+  fonction doit être offerte, compléter `docs/03-fonctions.md` et `docs/07-config.md`
+  pour Outlook, et tester les flux OAuth sur appareil avec la configuration Microsoft.

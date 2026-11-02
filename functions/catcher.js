@@ -3,6 +3,7 @@ import { toastTypes } from "@/constants/toastConfig"
 import i18n from "../i18n"
 import log from "./log"
 import { capturerErreurPourSignalement } from "@/contextes/contexteSignalements"
+import { router } from "expo-router"
 
 export default function catcher(error, titre){
     //const {ouvirModal} = useModal()
@@ -10,6 +11,7 @@ export default function catcher(error, titre){
     // Session expired / signed out: contexteAPI already sends the member to the
     // login screen and flags the error, so there's nothing useful to show.
     if (error?.deconnecte) return
+    if (error?.__requeteLente && router.canGoBack()) router.back()
     const status = error?.response?.status ?? error?.status
     capturerErreurPourSignalement(error, titre)
     const errorKey = String(status ?? error?.code ?? 'default')
