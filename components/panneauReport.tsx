@@ -13,6 +13,7 @@ import { useMembre } from '@/contextes/contexteMembre'
 import { usePalette } from '@/contextes/contextePalette'
 import catcher from '@/functions/catcher'
 import { convertUTCToLocal } from '@/functions/convertirUTCenLocal'
+import { convertirTimestampJourCourt } from '@/functions/convertirTimestamp'
 import useReportEvenement, { Creneau, Suggestion } from '@/hooks/useReportEvenement'
 
 type Props = {
@@ -156,7 +157,8 @@ export default function PanneauReport({ idEvenement, onPlageChangee, integre = f
     // Common free slots grouped by the member's local day, in order.
     const parJour: { jour: string, creneaux: Creneau[] }[] = []
     for (const c of creneaux) {
-        const jour = convertUTCToLocal(c.debut, membre?.timezone).toFormat('cccc d LLLL')
+        // formats.json, not Luxon's month names ('LLLL' gave "null" on the phone)
+        const jour = convertirTimestampJourCourt(convertUTCToLocal(c.debut, membre?.timezone))
         const groupe = parJour.find((g) => g.jour === jour)
         if (groupe) groupe.creneaux.push(c)
         else parJour.push({ jour, creneaux: [c] })

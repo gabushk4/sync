@@ -2,5 +2,18 @@
 	"requests": {
 		"title": "Demandes d'ami",
 		"empty": "Aucune demande d'ami en attente."
+	},
+	"infos": {
+		"title": "Infos",
+		"loadFailed": "Impossible de charger les infos de la conversation",
+		"members_one": "{{count}} membre",
+		"members_other": "{{count}} membres",
+		"membersTitle": "Membres ({{count}})",
+		"event": "Évènement",
+		"admin": "Organisateur",
+		"you": "toi",
+		"openProfile": "Voir le profil de {{pseudo}}",
+		"createdOn": "Conversation créée le {{date}}",
+		"eventGroup": "Groupe de discussion de « {{titre}} »"
 	}
 }

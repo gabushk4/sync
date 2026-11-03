@@ -21,7 +21,8 @@ export type AmiInvite = { id: string, pseudo: string, fp_url?: string | null }
  * @param {boolean} [options.depuisProfil=false] - Opened from the friend's profile.
  * @param {any} [options.navigation] - The profile's stack (with depuisProfil): the
  *   creation opens in that same stack, so going back returns to the profile. The profile
- *   is in the home stack when opened from a friend's row, in the profile stack otherwise.
+ *   is in the home stack when opened from a friend's row, in the profile stack otherwise
+ *   (a stack without a 'create' screen, e.g. the inbox's, uses the profile tab's).
  * @returns {void}
  */
 export default function ouvrirCreationAvecAmi({ debut, fin, ami, depuisProfil = false, navigation }: {
@@ -38,7 +39,7 @@ export default function ouvrirCreationAvecAmi({ debut, fin, ami, depuisProfil = 
         ...(depuisProfil ? { depuis: 'profil' } : {}),
     }
     // both stacks have a 'create' screen (home/create, profile/create)
-    if (depuisProfil && navigation?.push) {
+    if (depuisProfil && navigation?.getState?.()?.routeNames?.includes('create')) {
         navigation.push('create', params)
         return
     }
