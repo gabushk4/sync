@@ -489,6 +489,9 @@ export default function Home() {
         const evenements = formaterEvenementsMembre(data.evenements, membre.timezone)
         if (fenetreEnCoursRef.current) cacheJoursRef.current.set(fenetreEnCoursRef.current, evenements)
         setUserEvents(evenements)
+        // A picked range that an event now covers (e.g. the one just created on it) is dropped.
+        setPlageChoisie((plage) => plage && evenements.some((ev: any) =>
+          !estJourFerie(ev) && ev.debut && ev.fin && ev.debut < plage.fin && ev.fin > plage.debut) ? null : plage)
         setJourMembre(windowStartRef.current)
       }
     } catch (error) {
@@ -865,13 +868,8 @@ export default function Home() {
 
   // The picked range stays when the home screen is left (backing out of the creation
   // finds it still selected); a tap elsewhere clears it (see effacerSelection). Once an
-  // event covers it (e.g. the one just created on it), it's dropped.
-  useEffect(() => {
-    if (!plageChoisie) return
-    const couverte = evenementsHoraire.some((ev: any) =>
-      ev.debut && ev.fin && ev.debut < plageChoisie.fin && ev.fin > plageChoisie.debut)
-    if (couverte) setPlageChoisie(null)
-  }, [evenementsHoraire, plageChoisie])
+  // event covers it (e.g. the one just created on it), it's dropped when the member's
+  // events arrive (modifierEvenementsMembreFetched).
 
   useFocusEffect(
     useCallback(() => {

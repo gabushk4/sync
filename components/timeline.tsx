@@ -58,7 +58,7 @@ export default function Timeline({ horizontal, windowStart, selectedDate, timeli
     const initialisationFaite = useRef(false)
 
     useAnimatedReaction(
-        () => offset.value,
+        () => offset.get(),
         (offset) => 
             scrollTo(scrollViewRef, horizontal ? offset : 0, horizontal ? 0 : offset, false)
     )
@@ -82,7 +82,7 @@ export default function Timeline({ horizontal, windowStart, selectedDate, timeli
                 const heureDansLaFenetre = windowStart
                     ? cible.diff(windowStart.startOf('day'), 'hours').hours
                     : cible.hour
-                offset.value = Math.max(0, heureDansLaFenetre) * (pxHeures + L_HEURES)
+                offset.set(Math.max(0, heureDansLaFenetre) * (pxHeures + L_HEURES))
             }}
             >
             {Array.from({ length: timelineDays * 24 }, (_, index) => {
