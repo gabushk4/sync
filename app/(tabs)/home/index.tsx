@@ -18,7 +18,7 @@ import { Dimensions, Easing, Image, Keyboard, StyleSheet, Text, TouchableOpacity
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { getCommonFreeSlotsSurPlage } from '@/functions/availability';
-import { heuresVersDate } from '@/functions/positionTimeline';
+import { heuresVersDate, positionHeures } from '@/functions/positionTimeline';
 import catcher from '@/functions/catcher';
 import { convertUTCToLocal } from '@/functions/convertirUTCenLocal';
 import log from '@/functions/log';
@@ -44,12 +44,15 @@ import { estJourFerie, formaterEvenementsMembre, joursFeriesDuJour, paramsPlage 
 import { debutCreationPourJour, estJourPasse } from '@/functions/jourCreation';
 import { Friend } from '@/types/calendar';
 import { scheduleOnRN } from 'react-native-worklets';
+import { convertirTimestampHeure } from '@/functions/convertirTimestamp';
 
 //Constants
 const WIDTH_COL = 80;
 const HEIGHT_BOT_BAR = 80;
 const HEIGHT_DATE = 56;
 const HEIGHT_TIMELINE = 32;
+// Width of the current time's label in the hours' row ("14:05").
+const LARGEUR_HEURE_MAINTENANT = 44;
 const AnimatedStyleMinVal = 0.1
 const LIST_HEIGHT = 104
 // Height of the floating back-to-now button.
@@ -284,6 +287,19 @@ export default function Home() {
     offsetAccueilRef.current = offset
     offsetX.set(offset)
   }
+
+  // ── Current time line ──
+  // Drawn inside every row (and its time in the hours' row), at the same place as an
+  // event at this time would be (positionHeures): it stays on that time while the rows
+  // scroll. Moved every 30 s (about a pixel).
+  const [instantCourant, setInstantCourant] = useState(() => DateTime.now())
+  useEffect(() => {
+    const minuterie = setInterval(() => setInstantCourant(DateTime.now()), 30_000)
+    return () => clearInterval(minuterie)
+  }, [])
+  const debutFenetreJour = windowStart.startOf('day')
+  const maintenantVisible = instantCourant >= debutFenetreJour && instantCourant < debutFenetreJour.plus({ days: JOURS_FENETRE })
+  const xMaintenant = positionHeures(instantCourant, windowStart) * (pxHeures + L_HEURES)
 
   // Refresh the proximity tie-breaker as upcoming slots get closer or pass.
   useEffect(() => {
@@ -1127,6 +1143,30 @@ export default function Home() {
     calendarContainer: {
       flex:5
     },
+    // Current time: a line in every row, its time in the hours' row (see xMaintenant)
+    ligneMaintenant: {
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      width: 2,
+      backgroundColor: colors.error,
+      zIndex: 10,
+    },
+    heureMaintenant: {
+      position: 'absolute',
+      bottom: 2,
+      width: LARGEUR_HEURE_MAINTENANT,
+      paddingVertical: 1,
+      borderRadius: 6,
+      alignItems: 'center',
+      backgroundColor: colors.error,
+      zIndex: 10,
+    },
+    texteHeureMaintenant: {
+      color: '#fff',
+      fontFamily: fonts.number,
+      fontSize: 11,
+    },
     addFriendPlaceholderContainer: {
       height: '100%',
       width: '100%',
@@ -1200,6 +1240,11 @@ export default function Home() {
               ? DateTime.now()
               : todayDateTime?.plus({ hours: 9 })}
             timelineDays={JOURS_FENETRE}
+            premierPlan={maintenantVisible && (
+              <View pointerEvents="none" style={[s.heureMaintenant, { left: xMaintenant - LARGEUR_HEURE_MAINTENANT / 2 }]}>
+                <Text style={s.texteHeureMaintenant}>{convertirTimestampHeure(instantCourant)}</Text>
+              </View>
+            )}
           />
         </View>
 
@@ -1276,6 +1321,7 @@ export default function Home() {
                             displayedDate={windowStart}
                             timelineDays={JOURS_FENETRE}
                             getEvenements={() => { refreshAt(todayDateTime ?? DateTime.now()) }}
+                            premierPlan={maintenantVisible && <View pointerEvents="none" style={[s.ligneMaintenant, { left: xMaintenant - 1 }]} />}
                           />
                         </View>                    
                       )})}
@@ -1309,6 +1355,7 @@ export default function Home() {
                   // Free stretches in pale blue: hold then drag to pick a range, then "+"
                   // creates on it (event, or unavailability by swiping). Philip — user story 20.
                   arrierePlan={<TrousHoraire evenements={evenementsHoraire} debutFenetre={windowStart} jours={JOURS_FENETRE} selection={plageChoisie} onSelection={setPlageChoisie} />}
+                  premierPlan={maintenantVisible && <View pointerEvents="none" style={[s.ligneMaintenant, { left: xMaintenant - 1 }]} />}
                 />
                 {/* Fully booked day: a fixed card over the (still mounted) timeline, so
                     it doesn't scroll and the timeline comes back as it was on a normal day. */}

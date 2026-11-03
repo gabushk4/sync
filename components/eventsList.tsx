@@ -32,6 +32,8 @@ export type EventsListProps = {
     timelineDays?: number;
     /** Drawn behind the events, over the whole row (the member's free blocks). */
     arrierePlan?: ReactNode;
+    /** Drawn over the events, in the row's content (it scrolls with it): the current time line. */
+    premierPlan?: ReactNode;
 }
 
 /**
@@ -75,6 +77,7 @@ export default function EventsList({
     onPressEvenement,
     timelineDays = 1,
     arrierePlan,
+    premierPlan,
 }: EventsListProps) {
     const { offset } = useGestionScroll()
     const { pxHeures, L_HEURES, H_HEURES } = useTimeline()
@@ -150,6 +153,7 @@ export default function EventsList({
                 {commonFreeSlots?.map((freeSlot, index) => 
                     <FreeSlotItem key={`${freeSlot.start}-${freeSlot.end}`} freeSlot={freeSlot} displayedDate={displayedDate} horizontal={horizontal} listOffset={offset} owner={owner} timelineDays={timelineDays}/>
                 )}
+                {premierPlan}
             </View>
         </Animated.ScrollView>
     )
