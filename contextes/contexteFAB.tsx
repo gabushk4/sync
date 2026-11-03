@@ -97,13 +97,6 @@ export type FabConfig = {
    *   a clear message instead of opening a form that can't be submitted
    */
   bloque?: string;
-  /**
-   * With `href` the event creation: pressing the FAB first asks what to add (create an
-   * event, or add an unavailability), see MenuCreation. Both get `params`.
-   *
-   * @author Philip — user story 20
-   */
-  menuCreation?: boolean;
 } | undefined;
 
 type FabState = { owner: string; config: FabConfig } | null;
@@ -132,7 +125,6 @@ function sameConfig(a: FabConfig, b: FabConfig) {
     (a.href ?? null) === (b.href ?? null) &&
     a.icon === b.icon &&
     (a.bloque ?? null) === (b.bloque ?? null) &&
-    !!a.menuCreation === !!b.menuCreation &&
     JSON.stringify(a.params ?? null) === JSON.stringify(b.params ?? null)
   );
 }

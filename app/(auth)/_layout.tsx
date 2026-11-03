@@ -15,7 +15,7 @@ export default function AuthLayout() {
       <Stack.Screen
         name="mdpOublie"
         options={{
-          presentation: 'transparentModal',
+        presentation: 'transparentModal',
           animation: 'fade',
           animationDuration: 50,
           headerShown: false,

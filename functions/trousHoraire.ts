@@ -1,6 +1,9 @@
 import { DateTime } from 'luxon'
 
-/** A free stretch of the member's schedule (no event), inside the loaded window. */
+/**
+ * A free stretch of the member's schedule (no event, no unavailability), inside the
+ * loaded window. Philip — user story 20.
+ */
 export type Trou = {
     debut: DateTime
     fin: DateTime
@@ -8,7 +11,10 @@ export type Trou = {
     passe: boolean
 }
 
-/** Step (minutes) the selected range's start and end are snapped to. */
+/**
+ * Step (minutes) the selected range's start and end are snapped to.
+ * Philip — user story 20 (selecting a free range to add an event or an unavailability).
+ */
 export const PAS_SELECTION = 15
 
 /**

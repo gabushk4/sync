@@ -13,6 +13,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Image, NativeScrollEvent, NativeSyntheticEvent, ScrollView, StyleSheet, Text, TouchableOpacity, useColorScheme, useWindowDimensions, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import titreEvenement from '@/functions/titreEvenement'
 import Animated, { scrollTo, useAnimatedReaction, useAnimatedRef, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated'
 
 /**
@@ -1053,7 +1054,7 @@ export default function CalendarMonthView({
                                     <View style={s.pastilleEvenement} />
                                     <View style={s.corpsEvenement}>
                                         <Text style={s.titreEvenement} numberOfLines={1}>
-                                            {evenement.titre?.trim() || t('month.untitled')}
+                                            {titreEvenement(evenement) || t('month.untitled')}
                                         </Text>
                                         {!!description && <Text style={s.descriptionEvenement} numberOfLines={1}>{description}</Text>}
                                         {(multiJours || evenement.regle_recurrence || evenement.type === 'recurrence' || !!evenement.prive) && (

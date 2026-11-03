@@ -16,6 +16,8 @@ export type EvenementEnConflit = {
     type?: string
     /** 'editeur' may delete the event; any other value can only leave it. */
     privilege_membre?: string | null
+    /** 'indisponibilite': one of the member's unavailabilities (Philip — user story 20). */
+    nature?: string
 }
 
 /** POST /evenements/ body of the event being created. */

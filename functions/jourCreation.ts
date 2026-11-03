@@ -59,8 +59,9 @@ export function estJourPasse(jour: DateTime): boolean {
  *   whole days are kept as is, even today, so the form opens with "all day" on;
  * - a range already over is dropped.
  *
- * @author Philip — user story 20: shared by create.tsx (where this
- *   logic lived, user story 5 / rectification) and indisponibilite.tsx
+ * @author Philip — user story 20: shared by both pages of the creation screen,
+ *   CreationEvenement (where this logic lived, user story 5 / rectification) and
+ *   CreationIndisponibilite, so an unavailability opens on the same range as an event
  * @param {string} [start] - ISO start.
  * @param {string} [end] - ISO end.
  * @param {DateTime} [maintenant=DateTime.now()]
@@ -87,8 +88,8 @@ export function plagePreremplie(start?: string, end?: string, maintenant: DateTi
  * the pickers' minimum is set when the form opens, so the start can pass while it
  * is filled). An all-day range starts at midnight: today is still allowed.
  *
- * @author Philip — user story 20: shared by create.tsx (where this
- *   check lived, rectification) and indisponibilite.tsx
+ * @author Philip — user story 20: shared by CreationEvenement (where this check
+ *   lived, rectification) and CreationIndisponibilite — no unavailability in the past either
  * @param {DateTime} debut
  * @param {DateTime} fin
  * @returns {boolean}

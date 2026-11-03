@@ -26,6 +26,7 @@ import { Participant } from "@/types/invites";
 import { DateTime } from "luxon";
 import { useEventDraft } from "@/contextes/contexteEventDraft";
 import FriendLine from "./friendLine";
+import { paramsPlage } from "@/functions/evenementsMembre";
 
 export type FriendAPIRes = {
     temps_amitie: string,
@@ -69,6 +70,24 @@ function EventListAmiContent() {
 
     const [amis, setAmis] = useState<Participant[]>([])
     const [idsSelec, setIdsSelec] = useState(new Set())
+    // Friends with an unavailability over the event's range: shown "unavailable then"
+    // and can't be picked (the API would leave them out anyway). Philip — user story 20.
+    const [idsIndisponibles, setIdsIndisponibles] = useState<Set<string>>(new Set())
+
+    useEffect(() => {
+        if (!select) return
+        let annule = false
+        api.get('/disponibilites/indisponibles', { params: paramsPlage(start, end) })
+            .then((reponse) => {
+                if (annule) return
+                const ids = new Set<string>(reponse.data?.amis ?? [])
+                setIdsIndisponibles(ids)
+                // Already picked before the range changed: unpicked.
+                setIdsSelec((prev) => new Set([...prev].filter((id) => !ids.has(id as string))))
+            })
+            .catch((error) => { if (!annule) catcher(error, t('errors.loadFailed')) })
+        return () => { annule = true }
+    }, [select, start, end])
 
     const getAmis = async () => {
         try {
@@ -117,7 +136,8 @@ function EventListAmiContent() {
             if (complet) disponibles.add(id)
         }
         const availableFriends = [...disponibles]
-            .filter(id => !invitedIds.has(id))
+            // Unavailable then: not offered (Philip — user story 20).
+            .filter(id => !invitedIds.has(id) && !idsIndisponibles.has(id))
             .map(id => friendsById.get(id))
             .filter((friend): friend is Participant => friend !== undefined)
             .map(friend => ({ ...friend, suggestedIntervals: [] }))
@@ -151,7 +171,7 @@ function EventListAmiContent() {
             { title: t('list.availableForSlot', {start: stringStart, end:stringEnd}), data: availableFriends, isAvailableSection: true },
             { title: t('list.otherFriends'), data: otherFriends, isAvailableSection: false },
         ]
-    }, [amis, end, excludedFriendIds, friendsSuggestions, invites, start, t])
+    }, [amis, end, excludedFriendIds, friendsSuggestions, invites, start, t, idsIndisponibles])
 
     useFocusEffect(useCallback(() => {
         getAmis()
@@ -242,7 +262,7 @@ function EventListAmiContent() {
                         
                         const selectionne = select && idsSelec.has(item.id)
                         return (
-                            <FriendLine friend={item} listType={type} selected={selectionne} suggestedIntervals={item.suggestedIntervals ?? []} onPress={() => {
+                            <FriendLine friend={item} listType={type} selected={selectionne} indisponible={select && idsIndisponibles.has(item.id)} suggestedIntervals={item.suggestedIntervals ?? []} onPress={() => {
                                 if (select) {
                                     setIdsSelec(prev => {
                                         const next = new Set(prev)

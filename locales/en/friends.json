@@ -9,7 +9,8 @@
 		"moreSuggestions": "+ {{count}} more time slots",
 		"loadMore": "load more available friends",
 		"friendSince": "friend since {{date}}",
-		"emptyState": "add friends using the option:"
+		"emptyState": "add friends using the option:",
+		"unavailable": "unavailable then"
 	},
 	"add": {
 		"codeLabel": "Friend code",

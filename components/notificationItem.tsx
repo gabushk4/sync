@@ -3,7 +3,7 @@ import { DateTime } from "luxon";
 import { useEffect, useState } from "react";
 import { useTranslation } from 'react-i18next';
 import { Image, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from "react-native";
-import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
+import Animated, { FadeIn, FadeOut, LinearTransition, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 
 import { useAPI } from "@/contextes/contexteAPI";
 import { useFont } from "@/contextes/contexteFont";
@@ -16,18 +16,18 @@ import { convertirTimestampDateCourte, convertirTimestampHeure, convertToWhen } 
 import { convertUTCToLocal } from "@/functions/convertirUTCenLocal";
 import log from "@/functions/log";
 
-import Haptics from "@/abstractions/haptics";
-
 import ToastAbs from "@/abstractions/toastAbs";
 import { withSpringConfig, withTimingConfig } from "@/constants/ReanimatedConfs";
 import { toastTypes } from "@/constants/toastConfig";
 import AppIcon from "@/svgs/appIcon";
 import Icon from "@react-native-vector-icons/ionicons";
 
-import ouvrirRevueInvitation, { ouvrirDecisionInvitation } from "@/functions/ouvrirRevueInvitation";
+import ouvrirRevueInvitation from "@/functions/ouvrirRevueInvitation";
+import PanneauGestionEvenement from "@/components/panneauGestionEvenement";
 import Spinner from "@/components/spinner";
 import useDecisionInvitation from "@/hooks/useDecisionInvitation";
-import { invitationDepuisDetails } from "@/types/invitation";
+import useDetailsEvenement from "@/hooks/useDetailsEvenement";
+import { bornesLocales, invitationDepuisDetails } from "@/types/invitation";
 
 type ItemProps = {
     item: Notification
@@ -68,14 +68,30 @@ export default function NotificationItem({ item, index, vu }: ItemProps) {
     // level; there's no `payload` anymore.
     const categorie = categorieNotification(item.type)
     const demandeAmiEnAttente = item.type === 'demande_ami' && item.statut_metier === 'en_attente'
+    // A postponement vote: yes / no buttons (the actions); its answer reads
+    // "available" / "not available". Philip — user story 23.
+    const voteReport = item.type === 'postpone_vote'
+    // Event the notification is about (the API sends it for every event notification).
+    const idEvenement: string | null = categorie === 'evenements'
+        ? (item.id_evenement ?? item.details?.id_evenement ?? null)
+        : null
     const nonLue = item.statut_notification === "non_lue"
+
+    // The event is loaded with the card, not on tapping it: whether it's already over
+    // shows in the header, and the card unfolds with it ready (the invited occurrence's
+    // bounds as strings, so a rebuilt `invitation` object doesn't reload it).
+    // Philip — rectification (event managed from its notification).
+    const bornesInvitation = invitation ? bornesLocales(invitation) : null
+    const details = useDetailsEvenement(idEvenement, bornesInvitation?.debut?.toISO() ?? undefined, bornesInvitation?.fin?.toISO() ?? undefined)
+    const evenementPasse = !!details.event?.fin && details.event.fin < DateTime.now()
 
     const [selectionner, setSelectionner] = useState(false)
     const [notificationsSelec, setNotificationsSelec] = useState<Array<string>>([])
-    
-    const [lines, setLines] = useState(1)
+
     const [montrerDetails, setMontrerDetails] = useState<boolean>(false)
-    const [montrerExplExpiration, setMontrerExplExpiration] = useState(false)
+    // Message lines shown: more once unfolded. Derived, not a state set from the effect
+    // below (the React Compiler lint rejects a synchronous setState in an effect).
+    const lines = montrerDetails ? 4 : 2
 
     const icones = {
         corbeille:
@@ -90,10 +106,6 @@ export default function NotificationItem({ item, index, vu }: ItemProps) {
             colorScheme === "dark"
                 ? require("@/assets/icones/croix-dark-icon.png")
                 : require("@/assets/icones/croix-light-icon.png"),
-        expiration:
-            colorScheme === "dark"
-                ? require("@/assets/icones/horloge-dark-icon.png")
-                : require("@/assets/icones/horloge-light-icon.png"),
     }
 
     const heightMaxNotif = demandeAmiEnAttente ? 152 : 124
@@ -106,9 +118,6 @@ export default function NotificationItem({ item, index, vu }: ItemProps) {
     const bottomOptionsNotif = useSharedValue(16)
     const heightNotif = useSharedValue(heightMinNotif)
     const backgroundColor = useSharedValue(backgroundDef)
-    const previewExpirationOpacity = useSharedValue(1)
-    const expirationOpacity = useSharedValue(1)
-    const expirationExplicationOpacity = useSharedValue(0)
 
     /**
      * Runs one of the notification's actions (e.g. accept/refuse an event
@@ -191,74 +200,47 @@ export default function NotificationItem({ item, index, vu }: ItemProps) {
     const notifAnime = useAnimatedStyle(() => {
         "worklet"
         return {
-            height: heightNotif.value,
-            backgroundColor: backgroundColor.value,
+            height: heightNotif.get(),
+            backgroundColor: backgroundColor.get(),
+        }
+    })
+
+    // An event notification is one block that grows with its content (no fixed height).
+    const fondAnime = useAnimatedStyle(() => {
+        "worklet"
+        return {
+            backgroundColor: backgroundColor.get(),
         }
     })
 
     const optionsNotifAnime = useAnimatedStyle(() => {
         "worklet"
         return {
-            opacity: opaciteOptionsNotif.value,
-            height: heightOptionsNotif.value,
-            bottom: bottomOptionsNotif.value,
-        }
-    })
-
-    const expirationPreviewIconAnime = useAnimatedStyle(() => {
-        "worklet"
-        return {
-            opacity: previewExpirationOpacity.value,
-        }
-    })
-
-    const explicationExpirationAnime = useAnimatedStyle(() => {
-        "worklet"
-        return {
-            opacity: expirationExplicationOpacity.value,
-        }
-    })
-
-    const expirationAnime = useAnimatedStyle(() => {
-        "worklet"
-        return {
-            opacity: expirationOpacity.value,
+            opacity: opaciteOptionsNotif.get(),
+            height: heightOptionsNotif.get(),
+            bottom: bottomOptionsNotif.get(),
         }
     })
 
     const typeLabel = t(`types.${categorie}`)
 
     const montrerDetailsNotif = () => {
-        heightNotif.value = withTiming(heightMaxNotif, withTimingConfig)
-        previewExpirationOpacity.value = withTiming(0, withTimingConfig)
-        opaciteOptionsNotif.value = withTiming(1, withTimingConfig)
-        heightOptionsNotif.value = withTiming(40, withTimingConfig)
-        bottomOptionsNotif.value = withSpring(-8, withSpringConfig)
-        setLines(4)
+        heightNotif.set(withTiming(heightMaxNotif, withTimingConfig))
+        opaciteOptionsNotif.set(withTiming(1, withTimingConfig))
+        heightOptionsNotif.set(withTiming(40, withTimingConfig))
+        bottomOptionsNotif.set(withSpring(-8, withSpringConfig))
     }
 
     const masquerDetailsNotif = () => {
-        heightNotif.value = withTiming(heightMinNotif, withTimingConfig)
-        previewExpirationOpacity.value = withTiming(1, withTimingConfig)
-        opaciteOptionsNotif.value = withTiming(0, { duration: 150 })
-        heightOptionsNotif.value = withTiming(1, withTimingConfig)
-        bottomOptionsNotif.value = withSpring(16, withSpringConfig)
-        setLines(2)
-    }
-
-    const montrerExplicationsExpiration = () => {
-        expirationOpacity.value = withTiming(0, withTimingConfig)
-        expirationExplicationOpacity.value = withTiming(1, withTimingConfig)
-    }
-
-    const masquerExplicationExpiration = () => {
-        expirationOpacity.value = withTiming(1, withTimingConfig)
-        expirationExplicationOpacity.value = withTiming(0, withTimingConfig)
+        heightNotif.set(withTiming(heightMinNotif, withTimingConfig))
+        opaciteOptionsNotif.set(withTiming(0, { duration: 150 }))
+        heightOptionsNotif.set(withTiming(1, withTimingConfig))
+        bottomOptionsNotif.set(withSpring(16, withSpringConfig))
     }
 
     const selectNotif = () => {
         setNotificationsSelec((prev) => [...prev, item.id])
-        backgroundColor.value = withTiming(colors.secondary, { duration: 500 })
+        backgroundColor.set(withTiming(colors.secondary, { duration: 500 }))
     }
 
     const typeIcon = () => {
@@ -278,17 +260,6 @@ export default function NotificationItem({ item, index, vu }: ItemProps) {
     }
 
     useEffect(() => {
-        if (montrerExplExpiration) {
-            montrerExplicationsExpiration()
-            const timer = setTimeout(() => {
-                masquerExplicationExpiration()
-                setMontrerExplExpiration(false)
-            }, 1500)
-            return () => clearTimeout(timer)
-        }
-    }, [montrerExplExpiration])
-
-    useEffect(() => {
         //log("montrer details ", item.id, montrerDetails)
         if (montrerDetails === true) {
             montrerDetailsNotif()
@@ -299,17 +270,32 @@ export default function NotificationItem({ item, index, vu }: ItemProps) {
 
     let expired = false
     if (item.expiration === "expired") expired = true
+
+    // Unfolded, an event notification is managed right in the card (PanneauGestionEvenement)
+    // instead of opening the details page: the decision while the invitation awaits an
+    // answer, else the actions of the member's role. Philip — rectification (user story 23).
+    const invitationEnAttente = invitation && item.statut_metier === 'en_attente' && !expired ? invitation : null
+    // Never answered, and now too late to.
+    const invitationExpiree = !!invitation && item.statut_metier === 'en_attente' && expired
     // The API sends "expired" instead of a date once the invitation has expired
     // (sync_api validateExpiration.js); convertUTCToLocal throws on it and crashed the list.
     const expiration = item.expiration && !expired ? convertUTCToLocal(item.expiration) : undefined
-    let expirationLabel
 
-    if (expired)
+    // Header label, seen without unfolding the card: the event is over, the invitation /
+    // request expired, or when it will (only while unanswered). Philip — rectification.
+    const enAttenteDeReponse = item.statut_metier !== 'acceptee' && item.statut_metier !== 'refusee'
+    let expirationLabel: string | undefined
+    if (evenementPasse)
+        expirationLabel = t('expiration.eventPastShort')
+    else if (expired && enAttenteDeReponse)
         expirationLabel = t('expiration.expired')
-    else if(expiration) {
+    else if (expiration && enAttenteDeReponse) {
         const expirationNowDiff = expiration.diff(DateTime.now(), 'days').days
-        expirationLabel = expirationNowDiff < 1 ? convertirTimestampHeure(expiration) : convertirTimestampDateCourte(expiration)
-    }    
+        expirationLabel = t('expiration.expires', {
+            quand: expirationNowDiff < 1 ? convertirTimestampHeure(expiration) : convertirTimestampDateCourte(expiration),
+        })
+    }
+    const expirationAtteinte = evenementPasse || expired
 
     const s = StyleSheet.create({
         container: {
@@ -426,10 +412,31 @@ export default function NotificationItem({ item, index, vu }: ItemProps) {
         })
         : null
 
+    // User story 9: once answered, show the answer instead of the buttons.
+    // Pending is shown too for an event notification (Philip — user story 23).
+    const statut = (item.statut_metier === "acceptee" || item.statut_metier === "refusee"
+        || (idEvenement && item.statut_metier === "en_attente")) ? (
+        <Text style={[s.reponse, {
+            color: item.statut_metier === "acceptee" ? colors.success
+                : item.statut_metier === "refusee" ? colors.error : colors.warning,
+        }]}>
+            {t(`${voteReport ? 'vote' : 'answer'}.${item.statut_metier}`)}
+        </Text>
+    ) : null
+
+    const corbeille = (style: object) => (
+        <TouchableOpacity onPress={() => supprNotif([item.id])} style={[{ position: "relative", right: 0, backgroundColor: colors.error, borderColor: colors.border }, style]}>
+            <Image source={icones.corbeille} style={{ width: "80%", height: "80%" }} resizeMode="contain" />
+        </TouchableOpacity>
+    )
+
     return (
         <View style={s.container}>
             {decision.conflit}
-            <Animated.View style={[notifAnime, s.notif]}>
+            <Animated.View
+                style={[idEvenement ? fondAnime : notifAnime, s.notif]}
+                layout={idEvenement ? LinearTransition.duration(200) : undefined}
+            >
                 <View
                     style={{
                         height: 32,
@@ -446,25 +453,29 @@ export default function NotificationItem({ item, index, vu }: ItemProps) {
                             {typeLabel}
                         </Text>
                     </View>
-                    <Text style={s.timestamp}>
-                        {/* convertUTCToLocal throws without a date, so the `??` fallback never
-                            ran and one notification without date crashed the whole feed.
-                            Rectification (Philip). */}
-                        {convertToWhen(item.date_envoie ? convertUTCToLocal(item.date_envoie) : DateTime.now().toLocal()) as string}
-                    </Text>
+                    <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+                        {expirationLabel && (
+                            <View style={{ flexDirection: "row", gap: 3, alignItems: "center" }}>
+                                <Icon name="time-outline" color={expirationAtteinte ? colors.error : colors.warning} size={14} />
+                                <Text style={[s.timestamp, { color: expirationAtteinte ? colors.error : colors.warning }]}>
+                                    {expirationLabel}
+                                </Text>
+                            </View>
+                        )}
+                        <Text style={s.timestamp}>
+                            {/* convertUTCToLocal throws without a date, so the `??` fallback never
+                                ran and one notification without date crashed the whole feed.
+                                Rectification (Philip). */}
+                            {convertToWhen(item.date_envoie ? convertUTCToLocal(item.date_envoie) : DateTime.now().toLocal()) as string}
+                        </Text>
+                    </View>
                 </View>
                 <TouchableOpacity
                     onPress={() => {
-                        // A pending invitation opens its decision page (event, organizer,
-                        // participants, accept / refuse / adjust my schedule).
-                        // Philip — user story 8.
-                        if (!selectionner && invitation && item.statut_metier === 'en_attente' && !expired) {
-                            ouvrirDecisionInvitation(invitation)
-                            return
-                        }
+                        // An event notification unfolds in place: status, then its details and
+                        // choices, all in this one block (Philip — user story 23 / rectification).
                         if (!selectionner) {
                             setMontrerDetails(!montrerDetails)
-                            setMontrerExplExpiration(true)
                         } else {
                             if (!notificationsSelec.includes(item.id)) {
                                 selectNotif()
@@ -479,110 +490,80 @@ export default function NotificationItem({ item, index, vu }: ItemProps) {
                         setSelectionner(true)
                         selectNotif()
                     }}
-                    style={{
-                        flex: demandeAmiEnAttente ? 0 : 1,
-                        flexDirection: "row",
-                        justifyContent: "space-between",
-                        height: demandeAmiEnAttente ? 48 : "80%",
-                    }}
+                    style={idEvenement
+                        ? { flexDirection: "row", justifyContent: "space-between", minHeight: 32 }
+                        : {
+                            flex: demandeAmiEnAttente ? 0 : 1,
+                            flexDirection: "row",
+                            justifyContent: "space-between",
+                            height: demandeAmiEnAttente ? 48 : "80%",
+                        }}
                 >
-                    <View style={{ paddingVertical: 4, paddingHorizontal: 8, height: "100%" }}>
+                    <View style={{ paddingVertical: 4, paddingHorizontal: 8, ...(idEvenement ? { flex: 1, paddingRight: 20 } : { height: "100%" }) }}>
                         <Text style={{ color: colors.text, fontSize: 16, fontFamily: fonts.body, fontWeight: nonLue ? "bold" : "100" }} numberOfLines={lines}>
                             {item.message}
                         </Text>
                     </View>
                     {nonLue && <View style={s.unreadFlag} />}
-                    {expired && (
-                        <Animated.View style={[expirationPreviewIconAnime, { height: "100%", width: "20%", alignItems: "center", justifyContent: "center" }]}> 
-                            <Image source={icones.expiration} style={{ height: "70%" }} resizeMode="contain" />
-                        </Animated.View>
-                    )}
                 </TouchableOpacity>
                 {demandeAmiEnAttente && (
                     <View style={{ flexDirection: 'row', gap: 10, paddingHorizontal: 10, paddingBottom: 6 }}>
                         {actionsDemandeAmi}
                     </View>
                 )}
+                {/* Unfolded event notification: status, then the details / choices, inside
+                    the card itself (Philip — rectification). */}
+                {idEvenement && montrerDetails && !selectionner && (
+                    <Animated.View
+                        entering={FadeIn.duration(200)}
+                        exiting={FadeOut.duration(150)}
+                        style={{ borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border, marginTop: 4 }}
+                    >
+                        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 8, paddingTop: 8 }}>
+                            {statut ?? <View />}
+                            <View style={{ flexDirection: "row", alignItems: "center", height: 36 }}>
+                                {/* e.g. a postponement vote's yes / no; an invitation's accept /
+                                    refuse are in the panel below. */}
+                                {!invitation && options}
+                                {corbeille({ height: 32, width: 32, borderRadius: 100, alignItems: "center", justifyContent: "center" })}
+                            </View>
+                        </View>
+                        <PanneauGestionEvenement
+                            idEvenement={idEvenement}
+                            event={details.event}
+                            erreur={details.erreur}
+                            recharger={details.recharger}
+                            passe={evenementPasse}
+                            invitation={invitationEnAttente}
+                            invitationExpiree={invitationExpiree}
+                            decision={decision}
+                            onTermine={() => notifRefresh?.forceRefresh()}
+                        />
+                    </Animated.View>
+                )}
             </Animated.View>
-            <Animated.View
-                style={[
-                    optionsNotifAnime,
-                    {
-                        position: "relative",
-                        width: "100%",
-                        justifyContent: "space-between",
-                        flexDirection: "row",
-                        paddingHorizontal: 16,
-                    },
-                ]}
-            >
-                <View style={{ flexDirection: "row", position: "relative", width: "50%" }}>
-                    {item.expiration && (
-                        <TouchableOpacity
-                            style={[
-                                s.optionBouton,
-                                {
-                                    position: "relative",
-                                    right: expired ? 4 : 0,
-                                    gap: 8,
-                                    width: expired ? "170%" : "60%",
-                                    flexDirection: "row",
-                                    alignItems: "center",
-                                    justifyContent: expired ? "center" : "space-around",
-                                    borderColor: colors.warning,
-                                    backgroundColor: colors.card,
-                                },
-                            ]}
-                            onPress={() => {
-                                setMontrerExplExpiration(true)
-                                Haptics.clickLeger()
-                            }}
-                        >
-                            <Animated.Image source={icones.expiration} style={[expirationAnime, { height: "70%" }]} resizeMode="contain" />
-                            <Animated.Text
-                                style={[
-                                    explicationExpirationAnime,
-                                    {
-                                        position: "absolute",
-                                        left: 16,
-                                        top: 8,
-                                        fontFamily: fonts.number,
-                                        color: colors.text,
-                                        fontSize: 16,
-                                        zIndex: 999,
-                                    },
-                                ]}
-                            >
-                                {t('expiration.label')}
-                            </Animated.Text>
-                            <Animated.Text
-                                style={[
-                                    expirationAnime,
-                                    {
-                                        fontFamily: fonts.number,
-                                        color: colors.text,
-                                        fontSize: 16,
-                                    },
-                                ]}
-                            >
-                                {expirationLabel}
-                            </Animated.Text>
-                        </TouchableOpacity>
-                    )}
-                </View>
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    {/* User story 9: once answered, show the answer instead of the buttons. */}
-                    {(item.statut_metier === "acceptee" || item.statut_metier === "refusee") && (
-                        <Text style={[s.reponse, { color: item.statut_metier === "acceptee" ? colors.success : colors.error }]}>
-                            {t(`answer.${item.statut_metier}`)}
-                        </Text>
-                    )}
-                    {!demandeAmiEnAttente && options}
-                    <TouchableOpacity onPress={() => supprNotif([item.id])} style={[{ position: "relative", right: 0, backgroundColor: colors.error, borderColor: colors.border }]}> 
-                        <Image source={icones.corbeille} style={{ width: "80%", height: "80%" }} resizeMode="contain" />
-                    </TouchableOpacity>
-                </View>
-            </Animated.View>
+            {/* Other notifications: their answer / buttons under the card, as before. */}
+            {!idEvenement && (
+                <Animated.View
+                    style={[
+                        optionsNotifAnime,
+                        {
+                            position: "relative",
+                            width: "100%",
+                            justifyContent: "space-between",
+                            flexDirection: "row",
+                            paddingHorizontal: 16,
+                        },
+                    ]}
+                >
+                    <View />
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                        {statut}
+                        {!demandeAmiEnAttente && options}
+                        {corbeille({})}
+                    </View>
+                </Animated.View>
+            )}
         </View>
     )
 }

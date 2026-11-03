@@ -23,12 +23,9 @@ export default function HomeLayout() {
             <Stack.Screen
                 name="calendrier" options={{headerBackVisible:true, headerBackButtonDisplayMode:'minimal', headerTitle:t('navigation.calendar')}}
             />
+            {/* Event and unavailability pages, swiped (Philip — user story 20). */}
             <Stack.Screen
                 name="create" options={{headerBackVisible:true, headerBackButtonDisplayMode:'minimal', headerTitle:t('navigation.create')}}
-            />
-            {/* Philip — user story 20. */}
-            <Stack.Screen
-                name="indisponibilite" options={{headerBackVisible:true, headerBackButtonDisplayMode:'minimal', headerTitle:t('navigation.unavailability')}}
             />
             {/* Invitation review ("adjust my schedule" for an invitation in conflict).
                 Philip — user story 8. */}

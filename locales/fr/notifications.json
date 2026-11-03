@@ -6,8 +6,11 @@
 		"evenements": "évènements"
 	},
 	"expiration": {
-		"label": "expiration",
-		"expired": "expirée"
+		"expired": "expirée",
+		"expires": "expire {{quand}}",
+		"eventPastShort": "passé",
+		"eventPast": "Cet évènement est déjà passé.",
+		"invitationExpired": "Cette invitation a expiré : il est trop tard pour y répondre."
 	},
 	"list": {
 		"emptyState": "Il n'y a rien pour toi...\nAlors profite de ce moment pour toi !",
@@ -16,7 +19,13 @@
 	},
 	"answer": {
 		"acceptee": "acceptée",
-		"refusee": "refusée"
+		"refusee": "refusée",
+		"en_attente": "en attente"
+	},
+	"vote": {
+		"acceptee": "disponible",
+		"refusee": "pas disponible",
+		"en_attente": "pas encore voté"
 	},
 	"refused": {
 		"link": "refusées",

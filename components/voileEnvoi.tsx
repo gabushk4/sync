@@ -7,8 +7,8 @@ import { StyleSheet, View } from 'react-native'
 /**
  * Spinner centered over a form while it is being sent (touches go through).
  *
- * @author Philip — user story 20: shared by create.tsx (where it lived,
- *   rectification) and indisponibilite.tsx
+ * @author Philip — user story 20: shared by CreationEvenement (where it lived,
+ *   rectification) and CreationIndisponibilite, the two pages of the creation screen
  * @returns {JSX.Element}
  */
 export default function VoileEnvoi() {

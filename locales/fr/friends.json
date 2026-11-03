@@ -9,7 +9,8 @@
 		"moreSuggestions": "+ {{count}} autres créneaux",
 		"loadMore": "charger plus d'amis disponibles",
 		"friendSince": "ami depuis le {{date}}",
-		"emptyState": "Ajoute des amis grâce à l'option :"
+		"emptyState": "Ajoute des amis grâce à l'option :",
+		"unavailable": "indisponible à ce moment"
 	},
 	"add": {
 		"codeLabel": "Code d'ami",

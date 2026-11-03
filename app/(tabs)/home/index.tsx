@@ -28,7 +28,7 @@ import EventsList, { RETRAIT_RANGEE } from '@/components/eventsList';
 import ProfilPic from '@/components/pfp';
 import Spinner from '@/components/spinner';
 import Timeline from '@/components/timeline';
-import TrousHoraire from '@/components/trousHoraire';
+import TrousHoraire, { PlageChoisie } from '@/components/trousHoraire';
 import { useFont } from '@/contextes/contexteFont';
 import { useMembre } from '@/contextes/contexteMembre';
 import { useTimeline } from '@/contextes/contexteTimeline';
@@ -163,6 +163,13 @@ export default function Home() {
     ...(rechercheRef.current ? { recherche: rechercheRef.current } : {}),
   })
 
+  // Declared before appliquerRecherche, which reads windowStartRef: used before its
+  // declaration, the React Compiler lint didn't see it as a ref and rejected the later
+  // `windowStartRef.current = ...`. Rectification (Philip).
+  const [windowStart, setWindowStart] = useState<DateTime>(() => DateTime.now().startOf('day').minus({ days: 3 }))
+  const windowStartRef = useRef(windowStart)
+  const windowStartMillis = useSharedValue(windowStart.toMillis())
+
   /**
    * Applies a search to the friends' rows (reloads them right away).
    *
@@ -211,9 +218,6 @@ export default function Home() {
   }
   const [userEvents, setUserEvents] = useState<Array<any>>([])
   const [todayDateTime, setTodayDateTime] = useState<DateTime>()
-  const [windowStart, setWindowStart] = useState<DateTime>(() => DateTime.now().startOf('day').minus({ days: 3 }))
-  const windowStartRef = useRef(windowStart)
-  const windowStartMillis = useSharedValue(windowStart.toMillis())
   // Forward scroll changes to JS only when the visible calendar day changes or
   // the window itself is rebased, never on every animation frame.
   const dernierePositionTraitee = useSharedValue('')
@@ -263,7 +267,7 @@ export default function Home() {
    * @returns {number} 0 to 23.
    */
   const heureAffichee = () => {
-    const offset = offsetAccueilRef.current ?? offsetX.value
+    const offset = offsetAccueilRef.current ?? offsetX.get()
     return Math.floor(offset / (pxHeures + L_HEURES)) % 24
   }
 
@@ -291,10 +295,15 @@ export default function Home() {
   // but they don't occupy the day: no block on the timeline, no "fully booked" card,
   // and they don't remove common free slots.
   const evenementsHoraire = useMemo(() => userEvents.filter((ev: any) => !estJourFerie(ev)), [userEvents])
-  // Unavailabilities in red on the member's row (Philip — user story 20).
+  // Unavailabilities in red on the member's row (Philip — user story 20), group
+  // events in their own color (Philip — user story 23).
   const evenementsMembreAffiches = useMemo(
-    () => evenementsHoraire.map((ev: any) => (ev.nature === 'indisponibilite' ? { ...ev, couleur: colors.indisponible } : ev)),
-    [evenementsHoraire, colors.indisponible]
+    () => evenementsHoraire.map((ev: any) => (
+      ev.nature === 'indisponibilite' ? { ...ev, couleur: colors.indisponible }
+        : ev.groupe ? { ...ev, couleur: colors.groupe }
+        : ev
+    )),
+    [evenementsHoraire, colors.indisponible, colors.groupe]
   )
   const feriesDuJour = useMemo(() => joursFeriesDuJour(userEvents, todayDateTime), [userEvents, todayDateTime])
 
@@ -355,6 +364,8 @@ export default function Home() {
   // Pre-fills the create screen with the day currently displayed, at the suggested
   // hour (see debutCreationPourJour).
   const debutCreation = todayDateTime && debutCreationPourJour(todayDateTime)
+  // Range picked on the member's row (TrousHoraire), or null (Philip — user story 20).
+  const [plageChoisie, setPlageChoisie] = useState<PlageChoisie | null>(null)
 
 
   //SharedValues
@@ -366,7 +377,7 @@ export default function Home() {
   
   //Animated Styles
   const loadingAnimated = useAnimatedStyle(() => ({
-    opacity: chargementShared.value
+    opacity: chargementShared.get()
       ? withRepeat(withTiming(AnimatedStyleMinVal, { duration: 500, easing: Easing.inOut(Easing.ease) }), -1, true)
       : withTiming(1, { duration: 500 }),
   }));
@@ -381,7 +392,7 @@ export default function Home() {
   useEffect(() => {
     if (!todayDateTime) return
     const aujourdhui = DateTime.now().startOf('day')
-    jourRelatif.value = todayDateTime < aujourdhui ? -1 : todayDateTime > aujourdhui ? 1 : 0
+    jourRelatif.set(todayDateTime < aujourdhui ? -1 : todayDateTime > aujourdhui ? 1 : 0)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [todayDateTime])
 
@@ -422,16 +433,16 @@ export default function Home() {
       // (the tab showed "null"); the calendar's 'MMMM' uses the same 'MMM' family.
       : abregerMois(maintenantOnglet)
   useAnimatedReaction(
-    () => jourRelatif.value !== 0 || afficherRetourMaintenant.value.afficher,
+    () => jourRelatif.get() !== 0 || afficherRetourMaintenant.get().afficher,
     (visible, precedent) => {
       if (visible !== precedent) scheduleOnRN(changerVisibiliteOnglet, visible)
     }
   )
 
   const ongletAujourdhuiAnime = useAnimatedStyle(() => {
-    const visible = jourRelatif.value !== 0 || afficherRetourMaintenant.value.afficher
-    const aDroite = jourRelatif.value < 0
-      || (jourRelatif.value === 0 && afficherRetourMaintenant.value.left === LEFT_GO_TO_AFTER)
+    const visible = jourRelatif.get() !== 0 || afficherRetourMaintenant.get().afficher
+    const aDroite = jourRelatif.get() < 0
+      || (jourRelatif.get() === 0 && afficherRetourMaintenant.get().left === LEFT_GO_TO_AFTER)
     // Only the side away from the screen's edge is rounded.
     const arrondiGauche = withTiming(aDroite ? RAYON_ONGLET : 0, { duration: 200 })
     const arrondiDroite = withTiming(aDroite ? 0 : RAYON_ONGLET, { duration: 200 })
@@ -501,8 +512,13 @@ export default function Home() {
                     url: ev.url,
                     type: ev.type,
                     nature: ev.nature,
-                    titre: ev.prive ? undefined : ev.titre,
+                    // The API decides: no title for a private event the member isn't in,
+                    // the title of one they share with this friend (Philip — rectification).
+                    titre: ev.titre ?? undefined,
                     prive: ev.prive,
+                    // A friend's unavailability in red too, like the member's own: their
+                    // friends see at a glance when not to invite them (Philip — user story 20).
+                    couleur: ev.nature === 'indisponibilite' ? colors.indisponible : undefined,
                     debut: start?.toMillis(),
                     fin: end?.toMillis()
                   }
@@ -551,7 +567,7 @@ export default function Home() {
     const cle = `${debut.toISODate()}/${fin.toISODate()}`
     if (fenetreEnCoursRef.current === cle) return
     windowStartRef.current = debut
-    windowStartMillis.value = debut.toMillis()
+    windowStartMillis.set(debut.toMillis())
     fenetreEnCoursRef.current = cle
     setWindowStart(debut)
     jourDemandeRef.current = debut
@@ -611,7 +627,7 @@ export default function Home() {
   const appliquerJourCalendrier = (jour: DateTime) => {
     if (jourAfficheRef.current?.hasSame(jour, 'day')) return
     setTodayDateTime(jour.startOf('day'));
-    dateAujShared.value = jour.toMillis();
+    dateAujShared.set(jour.toMillis());
     jourDemandeRef.current = jour.startOf('day');
     afficherDepuisCache(jour);
     const heure = heureAffichee()
@@ -637,7 +653,7 @@ export default function Home() {
     const newDt = todayDateTime.plus({ days: delta });
     const heure = heureAffichee()
     setTodayDateTime(newDt);
-    dateAujShared.value = newDt.toMillis();
+    dateAujShared.set(newDt.toMillis());
     refreshAt(newDt);
     placerSurJourAffiche(heure)
   };
@@ -656,7 +672,7 @@ export default function Home() {
     const dateVue = heuresVersDate(Math.max(0, heures), debut)
     if (!todayDateTime?.hasSame(dateVue, 'day')) {
       setTodayDateTime(dateVue.startOf('day'))
-      dateAujShared.value = dateVue.toMillis()
+      dateAujShared.set(dateVue.toMillis())
     }
     // Keep the seven-day window moving by one calendar day at a time. This limits
     // refetches to one per 24h scrolled and preserves the visible instant.
@@ -664,12 +680,12 @@ export default function Home() {
       const deltaJours = heures < 24 ? -1 : 1
       const nouveauDebut = debut.plus({ days: deltaJours })
       windowStartRef.current = nouveauDebut
-      windowStartMillis.value = nouveauDebut.toMillis()
+      windowStartMillis.set(nouveauDebut.toMillis())
       const nouvelleCle = `${nouveauDebut.toISODate()}/${nouveauDebut.plus({ days: JOURS_FENETRE }).toISODate()}`
       if (fenetreEnCoursRef.current === nouvelleCle) return
       fenetreEnCoursRef.current = nouvelleCle
       setWindowStart(nouveauDebut)
-      offsetX.value = offset - deltaJours * 24 * cellule
+      offsetX.set(offset - deltaJours * 24 * cellule)
       jourDemandeRef.current = nouveauDebut
       const nouvelleFin = nouveauDebut.plus({ days: JOURS_FENETRE })
       cacheJoursRef.current.clear()
@@ -717,71 +733,71 @@ export default function Home() {
     // hasSame: comparing only `.day` missed e.g. the 10th of another month.
     if (!todayDateTime?.hasSame(now, 'day')) {
       setTodayDateTime(now.startOf('day'));
-      dateAujShared.value = now.toMillis();
+      dateAujShared.set(now.toMillis());
       refreshAt(now)
     }
-    afficherRetourMaintenant.value = {...afficherRetourMaintenant.value, afficher:false}
+    afficherRetourMaintenant.set({...afficherRetourMaintenant.get(), afficher:false})
   };
   const lockedAxis = useSharedValue<string | null>(null)
 
   const maxY = useSharedValue(0)
   const zoneH = useRef(0)
   const majMaxY = () => {
-    maxY.value = Math.max(0, amisAffiches.length * (LIST_HEIGHT + 4) - zoneH.current)
+    maxY.set(Math.max(0, amisAffiches.length * (LIST_HEIGHT + 4) - zoneH.current))
   }
   useEffect(majMaxY, [amisAffiches.length])
 
   const panGesture = Gesture.Pan()
     .onBegin(() => {
       cancelAnimation(offsetX)            // stoppe l'inertie en cours
-      lockedAxis.value = null
-      offsetXBase.value = offsetX.value
-      offsetYBase.value = offsetY.value
+      lockedAxis.set(null)
+      offsetXBase.set(offsetX.get())
+      offsetYBase.set(offsetY.get())
     })
     .onChange((e) => {
       // Lock la direction au premier mouvement significatif
-      if (!lockedAxis.value && (Math.abs(e.translationX) > 8 || Math.abs(e.translationY) > 8)) {
-        lockedAxis.value = Math.abs(e.translationX) > Math.abs(e.translationY) ? 'x' : 'y'
+      if (!lockedAxis.get() && (Math.abs(e.translationX) > 8 || Math.abs(e.translationY) > 8)) {
+        lockedAxis.set(Math.abs(e.translationX) > Math.abs(e.translationY) ? 'x' : 'y')
       }
-      if (lockedAxis.value === 'x') {
-        offsetX.value = clampOffset(offsetXBase.value - e.translationX)
-      }else if(lockedAxis.value === 'y') {
-        offsetY.value = clampOffset(offsetYBase.value - e.translationY)
+      if (lockedAxis.get() === 'x') {
+        offsetX.set(clampOffset(offsetXBase.get() - e.translationX))
+      }else if(lockedAxis.get() === 'y') {
+        offsetY.set(clampOffset(offsetYBase.get() - e.translationY))
       }
     })
     .onEnd((e) => {
-      //scheduleOnRN(log, "offsetX", offsetX.value, "base", offsetXBase.value)
-      //scheduleOnRN(log, "offsetY", offsetY.value, "base", offsetYBase.value)
-      if (lockedAxis.value === 'x') {
-        offsetX.value = withDecay(
+      //scheduleOnRN(log, "offsetX", offsetX.get(), "base", offsetXBase.get())
+      //scheduleOnRN(log, "offsetY", offsetY.get(), "base", offsetYBase.get())
+      if (lockedAxis.get() === 'x') {
+        offsetX.set(withDecay(
         { velocity: -e.velocityX, clamp: [0, maxOffset] },   // la ligne clé
         (finished) => {
           'worklet'
           if (!finished) return
           const cell = pxHeures + L_HEURES
-          const snapped = clampOffset(Math.round(offsetX.value / cell) * cell)
-          offsetX.value = withSpring(snapped, withSpringConfig)
+          const snapped = clampOffset(Math.round(offsetX.get() / cell) * cell)
+          offsetX.set(withSpring(snapped, withSpringConfig))
         }
-      )
+      ))
       }
       else {
-        offsetYBase.value = offsetY.value      
-        offsetY.value = withDecay(
+        offsetYBase.set(offsetY.get())
+        offsetY.set(withDecay(
         {
           velocity: -e.velocityY,
           },
           (endished) => {
             if (endished) {
               //Snap to nearest friend
-              offsetY.value = withDecay({ velocity: -e.velocityY, clamp: [0, maxY.value] })
+              offsetY.set(withDecay({ velocity: -e.velocityY, clamp: [0, maxY.get()] }))
             }
           }
-        )
+        ))
       }
     });
   
   useAnimatedReaction(
-      () => offsetY.value,
+      () => offsetY.get(),
       (offset) => 
           scrollTo(friendsList, 0, offset, false)
   )
@@ -789,34 +805,40 @@ export default function Home() {
   useAnimatedReaction(
     () => {
       const cellule = pxHeures + L_HEURES
-      const startMillis = windowStartMillis.value
-      const heure = Math.floor(offsetX.value / cellule)
+      const startMillis = windowStartMillis.get()
+      const heure = Math.floor(offsetX.get() / cellule)
       const jour = Math.floor(heure / 24)
       return { startMillis, heure, jour, position: `${startMillis}:${jour}` }
     },
     (state) => {
       if (!accueilActif.get()) return
       const heurePosition = `${state.startMillis}:${state.heure}`
-      if (derniereHeureTraitee.value !== heurePosition) {
-        derniereHeureTraitee.value = heurePosition
-        onPan(offsetX.value)
+      if (derniereHeureTraitee.get() !== heurePosition) {
+        derniereHeureTraitee.set(heurePosition)
+        onPan(offsetX.get())
       }
-      if (dernierePositionTraitee.value === state.position) return
-      dernierePositionTraitee.value = state.position
-      scheduleOnRN(traiterDefilementTimeline, offsetX.value, state.startMillis)
+      if (dernierePositionTraitee.get() === state.position) return
+      dernierePositionTraitee.set(state.position)
+      scheduleOnRN(traiterDefilementTimeline, offsetX.get(), state.startMillis)
     }
   , [pxHeures, L_HEURES])
 
   useNavFab("home", {
     href: '/home/create',
-    // Asks first: create an event or add an unavailability (Philip — user story 20).
-    menuCreation: true,
-    params: debutCreation ? { start: debutCreation.toISO() } : undefined,
+    // Straight to the creation screen; swipe there for an unavailability (Philip — user story 20).
+    // A range picked on the member's row (hold then drag) is what the "+" creates on.
+    params: plageChoisie
+      ? { start: plageChoisie.debut.toISO(), end: plageChoisie.fin.toISO() }
+      : debutCreation ? { start: debutCreation.toISO() } : undefined,
     icon: null,
     visible: true,
-    // No events in the past: on a day before today, the "+" shows an error instead.
-    bloque: todayDateTime && estJourPasse(todayDateTime) ? t('create.pastDate', { ns: 'events' }) : undefined,
+    // No events in the past: on a day before today, the "+" shows an error instead
+    // (a picked range is never in the past).
+    bloque: !plageChoisie && todayDateTime && estJourPasse(todayDateTime) ? t('create.pastDate', { ns: 'events' }) : undefined,
   })
+
+  // The picked range is dropped once the home screen is left (e.g. for the creation).
+  useFocusEffect(useCallback(() => () => setPlageChoisie(null), [setPlageChoisie]))
 
   useFocusEffect(
     useCallback(() => {
@@ -836,7 +858,7 @@ export default function Home() {
       fenetreEnCoursRef.current =`${debutFenetre.toISODate()}/${debutFenetre.plus({ days: JOURS_FENETRE }).toISODate()}`
       setTodayDateTime(jourAffiche.startOf('day'));
       setTempsClassement(now);
-      dateAujShared.value = jourAffiche.toMillis();
+      dateAujShared.set(jourAffiche.toMillis());
       jourDemandeRef.current = jourAffiche.startOf('day');
       afficherDepuisCache(jourAffiche);
       //chargerEvenements(now, now)
@@ -1263,9 +1285,9 @@ export default function Home() {
                   timelineDays={JOURS_FENETRE}
                   getEvenements={() => {refreshAt(todayDateTime ?? DateTime.now())}}
                   horizontal={true}
-                  // Free stretches in pale blue: hold then drag to pick a range (create an
-                  // event / add an unavailability). Philip — user story 20.
-                  arrierePlan={<TrousHoraire evenements={evenementsHoraire} debutFenetre={windowStart} jours={JOURS_FENETRE} />}
+                  // Free stretches in pale blue: hold then drag to pick a range, then "+"
+                  // creates on it (event, or unavailability by swiping). Philip — user story 20.
+                  arrierePlan={<TrousHoraire evenements={evenementsHoraire} debutFenetre={windowStart} jours={JOURS_FENETRE} selection={plageChoisie} onSelection={setPlageChoisie} />}
                 />
                 {/* Fully booked day: a fixed card over the (still mounted) timeline, so
                     it doesn't scroll and the timeline comes back as it was on a normal day. */}
