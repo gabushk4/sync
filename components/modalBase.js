@@ -27,7 +27,7 @@ export default function ModalBase({ children, canDismiss = true, onDismiss = () 
     const { fonts } = useFont()
     const isFocused = useIsFocused()
     
-    var s = StyleSheet.create({        
+    const s = StyleSheet.create({
         flexFill: {
             flex: 1,
         },
@@ -183,21 +183,21 @@ export default function ModalBase({ children, canDismiss = true, onDismiss = () 
     const flouAnime = useAnimatedStyle(()=>{
         "worklet"
         return{
-            opacity:opacityFlou.value
+            opacity:opacityFlou.get()
         }
     })
     const modalAnime = useAnimatedStyle(()=>{
         "worklet"
         return{
-            height: modalHeight.value,
-            opacity: modalOpacity.value
+            height: modalHeight.get(),
+            opacity: modalOpacity.get()
         }
     })
     const optionsAgrandirAnime = useAnimatedStyle(()=>{
         "worklet"
         return{
-            bottom:optionBottom.value,
-            opacity:optionsOpacity.value
+            bottom:optionBottom.get(),
+            opacity:optionsOpacity.get()
         }
     })
 
@@ -205,20 +205,20 @@ export default function ModalBase({ children, canDismiss = true, onDismiss = () 
         if (closing) return
         setClosing(true)
 
-        opacityFlou.value = withTiming(0, withTimingConfig);
-        modalOpacity.value = withTiming(0, withTimingConfig, (finished) => {
+        opacityFlou.set(withTiming(0, withTimingConfig));
+        modalOpacity.set(withTiming(0, withTimingConfig, (finished) => {
             if (finished) runOnJS(dismissModalRoute)()
-        });
-        modalHeight.value = withSpring('0%', withSpringConfig);
-        optionBottom.value = withSpring(-s.closeButton.height, withSpringConfig);
-        optionsOpacity.value = withTiming(0, withTimingConfig);
+        }));
+        modalHeight.set(withSpring('0%', withSpringConfig));
+        optionBottom.set(withSpring(-s.closeButton.height, withSpringConfig));
+        optionsOpacity.set(withTiming(0, withTimingConfig));
     }
 
     const panGesture = Gesture.Pan()
         .onChange((e) => {
-            const base = LEVELS[actualLevel.value];
+            const base = LEVELS[actualLevel.get()];
             const heightWanted = base + (-e.translationY / 10);
-            modalHeight.value = `${Math.max(0, Math.min(LEVELS[LEVELS.length-1], heightWanted))}%`;
+            modalHeight.set(`${Math.max(0, Math.min(LEVELS[LEVELS.length-1], heightWanted))}%`);
         })
         .onEnd((e) => {
             const MIN_DIST = 40;   // px 
@@ -231,16 +231,16 @@ export default function ModalBase({ children, canDismiss = true, onDismiss = () 
                 direction = -1; 
             }
 
-            const newIndex = Math.max(0, Math.min(LEVELS.length - 1, actualLevel.value + direction));
+            const newIndex = Math.max(0, Math.min(LEVELS.length - 1, actualLevel.get() + direction));
 
             if (newIndex === 0) {
                 runOnJS(fermerModalBase)();
             } else {
-                actualLevel.value = newIndex;
+                actualLevel.set(newIndex);
                 runOnJS(setFullScreen)(newIndex === 2);
-                modalHeight.value = withSpring(`${LEVELS[newIndex]}%`, withSpringConfig);
+                modalHeight.set(withSpring(`${LEVELS[newIndex]}%`, withSpringConfig));
             
-                optionBottom.value = withSpring(newIndex === 2 ?32 : -s.closeButton.height, withSpringConfig);                                
+                optionBottom.set(withSpring(newIndex === 2 ?32 : -s.closeButton.height, withSpringConfig));                                
             }
         });
         
@@ -248,14 +248,14 @@ export default function ModalBase({ children, canDismiss = true, onDismiss = () 
         const clavierAffiche = Keyboard.addListener("keyboardWillShow", () => {
             log("keyboard did show")
             setFullScreen(true)
-            modalHeight.value = withSpring('90%', withSpringConfig)
-            actualLevel.value = 2
+            modalHeight.set(withSpring('90%', withSpringConfig))
+            actualLevel.set(2)
         })             
         
         setFullScreen(false)
-        modalHeight.value = withSpring('45%', withSpringConfig)
-        modalOpacity.value = withTiming(1, withTimingConfig)
-        opacityFlou.value = withTiming(1, withTimingConfig)
+        modalHeight.set(withSpring('45%', withSpringConfig))
+        modalOpacity.set(withTiming(1, withTimingConfig))
+        opacityFlou.set(withTiming(1, withTimingConfig))
 
         Haptics.modalDebut()
 
@@ -288,7 +288,7 @@ export default function ModalBase({ children, canDismiss = true, onDismiss = () 
                 <Pressable 
                     onPress={() => {
                         log('fermer modal')
-                        opacityFlou.value = withTiming(0, {duration:300})
+                        opacityFlou.set(withTiming(0, {duration:300}))
                         fermerModalBase()                  
                     }} 
                     style={s.overlayPressable}

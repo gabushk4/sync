@@ -88,8 +88,10 @@ export default function NotificationItem({ item, index, vu }: ItemProps) {
     const [selectionner, setSelectionner] = useState(false)
     const [notificationsSelec, setNotificationsSelec] = useState<Array<string>>([])
 
-    const [lines, setLines] = useState(1)
     const [montrerDetails, setMontrerDetails] = useState<boolean>(false)
+    // Message lines shown: more once unfolded. Derived, not a state set from the effect
+    // below (the React Compiler lint rejects a synchronous setState in an effect).
+    const lines = montrerDetails ? 4 : 2
 
     const icones = {
         corbeille:
@@ -198,8 +200,8 @@ export default function NotificationItem({ item, index, vu }: ItemProps) {
     const notifAnime = useAnimatedStyle(() => {
         "worklet"
         return {
-            height: heightNotif.value,
-            backgroundColor: backgroundColor.value,
+            height: heightNotif.get(),
+            backgroundColor: backgroundColor.get(),
         }
     })
 
@@ -207,40 +209,38 @@ export default function NotificationItem({ item, index, vu }: ItemProps) {
     const fondAnime = useAnimatedStyle(() => {
         "worklet"
         return {
-            backgroundColor: backgroundColor.value,
+            backgroundColor: backgroundColor.get(),
         }
     })
 
     const optionsNotifAnime = useAnimatedStyle(() => {
         "worklet"
         return {
-            opacity: opaciteOptionsNotif.value,
-            height: heightOptionsNotif.value,
-            bottom: bottomOptionsNotif.value,
+            opacity: opaciteOptionsNotif.get(),
+            height: heightOptionsNotif.get(),
+            bottom: bottomOptionsNotif.get(),
         }
     })
 
     const typeLabel = t(`types.${categorie}`)
 
     const montrerDetailsNotif = () => {
-        heightNotif.value = withTiming(heightMaxNotif, withTimingConfig)
-        opaciteOptionsNotif.value = withTiming(1, withTimingConfig)
-        heightOptionsNotif.value = withTiming(40, withTimingConfig)
-        bottomOptionsNotif.value = withSpring(-8, withSpringConfig)
-        setLines(4)
+        heightNotif.set(withTiming(heightMaxNotif, withTimingConfig))
+        opaciteOptionsNotif.set(withTiming(1, withTimingConfig))
+        heightOptionsNotif.set(withTiming(40, withTimingConfig))
+        bottomOptionsNotif.set(withSpring(-8, withSpringConfig))
     }
 
     const masquerDetailsNotif = () => {
-        heightNotif.value = withTiming(heightMinNotif, withTimingConfig)
-        opaciteOptionsNotif.value = withTiming(0, { duration: 150 })
-        heightOptionsNotif.value = withTiming(1, withTimingConfig)
-        bottomOptionsNotif.value = withSpring(16, withSpringConfig)
-        setLines(2)
+        heightNotif.set(withTiming(heightMinNotif, withTimingConfig))
+        opaciteOptionsNotif.set(withTiming(0, { duration: 150 }))
+        heightOptionsNotif.set(withTiming(1, withTimingConfig))
+        bottomOptionsNotif.set(withSpring(16, withSpringConfig))
     }
 
     const selectNotif = () => {
         setNotificationsSelec((prev) => [...prev, item.id])
-        backgroundColor.value = withTiming(colors.secondary, { duration: 500 })
+        backgroundColor.set(withTiming(colors.secondary, { duration: 500 }))
     }
 
     const typeIcon = () => {
