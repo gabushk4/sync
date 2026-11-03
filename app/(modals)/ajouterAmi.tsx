@@ -1,7 +1,7 @@
 import ModalBase from "@/components/modalBase";
 import { useEffect, useRef } from "react";
 import { useTranslation } from 'react-i18next';
-import { Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Dimensions, StyleSheet, TouchableOpacity, View, } from 'react-native';
 
 import { useFont } from '@/contextes/contexteFont';
 import { useMembre } from "@/contextes/contexteMembre";
@@ -30,6 +30,8 @@ const PAGES_DEF = [
         page: <QRCodeAbs/>
     }
 ]
+
+const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
 export default function AjouterAmi() {
     const { t } = useTranslation('friends')
@@ -112,7 +114,7 @@ export default function AjouterAmi() {
                         </TouchableOpacity>
                     )}
                 </View>
-                <ScrollView
+                <AnimatedScrollView
                     ref={scrollViewRef}    
                     horizontal={true}
                     contentContainerStyle={{height:'90%', width: PAGE_W * 2, gap: 16 }}
@@ -120,16 +122,13 @@ export default function AjouterAmi() {
                     decelerationRate={'fast'}
                     showsHorizontalScrollIndicator={false}
                     onScroll={scrollHandler}
-                    onMomentumScrollEnd={(e) => {
-                        console.log("ended", e.nativeEvent.contentOffset)
-                    }}
                 >
                     {pages.map((p, index) =>
                         <View key={index} style={[s.page, {left:PAGE_W* index}]}>
                             {p.page}
                         </View>
                     )}                    
-                </ScrollView>
+                </AnimatedScrollView>
             </View>
         </ModalBase>
     ) : (
