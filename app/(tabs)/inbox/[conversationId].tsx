@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { FlatList, Keyboard, KeyboardEvent, Platform, StyleSheet, Text, View } from 'react-native'
-import { Stack, useFocusEffect, useLocalSearchParams } from 'expo-router'
+import { FlatList, Keyboard, KeyboardEvent, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { router, Stack, useFocusEffect, useLocalSearchParams, useSegments } from 'expo-router'
+import { useTranslation } from 'react-i18next'
+import Icon from '@react-native-vector-icons/ionicons'
 
 import { usePalette } from '@/contextes/contextePalette'
 import { useFont } from '@/contextes/contexteFont'
@@ -8,12 +10,14 @@ import { useConversations } from '@/contextes/contexteConversations'
 import { useMembre } from '@/contextes/contexteMembre'
 
 import MessageBubble from '@/components/messageBubble'
+import ProfilPic from '@/components/pfp'
 import MessageInput from '@/components/messageInput'
 import catcher from '@/functions/catcher'
 
 export default function Conversation(){
     const { colors } = usePalette()
     const { fonts } = useFont()
+    const { t } = useTranslation('inbox')
     // titre: sent when opened from an event's details (story #21), before the list has it
     const {conversationId, titre } = useLocalSearchParams<{conversationId: string, titre?: string}>()
 
@@ -21,6 +25,18 @@ export default function Conversation(){
     const {messages,conversations,ouvrirConversation,fermerConversation,envoyerMessage} = useConversations()
 
     const conversation = conversations.find((c) => c.id === conversationId)
+
+    // Tapping the title opens the conversation's info (like Messenger), in the same stack
+    // (this screen is in the inbox stack, or in the home one when opened from an event).
+    const dansAccueil = (useSegments() as string[]).includes('home')
+    const ouvrirInfos = () => {
+        if (!conversationId) return
+        router.push({
+            pathname: dansAccueil ? '/(tabs)/home/conversation/infos/[conversationId]' : '/(tabs)/inbox/infos/[conversationId]',
+            params: { conversationId },
+        } as any)
+    }
+    const titreAffiche = conversation?.ami.pseudo ?? titre ?? ''
 
     const listeRef = useRef<FlatList>(null)
     const conteneurRef = useRef<View>(null)
@@ -91,7 +107,27 @@ export default function Conversation(){
             ref={conteneurRef}
             style={[styles.conteneur, { backgroundColor: colors.background, paddingBottom: decalageClavier }]}
         >
-            <Stack.Screen options={{ headerTitle: conversation?.ami.pseudo ?? titre ?? '' }} />
+            {/* Tappable header (like Messenger): photo and name with a chevron, opens the
+                conversation's info. */}
+            <Stack.Screen options={{
+                headerTitle: () => (
+                    <TouchableOpacity
+                        onPress={ouvrirInfos}
+                        hitSlop={8}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('infos.open', { nom: titreAffiche })}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 8, maxWidth: 240 }}
+                    >
+                        <ProfilPic size={32} pfp={conversation?.ami.fp_url} />
+                        <View style={{ flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                            <Text style={{ flexShrink: 1, color: colors.text, fontFamily: fonts.title, fontSize: 16 }} numberOfLines={1}>
+                                {titreAffiche}
+                            </Text>
+                            <Icon name="chevron-forward" size={14} color={colors.muted} />
+                        </View>
+                    </TouchableOpacity>
+                ),
+            }} />
             <FlatList
                 ref={listeRef}
                 data={messages}

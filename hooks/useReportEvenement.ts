@@ -7,6 +7,7 @@ import { useAPI } from "@/contextes/contexteAPI";
 import { useMembre } from "@/contextes/contexteMembre";
 import catcher from "@/functions/catcher";
 import { convertUTCToLocal } from "@/functions/convertirUTCenLocal";
+import { convertirTimestampJourCourt } from "@/functions/convertirTimestamp";
 
 /** A slot where every participant is free (a common free slot). Dates: UTC ISO. */
 export type Creneau = { debut: string, fin: string, deja_propose: boolean }
@@ -86,7 +87,7 @@ export default function useReportEvenement(idEvenement: string | null | undefine
     const plage = (debut: string, fin: string) => {
         const d = convertUTCToLocal(debut, membre?.timezone)
         const f = convertUTCToLocal(fin, membre?.timezone)
-        return t('postpone.range', { jour: d.toFormat('ccc d LLL'), debut: d.toFormat('HH:mm'), fin: f.toFormat('HH:mm') })
+        return t('postpone.range', { jour: convertirTimestampJourCourt(d), debut: d.toFormat('HH:mm'), fin: f.toFormat('HH:mm') })
     }
 
     /**

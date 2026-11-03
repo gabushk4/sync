@@ -1,11 +1,12 @@
 {
   "navigation": {
-    "create": "Create an event",
-    "details": "Details",
-    "edit": "Edit",
+    "create": "New event",
+    "details": "Event details",
+    "edit": "Edit event",
     "calendar": "Calendar",
     "invitationReview": "Invitation schedules",
-    "unavailability": "Unavailability"
+    "unavailability": "New unavailability",
+    "unavailabilityDetails": "Unavailability details"
   },
   "creationPages": {
     "event": "Event",
@@ -19,7 +20,11 @@
     "deletedTitle": "Deleted",
     "deletedMessage": "It has been filed away where nobody looks; what was filed? No idea.",
     "clickSource": "clic here to show in {source}",
-    "openConversation": "Open the event's conversation"
+    "openConversation": "Open the event's conversation",
+    "conversation": "Event conversation",
+    "deleteEvent": "Delete event",
+    "deleteUnavailability": "Delete unavailability",
+    "leaveEvent": "Leave event"
   },
   "edit": {
     "defaultError": "Unable to edit the event",

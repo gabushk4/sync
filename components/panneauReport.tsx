@@ -13,6 +13,7 @@ import { useMembre } from '@/contextes/contexteMembre'
 import { usePalette } from '@/contextes/contextePalette'
 import catcher from '@/functions/catcher'
 import { convertUTCToLocal } from '@/functions/convertirUTCenLocal'
+import { convertirTimestampJourCourt } from '@/functions/convertirTimestamp'
 import useReportEvenement, { Creneau, Suggestion } from '@/hooks/useReportEvenement'
 
 type Props = {
@@ -22,6 +23,8 @@ type Props = {
     onPlageChangee?: () => void
     /** Inside another panel (the invitation decision one): no background nor padding of its own. */
     integre?: boolean
+    /** A block of the event's form (details page): its rounded card and label style. */
+    enBloc?: boolean
 }
 
 /**
@@ -42,7 +45,7 @@ type Props = {
  * @param {Props} props
  * @returns {JSX.Element | null}
  */
-export default function PanneauReport({ idEvenement, onPlageChangee, integre = false }: Props) {
+export default function PanneauReport({ idEvenement, onPlageChangee, integre = false, enBloc = false }: Props) {
     const { t } = useTranslation('events')
     const { colors } = usePalette()
     const { fonts } = useFont()
@@ -98,6 +101,8 @@ export default function PanneauReport({ idEvenement, onPlageChangee, integre = f
     const s = StyleSheet.create({
         panneau: integre
             ? { gap: 10 }
+            : enBloc
+            ? { backgroundColor: colors.card, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 12, gap: 10 }
             : {
                 backgroundColor: colors.card,
                 borderTopWidth: StyleSheet.hairlineWidth,
@@ -108,7 +113,10 @@ export default function PanneauReport({ idEvenement, onPlageChangee, integre = f
                 gap: 10,
             },
         entete: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-        titre: { color: colors.text, fontFamily: fonts.title, fontSize: 16 },
+        // in the form: the label style of its other blocks (Visibility, Participants…)
+        titre: enBloc
+            ? { color: colors.muted, fontFamily: fonts.body, fontSize: 20 }
+            : { color: colors.text, fontFamily: fonts.title, fontSize: 16 },
         texte: { color: colors.muted, fontFamily: fonts.body, fontSize: 14 },
         jour: { color: colors.text, fontFamily: fonts.title, fontSize: 13, marginTop: 2 },
         blocs: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
@@ -156,7 +164,8 @@ export default function PanneauReport({ idEvenement, onPlageChangee, integre = f
     // Common free slots grouped by the member's local day, in order.
     const parJour: { jour: string, creneaux: Creneau[] }[] = []
     for (const c of creneaux) {
-        const jour = convertUTCToLocal(c.debut, membre?.timezone).toFormat('cccc d LLLL')
+        // formats.json, not Luxon's month names ('LLLL' gave "null" on the phone)
+        const jour = convertirTimestampJourCourt(convertUTCToLocal(c.debut, membre?.timezone))
         const groupe = parJour.find((g) => g.jour === jour)
         if (groupe) groupe.creneaux.push(c)
         else parJour.push({ jour, creneaux: [c] })

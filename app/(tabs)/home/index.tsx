@@ -18,7 +18,7 @@ import { Dimensions, Easing, Image, Keyboard, StyleSheet, Text, TouchableOpacity
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { getCommonFreeSlotsSurPlage } from '@/functions/availability';
-import { heuresVersDate } from '@/functions/positionTimeline';
+import { heuresVersDate, positionHeures } from '@/functions/positionTimeline';
 import catcher from '@/functions/catcher';
 import { convertUTCToLocal } from '@/functions/convertirUTCenLocal';
 import log from '@/functions/log';
@@ -44,12 +44,15 @@ import { estJourFerie, formaterEvenementsMembre, joursFeriesDuJour, paramsPlage 
 import { debutCreationPourJour, estJourPasse } from '@/functions/jourCreation';
 import { Friend } from '@/types/calendar';
 import { scheduleOnRN } from 'react-native-worklets';
+import { convertirTimestampHeure } from '@/functions/convertirTimestamp';
 
 //Constants
 const WIDTH_COL = 80;
 const HEIGHT_BOT_BAR = 80;
 const HEIGHT_DATE = 56;
 const HEIGHT_TIMELINE = 32;
+// Width of the current time's label in the hours' row ("14:05").
+const LARGEUR_HEURE_MAINTENANT = 44;
 const AnimatedStyleMinVal = 0.1
 const LIST_HEIGHT = 104
 // Height of the floating back-to-now button.
@@ -285,6 +288,27 @@ export default function Home() {
     offsetX.set(offset)
   }
 
+  // ── Current time line ──
+  // Drawn inside every row (and its time in the hours' row), at the same place as an
+  // event at this time would be (positionHeures): it stays on that time while the rows
+  // scroll. Moved every 30 s (about a pixel).
+  const [instantCourant, setInstantCourant] = useState(() => DateTime.now())
+  useEffect(() => {
+    const minuterie = setInterval(() => setInstantCourant(DateTime.now()), 30_000)
+    return () => clearInterval(minuterie)
+  }, [])
+  // One line over every row (full height, no gaps between rows): a see-through strip
+  // scrolled exactly like the rows (scrollTo from the shared offset, see EventsList),
+  // the line at the current time in it.
+  const ligneMaintenantRef = useAnimatedRef<Animated.ScrollView>()
+  useAnimatedReaction(
+    () => offsetX.get(),
+    (offset) => scrollTo(ligneMaintenantRef, offset, 0, false)
+  )
+  const debutFenetreJour = windowStart.startOf('day')
+  const maintenantVisible = instantCourant >= debutFenetreJour && instantCourant < debutFenetreJour.plus({ days: JOURS_FENETRE })
+  const xMaintenant = positionHeures(instantCourant, windowStart) * (pxHeures + L_HEURES)
+
   // Refresh the proximity tie-breaker as upcoming slots get closer or pass.
   useEffect(() => {
     const timer = setInterval(() => setTempsClassement(DateTime.now()), 60_000)
@@ -473,6 +497,9 @@ export default function Home() {
         const evenements = formaterEvenementsMembre(data.evenements, membre.timezone)
         if (fenetreEnCoursRef.current) cacheJoursRef.current.set(fenetreEnCoursRef.current, evenements)
         setUserEvents(evenements)
+        // A picked range that an event now covers (e.g. the one just created on it) is dropped.
+        setPlageChoisie((plage) => plage && evenements.some((ev: any) =>
+          !estJourFerie(ev) && ev.debut && ev.fin && ev.debut < plage.fin && ev.fin > plage.debut) ? null : plage)
         setJourMembre(windowStartRef.current)
       }
     } catch (error) {
@@ -747,6 +774,16 @@ export default function Home() {
   }
   useEffect(majMaxY, [amisAffiches.length])
 
+  // A tap anywhere on the rows clears the picked range ("click off"). Shorter than the
+  // hold that starts a selection on the member's row (200 ms), so that hold never
+  // counts as a tap.
+  const effacerSelection = () => setPlageChoisie(null)
+  const toucherHorsSelection = Gesture.Tap()
+    .maxDuration(180)
+    .onEnd((_e, reussi) => {
+      if (reussi) scheduleOnRN(effacerSelection)
+    })
+
   const panGesture = Gesture.Pan()
     .onBegin(() => {
       cancelAnimation(offsetX)            // stoppe l'inertie en cours
@@ -837,8 +874,10 @@ export default function Home() {
     bloque: !plageChoisie && todayDateTime && estJourPasse(todayDateTime) ? t('create.pastDate', { ns: 'events' }) : undefined,
   })
 
-  // The picked range is dropped once the home screen is left (e.g. for the creation).
-  useFocusEffect(useCallback(() => () => setPlageChoisie(null), [setPlageChoisie]))
+  // The picked range stays when the home screen is left (backing out of the creation
+  // finds it still selected); a tap elsewhere clears it (see effacerSelection). Once an
+  // event covers it (e.g. the one just created on it), it's dropped when the member's
+  // events arrive (modifierEvenementsMembreFetched).
 
   useFocusEffect(
     useCallback(() => {
@@ -886,6 +925,10 @@ export default function Home() {
       })      
 
       return () => {
+        // This screen's exact position, given back on return (it was only recorded when
+        // the displayed day changed, so coming back from e.g. the creation jumped to an
+        // older position, away from a range picked on the same day).
+        if (accueilActifRef.current) offsetAccueilRef.current = offsetX.get()
         accueilActifRef.current = false
         accueilActif.set(false)
         userEventsRefresh.current?.destroy()
@@ -1106,6 +1149,38 @@ export default function Home() {
     calendarContainer: {
       flex:5
     },
+    // Current time: a line over all the rows, its time in the hours' row (see xMaintenant)
+    bandeMaintenant: {
+      position: 'absolute',
+      left: WIDTH_COL,
+      right: 0,
+      top: 0,
+      bottom: 0,
+      zIndex: 10,
+    },
+    ligneMaintenant: {
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      width: 2,
+      backgroundColor: colors.error,
+      zIndex: 10,
+    },
+    heureMaintenant: {
+      position: 'absolute',
+      bottom: 2,
+      width: LARGEUR_HEURE_MAINTENANT,
+      paddingVertical: 1,
+      borderRadius: 6,
+      alignItems: 'center',
+      backgroundColor: colors.error,
+      zIndex: 10,
+    },
+    texteHeureMaintenant: {
+      color: '#fff',
+      fontFamily: fonts.number,
+      fontSize: 11,
+    },
     addFriendPlaceholderContainer: {
       height: '100%',
       width: '100%',
@@ -1179,11 +1254,16 @@ export default function Home() {
               ? DateTime.now()
               : todayDateTime?.plus({ hours: 9 })}
             timelineDays={JOURS_FENETRE}
+            premierPlan={maintenantVisible && (
+              <View pointerEvents="none" style={[s.heureMaintenant, { left: xMaintenant - LARGEUR_HEURE_MAINTENANT / 2 }]}>
+                <Text style={s.texteHeureMaintenant}>{convertirTimestampHeure(instantCourant)}</Text>
+              </View>
+            )}
           />
         </View>
 
         {/* ── Zone principale (3/4) — horaire amis ── */}
-        <GestureDetector gesture={panGesture}>
+        <GestureDetector gesture={Gesture.Simultaneous(panGesture, toucherHorsSelection)}>
           <View
             style={s.calendarContainer}
           >
@@ -1234,7 +1314,7 @@ export default function Home() {
                             style={s.colonneAmi}
                             accessibilityRole="button"
                             accessibilityLabel={t('viewFriendProfile', { name: friend.pseudo })}
-                            onPress={() => router.push({ pathname: '/(tabs)/profile/[membreId]', params: { membreId: friend.id } })}
+                            onPress={() => router.push({ pathname: '/(tabs)/home/profil/[membreId]', params: { membreId: friend.id } })}
                           >
                           <View style={s.photoAmi}>
                             <ProfilPic
@@ -1314,6 +1394,20 @@ export default function Home() {
                 )}
               </View>
             </Animated.View>
+          {/* Current time: one line over all the rows, scrolled like them */}
+          <Animated.ScrollView
+            ref={ligneMaintenantRef}
+            horizontal
+            scrollEnabled={false}
+            pointerEvents="none"
+            showsHorizontalScrollIndicator={false}
+            style={s.bandeMaintenant}
+            contentContainerStyle={{ height: '100%' }}
+          >
+            <View style={{ width: JOURS_FENETRE * 24 * (pxHeures + L_HEURES), height: '100%' }}>
+              {maintenantVisible && <View style={[s.ligneMaintenant, { left: xMaintenant - 1 }]} />}
+            </View>
+          </Animated.ScrollView>
         </View>
         </GestureDetector>
 

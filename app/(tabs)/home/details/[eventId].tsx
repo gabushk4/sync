@@ -3,11 +3,12 @@ import { useFocusEffect, useIsFocused } from "expo-router/react-navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DateTime } from "luxon";
 import { useTranslation } from "react-i18next";
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 
 import { useAPI } from "@/contextes/contexteAPI";
 import { useConversations } from "@/contextes/contexteConversations";
+import { useFont } from "@/contextes/contexteFont";
 import { useMembre } from "@/contextes/contexteMembre";
 import { usePalette } from "@/contextes/contextePalette";
 
@@ -30,6 +31,7 @@ import Icon from "@react-native-vector-icons/ionicons";
 export default function Details(){
     const { t } = useTranslation('events')
     const { colors } = usePalette()
+    const { fonts } = useFont()
     const { api } = useAPI()
     const isFocused = useIsFocused()
     const { membre } = useMembre()
@@ -67,7 +69,8 @@ export default function Details(){
         if (!event.conversation_id) return
         rafraichirConversations()
         router.push({
-            pathname: '/(tabs)/inbox/[conversationId]',
+            // in the home stack, over this page: its back arrow returns here
+            pathname: '/(tabs)/home/conversation/[conversationId]',
             params: { conversationId: event.conversation_id, titre: event.titre ?? '' },
         })
     }
@@ -124,32 +127,27 @@ export default function Details(){
         log("event dans details", event)
     }, [event])
 
+    // Header: "Détails de l'évènement", or "Détails de l'indisponibilité" for an unavailability
+    useEffect(() => {
+        navigation.setOptions({
+            headerTitle: t(event.nature === 'indisponibilite' ? 'navigation.unavailabilityDetails' : 'navigation.details'),
+        })
+    }, [event.nature, navigation, t])
+
     const s = StyleSheet.create({
-        conversationBtn: {
-            height: 64,
-            width: 64,
-            position: 'absolute',
-            bottom: 16,
-            left: 16,
-            borderRadius: 100,
+        // Delete (creator) / leave: the form's last block, in red
+        blocSupprimer: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            paddingVertical: 14,
+            borderRadius: 16,
             borderWidth: 1,
-            borderColor: colors.secondary,
-            alignItems: 'center',
-            justifyContent: 'center'
-        },
-        floatingBtn: {
-            height: 64, 
-            width: 64,
-            //backgroundColor: colors.secondary,
-            position: 'absolute',
-            bottom: 16,
-            right: 16,
-            borderRadius: 100,
-            borderWidth: 1, 
             borderColor: colors.error,
-            alignItems: 'center',
-            justifyContent: 'center'
-        }
+            backgroundColor: colors.card,
+        },
+        texteSupprimer: { color: colors.error, fontFamily: fonts.body, fontSize: 18 }
     })
 
     // Not loaded yet: a spinner. EventForm computes its dates once, on its first focus:
@@ -172,6 +170,31 @@ export default function Details(){
                 mode={'details'}
                 masquerParticipants={!!invitation}
                 nature={event.nature}
+                // Story #21: a block under the participants (review: part of the form)
+                onOuvrirConversation={event.conversation_id && !invitation ? ouvrirConversation : undefined}
+                // Common availabilities / suggestions (Philip — user story 23) and delete /
+                // leave: blocks at the end of the form, like the others
+                blocsFin={invitation ? undefined : (
+                    <>
+                        {!!event.id && !indisponibilite && (
+                            <PanneauReport enBloc idEvenement={event.id} onPlageChangee={() => getDetails(event.id as string)} />
+                        )}
+                        {!isExternal && (
+                            <TouchableOpacity
+                                style={s.blocSupprimer}
+                                onPress={gestion.supprimerOuQuitter}
+                                accessibilityRole="button"
+                            >
+                                <Icon name={gestion.estEditeur ? 'trash-outline' : 'exit-outline'} color={colors.error} size={24} />
+                                <Text style={s.texteSupprimer}>
+                                    {gestion.estEditeur
+                                        ? t(indisponibilite ? 'details.deleteUnavailability' : 'details.deleteEvent')
+                                        : t('details.leaveEvent')}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+                    </>
+                )}
             />
             {invitation ? (
                 <>
@@ -190,27 +213,6 @@ export default function Details(){
                 </>
             ) : (
                 <>
-                    {/* Postponement votes: propose / vote (invitee), apply one (creator).
-                        Philip — user story 23. */}
-                    {!!event.id && !indisponibilite && (
-                        <PanneauReport idEvenement={event.id} onPlageChangee={() => getDetails(event.id as string)} />
-                    )}
-                    {event.conversation_id ? (
-                        <TouchableOpacity
-                            style={s.conversationBtn}
-                            onPress={ouvrirConversation}
-                            accessibilityRole="button"
-                            accessibilityLabel={t('details.openConversation')}
-                        >
-                            <Icon name='chatbubbles-outline' color={colors.secondary} size={28}/>
-                        </TouchableOpacity>
-                    ) : null}
-                    {/* quit (non-creators) / delete (creator) button */}
-                    {isExternal ? null : (
-                        <TouchableOpacity style={s.floatingBtn} onPress={gestion.supprimerOuQuitter}>
-                            <Icon name='trash-sharp' color={colors.error} size={28} />
-                        </TouchableOpacity>
-                    )}
                 </>
             )}
         </View>
