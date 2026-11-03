@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { FlatList, Keyboard, KeyboardEvent, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { router, Stack, useFocusEffect, useLocalSearchParams, useSegments } from 'expo-router'
+import { useTranslation } from 'react-i18next'
+import Icon from '@react-native-vector-icons/ionicons'
 
 import { usePalette } from '@/contextes/contextePalette'
 import { useFont } from '@/contextes/contexteFont'
@@ -8,12 +10,14 @@ import { useConversations } from '@/contextes/contexteConversations'
 import { useMembre } from '@/contextes/contexteMembre'
 
 import MessageBubble from '@/components/messageBubble'
+import ProfilPic from '@/components/pfp'
 import MessageInput from '@/components/messageInput'
 import catcher from '@/functions/catcher'
 
 export default function Conversation(){
     const { colors } = usePalette()
     const { fonts } = useFont()
+    const { t } = useTranslation('inbox')
     // titre: sent when opened from an event's details (story #21), before the list has it
     const {conversationId, titre } = useLocalSearchParams<{conversationId: string, titre?: string}>()
 
@@ -103,18 +107,24 @@ export default function Conversation(){
             ref={conteneurRef}
             style={[styles.conteneur, { backgroundColor: colors.background, paddingBottom: decalageClavier }]}
         >
+            {/* Tappable header (like Messenger): photo and name with a chevron, opens the
+                conversation's info. */}
             <Stack.Screen options={{
                 headerTitle: () => (
                     <TouchableOpacity
                         onPress={ouvrirInfos}
                         hitSlop={8}
                         accessibilityRole="button"
-                        accessibilityHint="Infos de la conversation"
-                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4, maxWidth: 240 }}
+                        accessibilityLabel={t('infos.open', { nom: titreAffiche })}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 8, maxWidth: 240 }}
                     >
-                        <Text style={{ color: colors.text, fontFamily: fonts.title, fontSize: 17 }} numberOfLines={1}>
-                            {titreAffiche}
-                        </Text>
+                        <ProfilPic size={32} pfp={conversation?.ami.fp_url} />
+                        <View style={{ flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                            <Text style={{ flexShrink: 1, color: colors.text, fontFamily: fonts.title, fontSize: 16 }} numberOfLines={1}>
+                                {titreAffiche}
+                            </Text>
+                            <Icon name="chevron-forward" size={14} color={colors.muted} />
+                        </View>
                     </TouchableOpacity>
                 ),
             }} />

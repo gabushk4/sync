@@ -14,6 +14,7 @@
 		"you": "toi",
 		"openProfile": "Voir le profil de {{pseudo}}",
 		"createdOn": "Conversation créée le {{date}}",
-		"eventGroup": "Groupe de discussion de « {{titre}} »"
+		"eventGroup": "Groupe de discussion de « {{titre}} »",
+		"open": "Infos de la conversation {{nom}}"
 	}
 }

@@ -14,6 +14,7 @@
 		"you": "you",
 		"openProfile": "See {{pseudo}}'s profile",
 		"createdOn": "Conversation created on {{date}}",
-		"eventGroup": "{{titre}}'s group chat"
+		"eventGroup": "{{titre}}'s group chat",
+		"open": "{{nom}} conversation info"
 	}
 }
