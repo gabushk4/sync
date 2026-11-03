@@ -32,7 +32,8 @@ function DefaultFriendList({ openProfiles, type}: { openProfiles: boolean, type:
     const { api } = useAPI()
     const { colors } = usePalette()
     const { fonts } = useFont()
-    const colorScheme = useColorScheme()
+    const colorScheme = useColorScheme()    
+
     const [amis, setAmis] = useState<Participant[]>([])
     const onPressConsult = useFriendList('consult')
     const onPressMessage = useFriendList('message')

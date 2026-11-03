@@ -16,13 +16,13 @@ import { usePalette } from "@/contextes/contextePalette"
 
 import { withSpringConfig, withTimingConfig } from "@/constants/ReanimatedConfs"
 
+import { useModal } from "@/contextes/contexteModals"
 import { modalEvents } from "@/events/modalEvents"
 import Ionicons from "@react-native-vector-icons/ionicons"
-import { useModal } from "@/contextes/contexteModals"
 
 export default function ModalBase({ children, canDismiss = true, onDismiss = () => { } }){
     const { colors } = usePalette()
-    const {dismissButton} = useModal()
+    const {dismissButton, runDismissButtonAction} = useModal()
 
     const { fonts } = useFont()
     const isFocused = useIsFocused()
@@ -321,7 +321,10 @@ export default function ModalBase({ children, canDismiss = true, onDismiss = () 
             {/* Fullscreen options */}
             <Animated.View style={[optionsAgrandirAnime, s.optionsRow]}>
                 <TouchableOpacity 
-                    onPress={() => fermerModalBase()}
+                        onPress={() => {
+                            runDismissButtonAction()
+                            fermerModalBase()
+                        }}
                     style={[s.circleButtonBase, s.closeButton, {backgroundColor:dismissButton.bgColor}, dismissButton.style]}
                 >
                         <Ionicons name={dismissButton.icon} size={40} color={colors.text} />

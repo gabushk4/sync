@@ -86,7 +86,7 @@ class AutoRefresh {
     }
 
     private extractLastChecked(data: any): string | undefined{
-        console.log(this.url, "last checked", data?.last_checked)
+        console.log(this.url, {data}, "last checked", data?.last_checked)
         if (data?.last_checked) {
             
             return data.last_checked
