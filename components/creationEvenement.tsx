@@ -2,6 +2,7 @@ import { useLocalSearchParams, useNavigation } from "expo-router";
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import useEnvoiCreation, { avertirIndisponibles, corpsCreation } from "@/hooks/useEnvoiCreation";
 import { useTranslation } from "react-i18next";
+import { Alert } from "react-native";
 
 import { useAPI } from "@/contextes/contexteAPI";
 import { useInvites } from "@/contextes/contexteInvites";
@@ -132,6 +133,22 @@ const CreationEvenement = forwardRef<CreationHandle>(function CreationEvenement(
         if (sortie === 'retour') navigation.goBack()
         else if (sortie === 'accueil') quitterApresCreation()
     }
+    
+    /**
+     * Story #21 : asks the creator whether a group conversation with the participants
+     * should be created along with the shared event. Resolves to the answer.
+     */
+    const demanderConversation = () => new Promise<boolean>((resolve) => {
+        Alert.alert(
+            t('create.conversationTitle'),
+            t('create.conversationMessage'),
+            [
+                { text: t('create.conversationNo'), style: 'cancel', onPress: () => resolve(false) },
+                { text: t('create.conversationYes'), onPress: () => resolve(true), isPreferred: true },
+            ],
+            { cancelable: true, onDismiss: () => resolve(false) }
+        )
+    })
 
     /**
      * Validates the form (title present and long enough, start not past) and
@@ -175,11 +192,16 @@ const CreationEvenement = forwardRef<CreationHandle>(function CreationEvenement(
             }
 
             if (valid) {
+                // Story #21 : a shared event (with invitees) can get its group conversation
+                const creerConversation = invites.length > 0 ? await demanderConversation() : false
+
                 demarrerChargement()
 
                 nouveau = {
                     ...event,
                     ...corpsCreation(values),
+                    // kept in `nouveau`, so the conflict screen re-sends it too
+                    creer_conversation: creerConversation,
                     participants: invites.map((i) => ({ id: i.id, privilege: i.privilege }))
                 }
 
