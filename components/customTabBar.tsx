@@ -129,7 +129,8 @@ const Fab = React.memo(function Fab() {
         router.push(params ? ({ pathname, params } as any) : (pathname as any));
     };
 
-    return (
+    
+    return  shown ? (
         <>
         <AnimatedTouchableOpacity
         disabled={!shown}
@@ -146,7 +147,7 @@ const Fab = React.memo(function Fab() {
             onFermer={() => setMenuCreation(null)}
         />
         </>
-    );
+    ) : null;
 });
 
 export function CustomTabBar(props: BottomTabBarProps) {

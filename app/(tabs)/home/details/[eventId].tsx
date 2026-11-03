@@ -6,6 +6,7 @@ import { Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 
 import { useAPI } from "@/contextes/contexteAPI";
+import { useConversations } from "@/contextes/contexteConversations";
 import { useMembre } from "@/contextes/contexteMembre";
 import { usePalette } from "@/contextes/contextePalette";
 import { useAccessToken } from "@/contextes/contexteToken";
@@ -60,6 +61,19 @@ export default function Details(){
     })
 
     const [event, setEvent] = useState<Event>(defaultEvent)  
+
+    const isExternal = useMemo(() => event.nom_calendrier !== undefined && (event.source == 'google' || event.source === 'outlook' || event.source === 'device') ,[event])
+
+    // Story #21 : the shared event's group conversation (only sent when the member is in it)
+    const { rafraichirConversations } = useConversations()
+    const ouvrirConversation = () => {
+        if (!event.conversation_id) return
+        rafraichirConversations()
+        router.push({
+            pathname: '/(tabs)/inbox/[conversationId]',
+            params: { conversationId: event.conversation_id, titre: event.titre ?? '' },
+        })
+    }
 
     const verifAvantDelete = ()=>{        
         if (event.type === "recurrence") {
@@ -178,13 +192,13 @@ export default function Details(){
         () => ({ event: JSON.stringify(event) }),
         [event]
     )
-
+    log("visible", !invitation || event.nom_calendrier == undefined)
     useNavFab("details", {
             icon: <Icon name="pencil" size={24} color={colors.text} />,
             href: '/(tabs)/home/edit/[event]' as const,
             params: FABParams,
             // No editing while deciding on an invitation.
-            visible: !invitation,
+            visible: !invitation && !isExternal,
         })
 
     useFocusEffect(useCallback(() => {
@@ -199,6 +213,18 @@ export default function Details(){
     }, [event])
 
     const s = StyleSheet.create({
+        conversationBtn: {
+            height: 64,
+            width: 64,
+            position: 'absolute',
+            bottom: 16,
+            left: 16,
+            borderRadius: 100,
+            borderWidth: 1,
+            borderColor: colors.secondary,
+            alignItems: 'center',
+            justifyContent: 'center'
+        },
         floatingBtn: {
             height: 64, 
             width: 64,
@@ -234,16 +260,30 @@ export default function Details(){
                     {decision.conflit}
                 </>
             ) : (
-                // quit (non-creators) / delete (creator) button
-                <TouchableOpacity style={s.floatingBtn} onPress={() => {
-                    if (event.privilege_membre === 'editeur')
-                        verifAvantDelete()
-                    else
-                        quitterEvenement()
-                }}>
-                    <Icon name='trash-sharp' color={colors.error} size={28}/>
-                </TouchableOpacity>
-            )}
+                <>
+                    {event.conversation_id ? (
+                        <TouchableOpacity
+                            style={s.conversationBtn}
+                            onPress={ouvrirConversation}
+                            accessibilityRole="button"
+                            accessibilityLabel={t('details.openConversation')}
+                        >
+                            <Icon name='chatbubbles-outline' color={colors.secondary} size={28}/>
+                        </TouchableOpacity>
+                    ) : null}
+                        {/* quit (non-creators) / delete (creator) button */}
+                        {isExternal ? null : (
+                            <TouchableOpacity style={s.floatingBtn} onPress={() => {
+                                if (event.privilege_membre === 'editeur')
+                                    verifAvantDelete()
+                                else
+                                    quitterEvenement()
+                            }}>
+                                <Icon name='trash-sharp' color={colors.error} size={28} />
+                            </TouchableOpacity>
+                        )}
+                </>
+            )}    
         </View>
     )
 }

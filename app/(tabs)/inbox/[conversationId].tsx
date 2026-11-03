@@ -14,7 +14,8 @@ import catcher from '@/functions/catcher'
 export default function Conversation(){
     const { colors } = usePalette()
     const { fonts } = useFont()
-    const {conversationId } = useLocalSearchParams<{conversationId: string}>()
+    // titre: sent when opened from an event's details (story #21), before the list has it
+    const {conversationId, titre } = useLocalSearchParams<{conversationId: string, titre?: string}>()
 
     const { membre } = useMembre()
     const {messages,conversations,ouvrirConversation,fermerConversation,envoyerMessage} = useConversations()
@@ -90,7 +91,7 @@ export default function Conversation(){
             ref={conteneurRef}
             style={[styles.conteneur, { backgroundColor: colors.background, paddingBottom: decalageClavier }]}
         >
-            <Stack.Screen options={{ headerTitle: conversation?.ami.pseudo ?? '' }} />
+            <Stack.Screen options={{ headerTitle: conversation?.ami.pseudo ?? titre ?? '' }} />
             <FlatList
                 ref={listeRef}
                 data={messages}
