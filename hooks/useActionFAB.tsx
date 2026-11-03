@@ -1,5 +1,5 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { FabConfig, useFabActions } from '@/contextes/contexteFAB'; 
 import log from '@/functions/log';
 
@@ -8,7 +8,11 @@ export function useActionFab(owner: string, { action, config }: { action: () => 
 
     const configRef = useRef(config)
 
-    // L'action locale est toujours à jour, mais n'est enregistrée qu'au focus
+    // L'action locale est toujours à jour, mais n'est enregistrée qu'au focus.
+    // The ref is updated in an effect (writing it during render is what ESLint flagged),
+    // and the FAB *calls* the latest action. 2ef2141 had `() => action`, which only
+    // returned the function: every ✓ (create, unavailability, edit) did nothing.
+    // Rectification (Philip).
     const actionLocalRef = useRef(action);
     actionLocalRef.current = action;
     // Calls the CURRENT action. `() => action` only returned the function without calling it,
