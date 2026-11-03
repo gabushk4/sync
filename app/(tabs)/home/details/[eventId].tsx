@@ -1,39 +1,41 @@
 import { router, useLocalSearchParams, useNavigation } from "expo-router";
 import { useFocusEffect, useIsFocused } from "expo-router/react-navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { DateTime } from "luxon";
 import { useTranslation } from "react-i18next";
-import { Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 
 import { useAPI } from "@/contextes/contexteAPI";
+import { useConversations } from "@/contextes/contexteConversations";
+import { useFont } from "@/contextes/contexteFont";
 import { useMembre } from "@/contextes/contexteMembre";
 import { usePalette } from "@/contextes/contextePalette";
-import { useAccessToken } from "@/contextes/contexteToken";
 
 import catcher from "@/functions/catcher";
-import { convertLocalToUTC, convertUTCToLocal } from "@/functions/convertirUTCenLocal";
-import formaterDatePourServeur from "@/functions/formaterDatePourServeur";
+import ToastAbs from "@/abstractions/toastAbs";
+import { toastTypes } from "@/constants/toastConfig";
+import chargerDetailsEvenement from "@/functions/chargerDetailsEvenement";
 import log from "@/functions/log";
 
-import ToastAbs from "@/abstractions/toastAbs";
 import EventForm from "@/components/eventForm";
-import { toastTypes } from "@/constants/toastConfig";
+import Spinner from "@/components/spinner";
+import useGestionEvenement from "@/hooks/useGestionEvenement";
 import { useNavFab } from "@/hooks/useNavFAB";
 import PanneauDecisionInvitation from "@/components/panneauDecisionInvitation";
+import PanneauReport from "@/components/panneauReport";
 import ouvrirRevueInvitation from "@/functions/ouvrirRevueInvitation";
 import useDecisionInvitation from "@/hooks/useDecisionInvitation";
 import { InvitationInfo } from "@/types/invitation";
 import { defaultEvent, Event } from "@/types/calendar";
-import { UrlDescriptor } from "@/types/url";
 import Icon from "@react-native-vector-icons/ionicons";
-import { DateTime } from "luxon";
 
 export default function Details(){
     const { t } = useTranslation('events')
     const { colors } = usePalette()
+    const { fonts } = useFont()
     const { api } = useAPI()
     const isFocused = useIsFocused()
-    const { getToken } = useAccessToken()
     const { membre } = useMembre()
     
     const { eventId, start, end, invitation: invitationParam, depuisRevue } = useLocalSearchParams()
@@ -61,113 +63,54 @@ export default function Details(){
 
     const [event, setEvent] = useState<Event>(defaultEvent)  
 
-    const verifAvantDelete = ()=>{        
-        if (event.type === "recurrence") {
-            Alert.alert(t('details.recurringEditTitle'), t('details.recurringEditMessage'),
-                [
-                    {text:t('details.editSeries'), onPress:()=>{
-                        const url = {
-                            method: 'DELETE',
-                            string: `/evenements/${event.id}`,
-                            data: {}
-                        };
-                        deleteEvenement(url)
-                    }},
-                    {text:t('details.editOccurrence'), onPress:()=>{
-                        const url = {
-                            method: 'POST',
-                            string: '/evenements/exceptions/',
-                            data: {
-                                id_parent:event.id, 
-                                date_occurence:formaterDatePourServeur(convertLocalToUTC(event.debut)), 
-                                debut:formaterDatePourServeur(convertLocalToUTC(event.debut)), 
-                                fin:formaterDatePourServeur(convertLocalToUTC(event.fin)), 
-                                type: 'annule' 
-                            }
-                        };
-                        log("url avant delete", url)
-                        deleteEvenement(url)
-                    }, isPreferred:true}
-                ]
-            )
-        }
-        else{
-            const url = {
-                method: 'DELETE',
-                string: `/evenements/${event.id}`,
-                data: {}
-            };
-            deleteEvenement(url)
+    const isExternal = useMemo(() => event.nom_calendrier !== undefined && (event.source == 'google' || event.source === 'outlook' || event.source === 'device') ,[event])
+
+    // Story #21 : the shared event's group conversation (only sent when the member is in it)
+    const { rafraichirConversations } = useConversations()
+    // Story #21: the event has no conversation yet, its creator makes one (an invitee accepted)
+    const [creationConversation, setCreationConversation] = useState(false)
+    const creerConversation = async () => {
+        if (!event.id || creationConversation) return
+        setCreationConversation(true)
+        try {
+            await api.post(`/evenements/${event.id}/conversation`, {})
+            ToastAbs.show({ type: toastTypes.success, text2: t('details.conversationCreated') })
+            rafraichirConversations()
+            // reloaded: the block becomes the one that opens the conversation
+            await getDetails(event.id as string)
+        } catch (error) {
+            catcher(error, t('details.createConversationFailed'))
+        } finally {
+            setCreationConversation(false)
         }
     }
-
-    const deleteEvenement = async (url:UrlDescriptor)=>{        
-        try {
-            const token = await getToken()
-            const reponse = await api.request(
-                {
-                    method:url.method,
-                    url:url.string,
-                    ...(url.data?{data:url.data}:{}),
-                    headers: {
-                        'Authorization':`Bearer ${token}`,
-                    },
-                }
-            )
-
-            log('evenements supprimé', reponse.status)
-
-            ToastAbs.show({
-                type:toastTypes.success,
-                text1:t('details.deletedTitle'),
-                text2:t('details.deletedMessage'),
-                position:'top'
-            })
-            router.back()
-        } catch (error) {
-            log('erreur en supprimant l\'évènement', error)
-            catcher(error, t('errors.deleteFailed'))
-        }
-    }    
-
-    const quitterEvenement = async ()=>{
-        try {
-            const reponse = await api.post(`/evenements/${event.id}/quitter`, {})
-            if(reponse.status === 201){
-                ToastAbs.show({
-                    type:toastTypes.success,
-                    text2:reponse.data.message
-                })
-                router.back()
-            }
-        } catch (error) {
-            catcher(error, t('errors.leaveFailed'))
-        }
+    const ouvrirConversation = () => {
+        if (!event.conversation_id) return
+        rafraichirConversations()
+        router.push({
+            // in the home stack, over this page: its back arrow returns here
+            pathname: '/(tabs)/home/conversation/[conversationId]',
+            params: { conversationId: event.conversation_id, titre: event.titre ?? '' },
+        })
     }
+
+    // Delete (editor) / leave (anyone else), shared with the notification card.
+    // The occurrence that was opened (timeline / calendar `start` / `end`): deleting "this
+    // one" cancels it, not the series' first (Philip — user story 20, review).
+    const occurrence = useMemo(() => {
+        const debutOcc = typeof start === 'string' ? DateTime.fromISO(start) : null
+        const finOcc = typeof end === 'string' ? DateTime.fromISO(end) : null
+        return debutOcc?.isValid && finOcc?.isValid ? { debut: debutOcc, fin: finOcc } : undefined
+    }, [start, end])
+    const gestion = useGestionEvenement(event, { onTermine: () => router.back(), occurrence })
 
     const getDetails = async (id: string) => {
         try {
-            const timezone = membre.timezone
-
-            const res = await api.request({
-                method: "GET",
-                url: `/evenements/${id}`,
-                params: {
-                    debut: formaterDatePourServeur(convertLocalToUTC(
-                        typeof start === "string"
-                            ? start
-                            : DateTime.now())),
-                    fin: formaterDatePourServeur(convertLocalToUTC(
-                        typeof end === "string"
-                            ? end 
-                            : DateTime.now().plus({ hour: 1 })
-                    )),
-                }
-            })
-
-            res.data.debut = convertUTCToLocal(res.data.debut, timezone)
-            res.data.fin = convertUTCToLocal(res.data.fin, timezone)
-            setEvent(res.data)
+            setEvent(await chargerDetailsEvenement(
+                api, id, membre.timezone,
+                typeof start === "string" ? start : undefined,
+                typeof end === "string" ? end : undefined,
+            ))
         } catch (error) {
             router.back()
             catcher(error, t('errors.loadFailed'))
@@ -178,14 +121,19 @@ export default function Details(){
         () => ({ event: JSON.stringify(event) }),
         [event]
     )
-
+    log("visible", !invitation || event.nom_calendrier == undefined)
     useNavFab("details", {
             icon: <Icon name="pencil" size={24} color={colors.text} />,
             href: '/(tabs)/home/edit/[event]' as const,
             params: FABParams,
-            // No editing while deciding on an invitation.
-            visible: !invitation,
+            // No editing while deciding on an invitation, nor for a reader: the API only
+            // lets an editor change an event (Philip — user story 20, review).
+            visible: !invitation && !isExternal && event.privilege_membre === 'editeur',
         })
+
+    // An unavailability: its own form (reason, no participants) and no postponement
+    // (Philip — user story 20).
+    const indisponibilite = event.nature === 'indisponibilite'
 
     useFocusEffect(useCallback(() => {
         if (typeof eventId === 'string')
@@ -198,28 +146,76 @@ export default function Details(){
         log("event dans details", event)
     }, [event])
 
+    // Header: "Détails de l'évènement", or "Détails de l'indisponibilité" for an unavailability
+    useEffect(() => {
+        navigation.setOptions({
+            headerTitle: t(event.nature === 'indisponibilite' ? 'navigation.unavailabilityDetails' : 'navigation.details'),
+        })
+    }, [event.nature, navigation, t])
+
     const s = StyleSheet.create({
-        floatingBtn: {
-            height: 64, 
-            width: 64,
-            //backgroundColor: colors.secondary,
-            position: 'absolute',
-            bottom: 16,
-            right: 16,
-            borderRadius: 100,
-            borderWidth: 1, 
-            borderColor: colors.error,
+        // Delete (creator) / leave: the form's last block, in red
+        blocSupprimer: {
+            flexDirection: 'row',
             alignItems: 'center',
-            justifyContent: 'center'
-        }
+            justifyContent: 'center',
+            gap: 8,
+            paddingVertical: 14,
+            borderRadius: 16,
+            borderWidth: 1,
+            borderColor: colors.error,
+            backgroundColor: colors.card,
+        },
+        texteSupprimer: { color: colors.error, fontFamily: fonts.body, fontSize: 18 }
     })
+
+    // Not loaded yet: a spinner. EventForm computes its dates once, on its first focus:
+    // shown with the empty default event, it kept "now" as the dates and warned
+    // "Timestamp n'est pas une date" — the event's real dates never showed.
+    // Rectification (Philip — user story 20, review).
+    if (!event.id) {
+        return (
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                <Spinner size={32} color={colors.muted} />
+            </View>
+        )
+    }
 
     return (
         <View style={{flex:1}}>
             <EventForm
+                key={event.id}
                 event={event}
                 mode={'details'}
                 masquerParticipants={!!invitation}
+                nature={event.nature}
+                // Story #21: a block under the participants (review: part of the form)
+                onOuvrirConversation={event.conversation_id && !invitation ? ouvrirConversation : undefined}
+                onCreerConversation={!event.conversation_id && event.peut_creer_conversation && !invitation ? creerConversation : undefined}
+                creationConversationEnCours={creationConversation}
+                // Common availabilities / suggestions (Philip — user story 23) and delete /
+                // leave: blocks at the end of the form, like the others
+                blocsFin={invitation ? undefined : (
+                    <>
+                        {!!event.id && !indisponibilite && (
+                            <PanneauReport enBloc idEvenement={event.id} onPlageChangee={() => getDetails(event.id as string)} />
+                        )}
+                        {!isExternal && (
+                            <TouchableOpacity
+                                style={s.blocSupprimer}
+                                onPress={gestion.supprimerOuQuitter}
+                                accessibilityRole="button"
+                            >
+                                <Icon name={gestion.estEditeur ? 'trash-outline' : 'exit-outline'} color={colors.error} size={24} />
+                                <Text style={s.texteSupprimer}>
+                                    {gestion.estEditeur
+                                        ? t(indisponibilite ? 'details.deleteUnavailability' : 'details.deleteEvent')
+                                        : t('details.leaveEvent')}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+                    </>
+                )}
             />
             {invitation ? (
                 <>
@@ -230,19 +226,15 @@ export default function Details(){
                         accepter={decision.accepter}
                         refuser={decision.refuser}
                         enCours={decision.enCours}
-                    />
+                    >
+                        {/* Proposing another time instead (Philip — user story 23). */}
+                        <PanneauReport idEvenement={invitation.id_evenement} integre />
+                    </PanneauDecisionInvitation>
                     {decision.conflit}
                 </>
             ) : (
-                // quit (non-creators) / delete (creator) button
-                <TouchableOpacity style={s.floatingBtn} onPress={() => {
-                    if (event.privilege_membre === 'editeur')
-                        verifAvantDelete()
-                    else
-                        quitterEvenement()
-                }}>
-                    <Icon name='trash-sharp' color={colors.error} size={28}/>
-                </TouchableOpacity>
+                <>
+                </>
             )}
         </View>
     )

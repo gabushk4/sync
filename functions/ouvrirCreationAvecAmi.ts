@@ -19,21 +19,32 @@ export type AmiInvite = { id: string, pseudo: string, fp_url?: string | null }
  * @param {DateTime} options.fin - Slot end.
  * @param {AmiInvite} options.ami - Friend to invite.
  * @param {boolean} [options.depuisProfil=false] - Opened from the friend's profile.
+ * @param {any} [options.navigation] - The profile's stack (with depuisProfil): the
+ *   creation opens in that same stack, so going back returns to the profile. The profile
+ *   is in the home stack when opened from a friend's row, in the profile stack otherwise
+ *   (a stack without a 'create' screen, e.g. the inbox's, uses the profile tab's).
  * @returns {void}
  */
-export default function ouvrirCreationAvecAmi({ debut, fin, ami, depuisProfil = false }: {
+export default function ouvrirCreationAvecAmi({ debut, fin, ami, depuisProfil = false, navigation }: {
     debut: DateTime,
     fin: DateTime,
     ami: AmiInvite,
     depuisProfil?: boolean,
+    navigation?: any,
 }): void {
+    const params = {
+        start: debut.toISO(),
+        end: fin.toISO(),
+        friend: JSON.stringify({ id: ami.id, pseudo: ami.pseudo, fp_url: ami.fp_url ?? null, privilege: 'lecteur' }),
+        ...(depuisProfil ? { depuis: 'profil' } : {}),
+    }
+    // both stacks have a 'create' screen (home/create, profile/create)
+    if (depuisProfil && navigation?.getState?.()?.routeNames?.includes('create')) {
+        navigation.push('create', params)
+        return
+    }
     router.push({
         pathname: depuisProfil ? '/(tabs)/profile/create' : '/(tabs)/home/create',
-        params: {
-            start: debut.toISO(),
-            end: fin.toISO(),
-            friend: JSON.stringify({ id: ami.id, pseudo: ami.pseudo, fp_url: ami.fp_url ?? null, privilege: 'lecteur' }),
-            ...(depuisProfil ? { depuis: 'profil' } : {}),
-        },
+        params,
     } as any)
 }

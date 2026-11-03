@@ -13,6 +13,8 @@ export type Event = {
   type?: "recurrence" | "exception";
   // 'indisponibilite': a busy stretch the member declared (Philip — user story 20).
   nature?: "evenement" | "indisponibilite";
+  // Other participants than the creator: drawn in the group color (Philip — user story 23).
+  groupe?: boolean;
   regle_recurrence?: string;
   id_parent?: string;
   debut_occurence?: DateTime;
@@ -29,6 +31,11 @@ export type Event = {
   url_externe?: string;
   nom_calendrier?: string;
   compte_origine?: string;
+  // Story #21: public id of the shared event's group conversation, when the member is in it.
+  conversation_id?: string | null;
+  // Story #21: no conversation yet, the member created the event and an invitee accepted:
+  // they can create it (POST /evenements/:id/conversation).
+  peut_creer_conversation?: boolean;
 };
 
 export const defaultEvent = <Event>{

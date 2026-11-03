@@ -1,21 +1,17 @@
 import ModalBase from "@/components/modalBase";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo } from "react";
 import { useTranslation } from 'react-i18next';
-import { Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Dimensions, StyleSheet, TouchableOpacity, View, } from 'react-native';
 
-import { useFont } from '@/contextes/contexteFont';
 import { useMembre } from "@/contextes/contexteMembre";
-import { usePalette } from "@/contextes/contextePalette";
 
 import log from "@/functions/log";
 
-import Haptics from "@/abstractions/haptics";
 import QRCodeAbs from "@/abstractions/QrCodeAbs";
 import AddFriendForm from "@/components/addFriendForm";
 import DemandeConfirmerCourriel from "@/components/demandeConfirmerCourriel";
+import PagesGlissables from "@/components/pagesGlissables";
 import { useLocalSearchParams } from "expo-router";
-import { ScrollView } from "react-native-gesture-handler";
-import Animated, { interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 
 
 const PAGES_DEF = [
@@ -31,62 +27,38 @@ const PAGES_DEF = [
     }
 ]
 
+const s = StyleSheet.create({
+    page: {
+        flex: 1,
+        justifyContent: 'space-evenly',
+        alignItems: 'center',
+    },
+})
+
+/**
+ * "Add a friend" modal: the friend request form and the member's QR code, side by
+ * side, reached by a swipe or their tab. Opened on the QR code first with
+ * `contexte: 'qrCode'`.
+ *
+ * @author Philip — user story 20 (review): the tabs + swipe are PagesGlissables, shared
+ *   with the creation screen (event / unavailability), instead of a copy of their own
+ * @returns {JSX.Element}
+ */
 export default function AjouterAmi() {
     const { t } = useTranslation('friends')
-    const { colors } = usePalette();
-    const { fonts } = useFont();    
     const { membre, getMembre } = useMembre();
 
-    const { contexte } = useLocalSearchParams()    
+    const { contexte } = useLocalSearchParams()
 
-    const { width: WIN_W } = Dimensions.get('window')
-    const PAGE_W = WIN_W - 34 //padding applied by Modal Base
-
-    const scrollViewRef = useRef<ScrollView>(null)
-
-    const pages = contexte === 'qrCode'
-    ? [...PAGES_DEF].reverse()
-    : PAGES_DEF;
-    
-    const contentOffset = useSharedValue(0)
-
-    const animatedTab = useAnimatedStyle(() => {
-        return {
-            left: interpolate(contentOffset.get(), [0, WIN_W], [0, WIN_W/2])
-        }
-    })
-
-    const scrollHandler = useAnimatedScrollHandler({
-        onScroll: (e) => {
-            contentOffset.set(e.contentOffset.x)
-        }
-    })
-
-    const s = StyleSheet.create({
-        page: {
-            ...StyleSheet.absoluteFill,
-            justifyContent: 'space-evenly',
-            width: PAGE_W,
-            alignItems: 'center',
-            height:'100%'
-        },
-        title: {
-            color: colors.text,
-            fontSize: 20,
-            letterSpacing: 0.7,
-            fontFamily: fonts.title,
-            textAlign:'center'
-        },
-        tab: {
-            position: 'absolute',
-            backgroundColor: colors.secondary,
-            opacity: 0.5,
-            width: '50%',
-            height: '112%',
-            borderRadius: 16,
-            left: 0
-        }
-    })
+    // The QR code first when opened for it (a reversed copy: PAGES_DEF stays as is).
+    const pages = useMemo(
+        () => (contexte === 'qrCode' ? [...PAGES_DEF].reverse() : PAGES_DEF).map((p) => ({
+            id: p.id,
+            titre: t(`tabs.${p.titleKey}`),
+            contenu: <View style={s.page}>{p.page}</View>,
+        })),
+        [contexte, t]
+    )
 
     useEffect(() => {
         log('email confirme', membre.emailConfirme);
@@ -96,40 +68,8 @@ export default function AjouterAmi() {
 
     return membre.emailConfirme ? (
         <ModalBase>
-            <View style={{ flex: 1, gap: 4, }}>
-                <View style={{ position:'relative', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 8, }}>
-                    <Animated.View style={[s.tab, animatedTab]}/>
-                    {pages.map((p, index) => 
-                        <TouchableOpacity
-                            key={"tab"+index}
-                            style={{width: '50%',}}
-                            onPress={() => {
-                                Haptics.clickLeger()
-                                scrollViewRef.current?.scrollTo({x: WIN_W * index})
-                            }}
-                        >
-                            <Animated.Text key={index} style={s.title}>{t(`tabs.${p.titleKey}`)}</Animated.Text>
-                        </TouchableOpacity>
-                    )}
-                </View>
-                <ScrollView
-                    ref={scrollViewRef}    
-                    horizontal={true}
-                    contentContainerStyle={{height:'90%', width: PAGE_W * 2, gap: 16 }}
-                    snapToInterval={PAGE_W}
-                    decelerationRate={'fast'}
-                    showsHorizontalScrollIndicator={false}
-                    onScroll={scrollHandler}
-                    onMomentumScrollEnd={(e) => {
-                        console.log("ended", e.nativeEvent.contentOffset)
-                    }}
-                >
-                    {pages.map((p, index) =>
-                        <View key={index} style={[s.page, {left:PAGE_W* index}]}>
-                            {p.page}
-                        </View>
-                    )}                    
-                </ScrollView>
+            <View style={{ flex: 1, gap: 4 }}>
+                <PagesGlissables key={String(contexte)} integre pages={pages} />
             </View>
         </ModalBase>
     ) : (

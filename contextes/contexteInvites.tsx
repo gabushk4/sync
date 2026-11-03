@@ -1,6 +1,7 @@
 import ToastAbs from "@/abstractions/toastAbs";
 import { useAPI } from "@/contextes/contexteAPI";
 import catcher from "@/functions/catcher";
+import { avertirIndisponibles } from "@/hooks/useEnvoiCreation";
 import log from "@/functions/log";
 import { InviterUrl, Participant } from "@/types/invites";
 import React, { createContext, useContext, useState } from 'react';
@@ -36,6 +37,8 @@ export const InvitesProvider: React.FC<React.PropsWithChildren<{}>> = ({ childre
         }))
 
         let valid = true
+        // Friends the API didn't invite because they're unavailable then (Philip — user story 20).
+        let idsIndisponibles = new Set<string>()
 
         if (inviterUrl) {
             let text2: string[] = []
@@ -53,7 +56,10 @@ export const InvitesProvider: React.FC<React.PropsWithChildren<{}>> = ({ childre
                 const response = await api.post(url, {participants: invitations})
                 log('ajouterInvite res:', response.data)
 
-                ToastAbs.show({
+                const indisponibles: { id: string, pseudo: string }[] = response.data?.indisponibles ?? []
+                idsIndisponibles = new Set(indisponibles.map((i) => i.id))
+                if (indisponibles.length > 0) avertirIndisponibles(indisponibles)
+                else ToastAbs.show({
                     type: 'persoSucces',
                     text1: 'invitations envoyées',
                     text2: text2Str,
@@ -68,7 +74,7 @@ export const InvitesProvider: React.FC<React.PropsWithChildren<{}>> = ({ childre
         log('invitations', invitations, "valide", valid)
 
         if (valid) {
-            let nouvInvites = [...invites, ...invitations]
+            let nouvInvites = [...invites, ...invitations.filter((i) => !idsIndisponibles.has(i.id))]
 
             // dédupliquer par id
             nouvInvites = [...new Map(nouvInvites.map((i) => [i.id, i])).values()]

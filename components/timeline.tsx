@@ -44,9 +44,11 @@ type TimelineProps = {
      * review screen scrolls to the event's hour itself, within its one-day bounds.
      * Philip — user story 8 (replaces EventsList's defilerMaintenant). */
     defilerAuDemarrage?: boolean
+    /** Drawn in the hours' content (it scrolls with them): the current time's label. */
+    premierPlan?: React.ReactNode
 }
 
-export default function Timeline({ horizontal, windowStart, selectedDate, timelineDays = 1, defilerAuDemarrage = true } : TimelineProps){
+export default function Timeline({ horizontal, windowStart, selectedDate, timelineDays = 1, defilerAuDemarrage = true, premierPlan } : TimelineProps){
     const { colors } = usePalette()
     const {fonts} = useFont()
     const {pxHeures, L_HEURES, H_HEURES} = useTimeline()
@@ -56,7 +58,7 @@ export default function Timeline({ horizontal, windowStart, selectedDate, timeli
     const initialisationFaite = useRef(false)
 
     useAnimatedReaction(
-        () => offset.value,
+        () => offset.get(),
         (offset) => 
             scrollTo(scrollViewRef, horizontal ? offset : 0, horizontal ? 0 : offset, false)
     )
@@ -80,7 +82,7 @@ export default function Timeline({ horizontal, windowStart, selectedDate, timeli
                 const heureDansLaFenetre = windowStart
                     ? cible.diff(windowStart.startOf('day'), 'hours').hours
                     : cible.hour
-                offset.value = Math.max(0, heureDansLaFenetre) * (pxHeures + L_HEURES)
+                offset.set(Math.max(0, heureDansLaFenetre) * (pxHeures + L_HEURES))
             }}
             >
             {Array.from({ length: timelineDays * 24 }, (_, index) => {
@@ -105,6 +107,7 @@ export default function Timeline({ horizontal, windowStart, selectedDate, timeli
                     <Text style={{color: colors.text, fontSize:minuit ? 12 : 16, fontFamily:fonts.number}}>{minuit ? now.toFormat('ccc d') : item.heure}</Text>
                 </View>
             )})}
+            {premierPlan}
             </Animated.ScrollView>
         
         

@@ -12,6 +12,7 @@ import Animated, { SharedValue } from 'react-native-reanimated'
 import useTimelineLabelOffset from '@/hooks/useTimelineLabelOffset'
 import { positionHeures } from '@/functions/positionTimeline'
 import EventBloc from './eventBloc'
+import titreEvenement from '@/functions/titreEvenement'
 import RenderCalendarColor from '@/functions/renderCalendarColor'
 
 type Props = {
@@ -103,12 +104,14 @@ export default function ListItem({ event, horizontal, displayedDate, listOffset,
     }
 
     const couleurTexte = textColor ?? colors.text
+    const titre = titreEvenement(event)
 
     const s = StyleSheet.create({
         bloc: {
             position: 'absolute',
             left,
             top,
+            overflow: 'hidden',
             ...(horizontal ? { width: taille, height: '100%' } : { height: taille, width: '100%' }),
         },
         texte: {
@@ -143,11 +146,12 @@ export default function ListItem({ event, horizontal, displayedDate, listOffset,
             disabled={event.cliquable === false}
             onPress={() => onPress ? onPress(event) : ouvrirDetailsEvenement({ id: event.id, debut, fin })}
         >
-            <EventBloc event={event} blockColor={event.couleur ? RenderCalendarColor(event.couleur, scheme) : eventsColor} horizontal={horizontal} displayDate={displayedDate} />
+            <EventBloc event={event} blockColor={event.couleur ? RenderCalendarColor(event.couleur, scheme) : eventsColor} horizontal={horizontal} displayDate={displayedDate} size={taille} />
             <Animated.View style={[s.texte, texteAnime]}>
                 <Text style={s.heure} numberOfLines={1}>{startText}</Text>
-                {event.titre
-                    ? <Text style={s.titre} numberOfLines={2} ellipsizeMode="tail">{event.titre}</Text>
+                {/* An unavailability without a (shared) reason reads "Unavailable" (Philip — user story 20). */}
+                {titre
+                    ? <Text style={s.titre} numberOfLines={2} ellipsizeMode="tail">{titre}</Text>
                     // Private friend event: the API hides its title.
                     : <Icon name="lock-closed" color={couleurTexte} size={14} />}
                 <Text style={s.heure} numberOfLines={1}>{endText}</Text>

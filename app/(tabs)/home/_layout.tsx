@@ -23,12 +23,9 @@ export default function HomeLayout() {
             <Stack.Screen
                 name="calendrier" options={{headerBackVisible:true, headerBackButtonDisplayMode:'minimal', headerTitle:t('navigation.calendar')}}
             />
+            {/* Event and unavailability pages, swiped (Philip — user story 20). */}
             <Stack.Screen
                 name="create" options={{headerBackVisible:true, headerBackButtonDisplayMode:'minimal', headerTitle:t('navigation.create')}}
-            />
-            {/* Philip — user story 20. */}
-            <Stack.Screen
-                name="indisponibilite" options={{headerBackVisible:true, headerBackButtonDisplayMode:'minimal', headerTitle:t('navigation.unavailability')}}
             />
             {/* Invitation review ("adjust my schedule" for an invitation in conflict).
                 Philip — user story 8. */}
@@ -40,6 +37,19 @@ export default function HomeLayout() {
             />
             <Stack.Screen
                 name="edit/[event]" options={{headerBackVisible:true, headerBackButtonDisplayMode:'minimal', headerTitle:t('navigation.edit')}}
+            />
+            {/* A friend's profile, opened from their row (the page shows their pseudo). */}
+            <Stack.Screen
+                name="profil/[membreId]" options={{headerBackVisible:true, headerBackButtonDisplayMode:'minimal', headerTitle:''}}
+            />
+            {/* Story #21: an event's group conversation, opened from its details page
+                (the title is the event's, set by the screen). */}
+            <Stack.Screen
+                name="conversation/[conversationId]" options={{headerBackVisible:true, headerBackButtonDisplayMode:'minimal'}}
+            />
+            {/* Its info (tap on its title) */}
+            <Stack.Screen
+                name="conversation/infos/[conversationId]" options={{headerBackVisible:true, headerBackButtonDisplayMode:'minimal', headerTitle:''}}
             />
         </Stack>
     )

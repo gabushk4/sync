@@ -33,6 +33,8 @@ export type Notification = {
     date_envoie: string;
     message: string;
     source_url: { method: string, url: string };
+    /** Public id of the related event (event notifications), or null. Philip — user story 23. */
+    id_evenement?: string | null;
     icon?: string;
     payload?: Record<string, any> | null;
 };
@@ -173,6 +175,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         log("use effect notificaions")
         if (notifRefresh){
             notifRefresh.stop()
+            // The polling (an external resource) follows the login state: it is replaced
+            // here on purpose, so the rule against a setState in an effect doesn't apply.
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setNotifRefresh(undefined)
         }
         if (state === 'authenticated') {

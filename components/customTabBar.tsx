@@ -10,8 +10,6 @@ import ToastAbs from "@/abstractions/toastAbs";
 import { toastTypes } from "@/constants/toastConfig";
 import Animated, { useAnimatedStyle, withTiming, useSharedValue } from "react-native-reanimated";
 import { withTimingConfig } from "@/constants/ReanimatedConfs";
-import { useTranslation } from "react-i18next";
-import MenuCreation from "./menuCreation";
 
 const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
@@ -41,9 +39,6 @@ const Fab = React.memo(function Fab() {
     const { actionRef } = useFabActions();
     const { colors } = usePalette();
     const router = useRouter();
-    const { t } = useTranslation('home');
-    // "What to add?" menu (FabConfig.menuCreation), with the params it was opened with.
-    const [menuCreation, setMenuCreation] = useState<{ params?: any } | null>(null);
 
     // Contenu actuellement affiché (reste en place pendant le fade-out)
     const [display, setDisplay] = useState<FabConfig>(undefined);
@@ -106,12 +101,6 @@ const Fab = React.memo(function Fab() {
         ToastAbs.show({ type: toastTypes.error, text2: display.bloque });
         return;
         }
-        // Asks first whether to create an event or add an unavailability
-        // (Philip — user story 20).
-        if (display.href && display.menuCreation) {
-        setMenuCreation({ params: display.params });
-        return;
-        }
         if (display.href) {
         router.push(
             display.params
@@ -123,30 +112,18 @@ const Fab = React.memo(function Fab() {
         }
     };
 
-    const ouvrirDepuisMenu = (pathname: string) => {
-        const params = menuCreation?.params;
-        setMenuCreation(null);
-        router.push(params ? ({ pathname, params } as any) : (pathname as any));
-    };
-
-    return (
+    
+    return  shown ? (
         <>
-        <AnimatedTouchableOpacity
-        disabled={!shown}
-        onPress={onPress}
-        style={[s.fab, animatedStyle, { borderColor: colors.border, backgroundColor: colors.secondary }]}
-        >
-        {display.icon ?? <Icon name="add" color={colors.text} size={24} />}
-        </AnimatedTouchableOpacity>
-        <MenuCreation
-            visible={!!menuCreation}
-            titre={t('creation.titre')}
-            onCreerEvenement={() => ouvrirDepuisMenu(display.href as unknown as string)}
-            onAjouterIndisponibilite={() => ouvrirDepuisMenu('/home/indisponibilite')}
-            onFermer={() => setMenuCreation(null)}
-        />
+            <AnimatedTouchableOpacity
+            disabled={!shown}
+            onPress={onPress}
+            style={[s.fab, animatedStyle, { borderColor: colors.border, backgroundColor: colors.secondary }]}
+            >
+            {display.icon ?? <Icon name="add" color={colors.text} size={24} />}
+            </AnimatedTouchableOpacity>
         </>
-    );
+    ) : null;
 });
 
 export function CustomTabBar(props: BottomTabBarProps) {

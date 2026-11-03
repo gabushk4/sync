@@ -105,8 +105,7 @@ export default function CalendrierPage() {
 
     useNavFab('calendrier', {
         href: '/home/create',
-        // Asks first: create an event or add an unavailability (Philip — user story 20).
-        menuCreation: true,
+        // Straight to the creation screen; swipe there for an unavailability (Philip — user story 20).
         params: paramsCreation,
         icon: null,
         visible: true,

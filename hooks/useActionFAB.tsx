@@ -1,5 +1,5 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import { FabConfig, useFabActions } from '@/contextes/contexteFAB'; 
 import log from '@/functions/log';
 
@@ -8,13 +8,20 @@ export function useActionFab(owner: string, { action, config }: { action: () => 
 
     const configRef = useRef(config)
 
-    // L'action locale est toujours à jour, mais n'est enregistrée qu'au focus
+    // L'action locale est toujours à jour, mais n'est enregistrée qu'au focus.
+    // The ref is updated in an effect (writing it during render is what ESLint flagged),
+    // and the FAB *calls* the latest action. 2ef2141 had `() => action`, which only
+    // returned the function: every ✓ (create, unavailability, edit) did nothing.
+    // Rectification (Philip).
     const actionLocalRef = useRef(action);
-    actionLocalRef.current = action;
-    const stableAction = useCallback(() => action, []);
+    useEffect(() => {
+        actionLocalRef.current = action;
+    }, [action])
 
-    const visible = config?.visible;
-    
+    const stableAction = useCallback(() => {
+        actionLocalRef.current();    
+    }, [])
+
     // Gère l'icône + le montage/démontage lié au focus de l'écran
     useFocusEffect(
         useCallback(() => {
@@ -23,6 +30,6 @@ export function useActionFab(owner: string, { action, config }: { action: () => 
                 log("action fab cleansed by", owner)
                 release(owner)
             };
-        },  [owner, visible, setFabConfig, release, stableAction])
+        },  [owner, setFabConfig, release, stableAction])
     );
 }

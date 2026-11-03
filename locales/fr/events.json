@@ -1,10 +1,15 @@
 {
   "navigation": {
-    "create": "créer un évènement",
-    "details": "détails",
-    "edit": "éditer",
+    "create": "Nouvel évènement",
+    "details": "Détails de l'évènement",
+    "edit": "Modifier l'évènement",
     "calendar": "Calendrier",
     "invitationReview": "Horaires de l'invitation",
+    "unavailability": "Nouvelle indisponibilité",
+    "unavailabilityDetails": "Détails de l'indisponibilité"
+  },
+  "creationPages": {
+    "event": "Évènement",
     "unavailability": "Indisponibilité"
   },
   "details": {
@@ -14,7 +19,15 @@
     "editOccurrence": "celui-ci",
     "deletedTitle": "effacé",
     "deletedMessage": "on l'a bien rangé là où personne ne regarde; rangé quoi? aucune idée",
-    "clickSource": "clique ici pour afficher dans {{source}}"
+    "clickSource": "clique ici pour afficher dans {{source}}",
+    "openConversation": "Ouvrir la conversation de l'évènement",
+    "conversation": "Conversation de l'évènement",
+    "createConversation": "Créer une conversation de groupe",
+    "conversationCreated": "Conversation de groupe créée",
+    "createConversationFailed": "Impossible de créer la conversation",
+    "deleteEvent": "Supprimer l'évènement",
+    "deleteUnavailability": "Supprimer l'indisponibilité",
+    "leaveEvent": "Quitter l'évènement"
   },
   "edit": {
     "defaultError": "impossible d'éditer l'évènement",
@@ -31,7 +44,11 @@
     "pastDate": "Impossible de créer dans le passé.",
     "pastRange": "La sélection commence avant aujourd'hui.",
     "pastStart": "Le début est déjà passé.",
-    "titleRequired": "L'évènement doit avoir un nom."
+    "titleRequired": "L'évènement doit avoir un nom.",
+    "conversationTitle": "Conversation de groupe",
+    "conversationMessage": "Créer une conversation avec les participants de cet évènement ? Chaque invité y sera ajouté quand il accepte.",
+    "conversationYes": "Créer",
+    "conversationNo": "Non merci"
   },
   "form": {
     "titlePlaceholder": "titre...",
@@ -122,7 +139,8 @@
     "me": "Moi",
     "loadFailed": "Impossible de charger les horaires de l'invitation",
     "retry": "Impossible de charger les horaires. Touche pour réessayer.",
-    "private": "Privé"
+    "private": "Privé",
+    "commonSlot": "Dispo"
   },
   "invitationDecision": {
     "accept": "Accepter",
@@ -136,9 +154,38 @@
     "reasonShared": "raison partagée",
     "createdTitle": "Indisponibilité ajoutée",
     "createdMessage": "Tes amis te verront occupé sur cette plage",
-    "dayTaken": "Tu as déjà quelque chose cette journée-là",
-    "rangeTaken": "Tu as déjà quelque chose sur cette plage",
-    "inTheWay": "Déjà prévu : {{titres}}",
-    "createFailed": "Impossible d'ajouter l'indisponibilité"
+    "createFailed": "Impossible d'ajouter l'indisponibilité",
+    "defaultTitle": "Indisponible",
+    "leftOutTitle": "Pas invité",
+    "leftOut_one": "{{pseudos}} est indisponible à ce moment : pas d’invitation envoyée",
+    "leftOut_other": "{{pseudos}} sont indisponibles à ce moment : pas d’invitation envoyée"
+  },
+  "postpone": {
+    "suggestionsCount": "Plages proposées ({{count}})",
+    "proposedBy": "par {{pseudo}}",
+    "propose": "Proposer",
+    "cancel": "Annuler",
+    "sentTitle": "Proposition envoyée",
+    "sentMessage": "Les participants vont voter",
+    "apply": "Changer la plage",
+    "applyMessage": "{{plage}}\nOui ({{oui}}) : présents · Non ({{non}}) : absents · les autres devront répondre de nouveau.",
+    "appliedTitle": "Plage changée",
+    "appliedMessage": "Les participants sont avertis",
+    "conflictTitle": "Tu as déjà quelque chose à cette heure",
+    "conflictMessage": "Déjà prévu : {{titres}}",
+    "voteYes": "Disponible",
+    "voteNo": "Pas disponible",
+    "loadFailed": "Impossible de charger les plages proposées",
+    "proposeFailed": "Impossible d'envoyer la proposition",
+    "voteFailed": "Impossible d'enregistrer ton vote",
+    "applyFailed": "Impossible de changer la plage",
+    "range": "{{jour}} de {{debut}} à {{fin}}",
+    "movedTitle": "Évènement déplacé",
+    "movedMessage": "Les invités doivent confirmer de nouveau",
+    "moveFailed": "Impossible de déplacer l’évènement",
+    "notFreeTitle": "Plus tout le monde est libre",
+    "notFreeMessage": "{{pseudos}} : plus libre à ce moment",
+    "confirmPropose": "Proposer {{plage}}?",
+    "confirm": "Confirmer"
   }
 }

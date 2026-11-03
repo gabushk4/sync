@@ -1,12 +1,11 @@
 import React, { version as reactVersion, useEffect, useState } from 'react'
-import { Dimensions, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { Dimensions, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import Constants from 'expo-constants'
 import * as Device from 'expo-device'
 import * as Network from 'expo-network'
 import Icon from '@react-native-vector-icons/ionicons'
 import { router, usePathname } from 'expo-router'
 import { useTranslation } from 'react-i18next'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { useAPI } from '@/contextes/contexteAPI'
 import { useFont } from '@/contextes/contexteFont'
@@ -15,6 +14,7 @@ import catcher from '@/functions/catcher'
 import ToastAbs from '@/abstractions/toastAbs'
 import { toastTypes } from '@/constants/toastConfig'
 import { useSignalements } from '@/contextes/contexteSignalements'
+import ModalBase from '@/components/modalBase'
 
 type TechnicalInfo = { label: string; value: string }
 
@@ -24,16 +24,16 @@ export default function ReportBug() {
   const { api } = useAPI()
   const { colors } = usePalette()
   const { fonts } = useFont()
-  const insets = useSafeAreaInsets()
   const { erreursCapturees, retirerErreursCapturees } = useSignalements()
   const pathname = usePathname()
   const [messageQuand, setMessageQuand] = useState('')
   const [messageExpl, setMessageExpl] = useState('')
   const [infos, setInfos] = useState<TechnicalInfo[]>([])
   const [erreursSelectionnees, setErreursSelectionnees] = useState<string[]>(() => erreursCapturees.slice(0, 4).map((erreur) => erreur.id))
+  const idsErreursCapturees = new Set(erreursCapturees.map((erreur) => erreur.id))
+  const erreursSelectionneesDisponibles = erreursSelectionnees.filter((id) => idsErreursCapturees.has(id))
   const [sending, setSending] = useState(false)
   const canSend = !!messageQuand.trim() && !!messageExpl.trim() && !sending
-
   useEffect(() => {
     let actif = true
 
@@ -68,15 +68,6 @@ export default function ReportBug() {
     return () => { actif = false }
   }, [pathname, t])
 
-  useEffect(() => {
-    setErreursSelectionnees((selection) => {
-      const idsDisponibles = new Set(erreursCapturees.map((erreur) => erreur.id))
-      const conserves = selection.filter((id) => idsDisponibles.has(id))
-      const nouveaux = erreursCapturees.map((erreur) => erreur.id).filter((id) => !conserves.includes(id))
-      return [...nouveaux, ...conserves].slice(0, 4)
-    })
-  }, [erreursCapturees])
-
   const submit = async () => {
     if (!canSend) return
     setSending(true)
@@ -87,7 +78,7 @@ export default function ReportBug() {
       ...infos.map(({ label, value }) => `${label}: ${value}`),
       `${t('bugReport.reportedAt')}: ${new Date().toISOString()}`,
     ].join('\n\n')
-    const erreursAJoindre = erreursCapturees.filter((erreur) => erreursSelectionnees.includes(erreur.id)).slice(0, 4)
+    const erreursAJoindre = erreursCapturees.filter((erreur) => erreursSelectionneesDisponibles.includes(erreur.id)).slice(0, 4)
     const sectionsErreurs = erreursAJoindre.map((erreur, index) => [
       `${t('bugReport.caughtError')} ${index + 1} · ${erreur.horodatage}`,
       erreur.titre,
@@ -137,17 +128,10 @@ export default function ReportBug() {
   }
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: insets.top + 12, paddingBottom: 8 }}>
-        <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={t('bugReport.close')} style={{ minWidth: 72, paddingVertical: 10 }}>
-            <Text style={{ color: colors.muted, fontFamily: fonts.body }}>{t('bugReport.cancel')}</Text>
-        </TouchableOpacity>
-        <Text style={{ color: colors.text, fontFamily: fonts.title, fontSize: 20 }}>{t('bugReport.title')}</Text>
-        <TouchableOpacity onPress={submit} accessibilityRole="button" disabled={!canSend} style={{ minWidth: 72, alignItems: 'flex-end', paddingVertical: 10 }}>
-            <Text style={{ color: canSend ? colors.secondary : colors.muted, fontFamily: fonts.title }}>{sending ? t('bugReport.sending') : t('bugReport.sendShort')}</Text>
-        </TouchableOpacity>
-      </View>
-      <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 20, paddingTop: 8, paddingBottom: 32 }} keyboardShouldPersistTaps="handled">
+    <ModalBase>
+      <View style={{ flex: 1, width: '100%', minHeight: 0 }}>
+        <Text style={{ color: colors.text, fontFamily: fonts.title, fontSize: 20, textAlign: 'center', paddingVertical: 8 }}>{t('bugReport.title')}</Text>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 4, paddingTop: 8, paddingBottom: 20 }} keyboardShouldPersistTaps="handled">
 
         <Text style={styles.titreSection}>{t('bugReport.when')}</Text>
         <TextInput
@@ -191,17 +175,20 @@ export default function ReportBug() {
         ) : (
           <View style={{ marginTop: 8, gap: 8 }}>
             {erreursCapturees.map((erreur) => {
-              const selectionnee = erreursSelectionnees.includes(erreur.id)
-              const limiteAtteinte = erreursSelectionnees.length >= 4 && !selectionnee
+              const selectionnee = erreursSelectionneesDisponibles.includes(erreur.id)
+              const limiteAtteinte = erreursSelectionneesDisponibles.length >= 4 && !selectionnee
               return (
                 <TouchableOpacity
                   key={erreur.id}
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: selectionnee, disabled: limiteAtteinte }}
                   disabled={limiteAtteinte}
-                  onPress={() => setErreursSelectionnees((selection) => selectionnee
-                    ? selection.filter((id) => id !== erreur.id)
-                    : [erreur.id, ...selection].slice(0, 4))}
+                  onPress={() => setErreursSelectionnees((selection) => {
+                    const valides = selection.filter((id) => idsErreursCapturees.has(id))
+                    return selectionnee
+                      ? valides.filter((id) => id !== erreur.id)
+                      : [erreur.id, ...valides].slice(0, 4)
+                  })}
                   style={{ padding: 12, borderRadius: 10, borderWidth: 1, borderColor: selectionnee ? colors.secondary : colors.border, backgroundColor: colors.card, opacity: limiteAtteinte ? 0.55 : 1 }}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -217,7 +204,13 @@ export default function ReportBug() {
           </View>
         )}
 
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+        <View style={{ alignItems: 'flex-end', paddingHorizontal: 4, paddingTop: 12, paddingBottom: 8, borderTopWidth: 1, borderColor: colors.border, backgroundColor: colors.card }}>
+          <TouchableOpacity onPress={submit} accessibilityRole="button" accessibilityLabel={sending ? t('bugReport.sending') : t('bugReport.sendShort')} accessibilityState={{ disabled: !canSend }} disabled={!canSend} style={{ width: 56, height: 56, alignItems: 'center', justifyContent: 'center', borderRadius: 28, borderWidth: 1, borderColor: colors.border, backgroundColor: canSend ? colors.secondary : colors.card, opacity: sending ? 0.7 : 1 }}>
+            <Icon name="checkmark" color={colors.text} size={30} />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </ModalBase>
   )
 }

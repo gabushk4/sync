@@ -19,6 +19,7 @@ import { convertirTimestampDateCourte, convertirTimestampDateLongue, convertirTi
 import { convertUTCToLocal } from '@/functions/convertirUTCenLocal'
 import formaterDatePourServeur from '@/functions/formaterDatePourServeur'
 import { conflitsDeLaReponse, EvenementEnConflit } from '@/types/conflit'
+import titreEvenement from '@/functions/titreEvenement'
 import Ionicons from '@react-native-vector-icons/ionicons'
 
 /** Exit fade of the conflict screen (ms), and when it hands over to the create
@@ -29,12 +30,12 @@ const DELAI_NAVIGATION = 80
 
 /**
  * How the conflict screen is left:
- * - 'formulaire': back to the screen under it (the create form, or the feed), via
+ * - 'formulaire': back to the screen under it (the create form, or the feed), via "don't create it",
  *   the arrow next to the title or Android back;
  * - 'retour': "adjust my schedule" — creating: back to where the creation started
  *   (the calendar as it was before pressing "+", or the home timeline); accepting
  *   an invitation: the invitation review (everyone's schedule that day);
- * - 'accueil': the event was created / accepted, or the new one dropped.
+ * - 'accueil': the event was created / accepted.
  */
 export type SortieConflit = 'formulaire' | 'retour' | 'accueil'
 
@@ -171,7 +172,7 @@ export default function ConflitEvenement({ existants: existantsInitiaux, eveneme
     }))
 
     /**
-     * Event created, or the new one dropped: back to the home timeline.
+     * Event created / accepted: back to the home timeline.
      *
      * @author Philip — user story 8 (event conflicts)
      * @returns {void}
@@ -270,7 +271,7 @@ export default function ConflitEvenement({ existants: existantsInitiaux, eveneme
      * @returns {void}
      */
     const confirmerRetrait = () => {
-        const titres = existants.map((ev) => `• ${ev.titre}`).join('\n')
+        const titres = existants.map((ev) => `• ${titreEvenement(ev)}`).join('\n')
         Alert.alert(
             t('conflict.confirmTitle'),
             t('conflict.confirmMessage', { count: existants.length, titres }),
@@ -282,14 +283,16 @@ export default function ConflitEvenement({ existants: existantsInitiaux, eveneme
     }
 
     /**
-     * "Don't create it": the new event was never saved, so just drop it.
+     * "Don't create it": the new event was never saved; back to the form, still
+     * filled in, to change the time instead of starting over.
      *
      * @author Philip — user story 8 (event conflicts)
+     * @author Philip — rectification: stays on the form instead of the home timeline
      * @returns {void}
      */
     const abandonnerNouveau = () => {
         ToastAbs.show({ type: toastTypes.success, text2: t('conflict.newDiscarded') })
-        retourAccueil()
+        fermer('formulaire')
     }
 
     /**
@@ -526,7 +529,7 @@ export default function ConflitEvenement({ existants: existantsInitiaux, eveneme
                                     size={22}
                                 />
                                 <View style={{ flex: 1, gap: 2 }}>
-                                    <Text style={s.titreEvenement} numberOfLines={1}>{ev.titre}</Text>
+                                    <Text style={s.titreEvenement} numberOfLines={1}>{titreEvenement(ev)}</Text>
                                     {plage && <Text style={s.heureEvenement}>{plage}</Text>}
                                     <Text style={s.action}>{actionPour(ev)}</Text>
                                 </View>
