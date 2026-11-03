@@ -747,6 +747,16 @@ export default function Home() {
   }
   useEffect(majMaxY, [amisAffiches.length])
 
+  // A tap anywhere on the rows clears the picked range ("click off"). Shorter than the
+  // hold that starts a selection on the member's row (200 ms), so that hold never
+  // counts as a tap.
+  const effacerSelection = () => setPlageChoisie(null)
+  const toucherHorsSelection = Gesture.Tap()
+    .maxDuration(180)
+    .onEnd((_e, reussi) => {
+      if (reussi) scheduleOnRN(effacerSelection)
+    })
+
   const panGesture = Gesture.Pan()
     .onBegin(() => {
       cancelAnimation(offsetX)            // stoppe l'inertie en cours
@@ -837,8 +847,15 @@ export default function Home() {
     bloque: !plageChoisie && todayDateTime && estJourPasse(todayDateTime) ? t('create.pastDate', { ns: 'events' }) : undefined,
   })
 
-  // The picked range is dropped once the home screen is left (e.g. for the creation).
-  useFocusEffect(useCallback(() => () => setPlageChoisie(null), [setPlageChoisie]))
+  // The picked range stays when the home screen is left (backing out of the creation
+  // finds it still selected); a tap elsewhere clears it (see effacerSelection). Once an
+  // event covers it (e.g. the one just created on it), it's dropped.
+  useEffect(() => {
+    if (!plageChoisie) return
+    const couverte = evenementsHoraire.some((ev: any) =>
+      ev.debut && ev.fin && ev.debut < plageChoisie.fin && ev.fin > plageChoisie.debut)
+    if (couverte) setPlageChoisie(null)
+  }, [evenementsHoraire, plageChoisie])
 
   useFocusEffect(
     useCallback(() => {
@@ -886,6 +903,10 @@ export default function Home() {
       })      
 
       return () => {
+        // This screen's exact position, given back on return (it was only recorded when
+        // the displayed day changed, so coming back from e.g. the creation jumped to an
+        // older position, away from a range picked on the same day).
+        if (accueilActifRef.current) offsetAccueilRef.current = offsetX.get()
         accueilActifRef.current = false
         accueilActif.set(false)
         userEventsRefresh.current?.destroy()
@@ -1183,7 +1204,7 @@ export default function Home() {
         </View>
 
         {/* ── Zone principale (3/4) — horaire amis ── */}
-        <GestureDetector gesture={panGesture}>
+        <GestureDetector gesture={Gesture.Simultaneous(panGesture, toucherHorsSelection)}>
           <View
             style={s.calendarContainer}
           >
