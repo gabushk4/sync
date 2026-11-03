@@ -297,6 +297,14 @@ export default function Home() {
     const minuterie = setInterval(() => setInstantCourant(DateTime.now()), 30_000)
     return () => clearInterval(minuterie)
   }, [])
+  // One line over every row (full height, no gaps between rows): a see-through strip
+  // scrolled exactly like the rows (scrollTo from the shared offset, see EventsList),
+  // the line at the current time in it.
+  const ligneMaintenantRef = useAnimatedRef<Animated.ScrollView>()
+  useAnimatedReaction(
+    () => offsetX.get(),
+    (offset) => scrollTo(ligneMaintenantRef, offset, 0, false)
+  )
   const debutFenetreJour = windowStart.startOf('day')
   const maintenantVisible = instantCourant >= debutFenetreJour && instantCourant < debutFenetreJour.plus({ days: JOURS_FENETRE })
   const xMaintenant = positionHeures(instantCourant, windowStart) * (pxHeures + L_HEURES)
@@ -1141,7 +1149,15 @@ export default function Home() {
     calendarContainer: {
       flex:5
     },
-    // Current time: a line in every row, its time in the hours' row (see xMaintenant)
+    // Current time: a line over all the rows, its time in the hours' row (see xMaintenant)
+    bandeMaintenant: {
+      position: 'absolute',
+      left: WIDTH_COL,
+      right: 0,
+      top: 0,
+      bottom: 0,
+      zIndex: 10,
+    },
     ligneMaintenant: {
       position: 'absolute',
       top: 0,
@@ -1319,7 +1335,6 @@ export default function Home() {
                             displayedDate={windowStart}
                             timelineDays={JOURS_FENETRE}
                             getEvenements={() => { refreshAt(todayDateTime ?? DateTime.now()) }}
-                            premierPlan={maintenantVisible && <View pointerEvents="none" style={[s.ligneMaintenant, { left: xMaintenant - 1 }]} />}
                           />
                         </View>                    
                       )})}
@@ -1353,7 +1368,6 @@ export default function Home() {
                   // Free stretches in pale blue: hold then drag to pick a range, then "+"
                   // creates on it (event, or unavailability by swiping). Philip — user story 20.
                   arrierePlan={<TrousHoraire evenements={evenementsHoraire} debutFenetre={windowStart} jours={JOURS_FENETRE} selection={plageChoisie} onSelection={setPlageChoisie} />}
-                  premierPlan={maintenantVisible && <View pointerEvents="none" style={[s.ligneMaintenant, { left: xMaintenant - 1 }]} />}
                 />
                 {/* Fully booked day: a fixed card over the (still mounted) timeline, so
                     it doesn't scroll and the timeline comes back as it was on a normal day. */}
@@ -1380,6 +1394,20 @@ export default function Home() {
                 )}
               </View>
             </Animated.View>
+          {/* Current time: one line over all the rows, scrolled like them */}
+          <Animated.ScrollView
+            ref={ligneMaintenantRef}
+            horizontal
+            scrollEnabled={false}
+            pointerEvents="none"
+            showsHorizontalScrollIndicator={false}
+            style={s.bandeMaintenant}
+            contentContainerStyle={{ height: '100%' }}
+          >
+            <View style={{ width: JOURS_FENETRE * 24 * (pxHeures + L_HEURES), height: '100%' }}>
+              {maintenantVisible && <View style={[s.ligneMaintenant, { left: xMaintenant - 1 }]} />}
+            </View>
+          </Animated.ScrollView>
         </View>
         </GestureDetector>
 
