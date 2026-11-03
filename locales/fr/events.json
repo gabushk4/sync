@@ -149,8 +149,6 @@
   },
   "postpone": {
     "suggestionsCount": "Plages proposées ({{count}})",
-    "noSlot": "Aucune plage où tout le monde est libre dans les 7 prochains jours",
-    "alreadyProposed": "déjà proposée",
     "proposedBy": "par {{pseudo}}",
     "propose": "Proposer",
     "cancel": "Annuler",
@@ -169,15 +167,12 @@
     "voteFailed": "Impossible d'enregistrer ton vote",
     "applyFailed": "Impossible de changer la plage",
     "range": "{{jour}} de {{debut}} à {{fin}}",
-    "move": "Déplacer",
     "movedTitle": "Évènement déplacé",
     "movedMessage": "Les invités doivent confirmer de nouveau",
     "moveFailed": "Impossible de déplacer l’évènement",
     "notFreeTitle": "Plus tout le monde est libre",
     "notFreeMessage": "{{pseudos}} : plus libre à ce moment",
-    "commonSlots": "Disponibilités communes ({{count}})",
     "confirmPropose": "Proposer {{plage}}?",
-    "confirmMove": "Déplacer l’évènement {{plage}}?\nLes invités devront confirmer de nouveau.",
     "confirm": "Confirmer"
   }
 }

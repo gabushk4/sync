@@ -117,11 +117,11 @@ const CreationEvenement = forwardRef<CreationHandle>(function CreationEvenement(
      * The conflict screen is left: closes it, then navigates from this screen's own
      * stack — one plain action, like the header's back arrow (navigating from the
      * old (modals) route never reached the calendar under this screen):
-     * - 'formulaire': stays on this form;
+     * - 'formulaire': stays on this form (also "don't create it");
      * - 'retour' ("adjust my schedule"): back to where the creation started, the
      *   calendar page as it was before pressing "+" (same month, same selection)
      *   or the home timeline;
-     * - 'accueil' (created / dropped): back to the home timeline.
+     * - 'accueil' (created): back to the home timeline.
      *
      * @author Philip — user story 8 (event conflicts)
      * @param {SortieConflit} sortie

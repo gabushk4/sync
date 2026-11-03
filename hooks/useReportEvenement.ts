@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import ToastAbs from "@/abstractions/toastAbs";
@@ -68,13 +69,18 @@ export default function useReportEvenement(idEvenement: string | null | undefine
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [idEvenement])
 
-    useEffect(() => {
+    // (Re)loaded on focus: a proposal sent from the invitation review shows on the
+    // decision page it goes back to (already mounted, not reloaded otherwise).
+    // Rectification (Philip — user story 23).
+    useFocusEffect(useCallback(() => {
         if (!idEvenement) return
+        let actif = true
         api.get(`/postpone/evenements/${idEvenement}`)
-            .then((reponse) => setDonnees(reponse.data))
+            .then((reponse) => { if (actif) setDonnees(reponse.data) })
             .catch((error) => catcher(error, t('postpone.loadFailed')))
+        return () => { actif = false }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [idEvenement])
+    }, [idEvenement]))
 
     /**
      * "Tue 12 Nov from 14:00 to 15:00", in the member's timezone.

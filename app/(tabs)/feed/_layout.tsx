@@ -16,6 +16,10 @@ export default function FeedLayout() {
             <Stack.Screen
                 name="refusees" options={{headerTitle:t('navigation.refused')}}
             />
+            {/* Editing an event from its notification card (Philip — rectification). */}
+            <Stack.Screen
+                name="edit/[event]" options={{headerBackButtonDisplayMode:'minimal', headerTitle:t('events:navigation.edit')}}
+            />
         </Stack>
     )
 }

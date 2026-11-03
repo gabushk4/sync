@@ -99,7 +99,7 @@ const CreationIndisponibilite = forwardRef<CreationHandle>(function CreationIndi
     })
 
     /**
-     * The conflict screen is left: closes it; created (or dropped) → back to the home
+     * The conflict screen is left: closes it; created → back to the home
      * timeline, "adjust" → back to where the creation started, else stays on the form.
      *
      * @author Philip — user story 20 (review)
