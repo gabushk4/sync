@@ -25,8 +25,7 @@
     "minorSecurity":"sécurité des mineurs",
     "imports":"importer et gérer un calendrier",
     "calendarImports":{
-        "system": "à partir du système",
-        "file": "à partir d'un fichier .ics",
+        "local": "à partir de l'appareil ou fichier .ics",
         "google": "à partir de Google",
         "outlook": "à partir du Outlook"
     }

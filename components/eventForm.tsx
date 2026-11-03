@@ -15,7 +15,7 @@ import { useFocusEffect } from 'expo-router'
 import { DateTime } from 'luxon'
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, View } from 'react-native'
 
 import SwitchAbs from '@/abstractions/switchAbs'
 import { useEventDraft } from '@/contextes/contexteEventDraft'
@@ -26,6 +26,8 @@ import Animated from 'react-native-reanimated'
 import DateTimeSelecteur from './datetimeSelecteurs'
 import MenuDeroulant from './menuDeroulant'
 import ParticipantsListe from './participantsListe'
+import RenderCalendarColor from '@/functions/renderCalendarColor'
+import catcher from '@/functions/catcher'
 
 const MAX_LONG_TITLE = 50
 const MAX_LONG_DESC = 2000
@@ -73,6 +75,17 @@ type Props = {
 
 const dtNow = DateTime.now()
 
+const redirigerVersLaSource = async (url: string) => {
+    log('eventForm: redirigerVersLaSource: ' + url)
+    const canOpen = await Linking.canOpenURL(url)
+    if (canOpen) {
+        Linking.openURL(url)
+    } else {
+        const err = new Error(`Cannot open URL: ${url}`)        
+        catcher(err)
+    }
+}
+
 /**
  * Frequency ('DAILY', 'WEEKLY'…) and end (local) of a stored rule, as creerRegle writes
  * it: 'DTSTART:20261218T010000Z\nFREQ=DAILY;UNTIL=20261231T010000Z'.
@@ -110,7 +123,8 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
     const { colors } = usePalette()
     const { fonts } = useFont()
     const { ajouterInvite } = useInvites()    
-    const {start, end, setStart, setEnd, setRequestsEnabled} = useEventDraft()
+    const { start, end, setStart, setEnd, setRequestsEnabled , setFriendsRequestsEnabled} = useEventDraft()
+    const scheme = useColorScheme() ?? 'dark'
         
     // Parenthesized explicitly: `? :` binds looser than `||`, so without the
     // parens this would evaluate as `(constraints?.minimumStart || mode ===
@@ -123,6 +137,13 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
     const refDescription = useRef<TextInput>(null)
     const dateTimesCalculated = useRef(false)
     const prefilledParticipantsApplied = useRef(false)
+
+    const dateLocaleEvenement = (date?: DateTime): DateTime => {
+        if (!date) return dtNow
+        // Details already contains a Luxon DateTime in the member's timezone;
+        // edit routes receive ISO strings after JSON serialization.
+        return DateTime.isDateTime(date) ? date : convertUTCToLocal(date as unknown as string)
+    }
 
     const [dateTimeDisabled, setDateTimeDisabled] = useState<boolean>(false)
     const [titleLen, setTitleLen] = useState<number>(0)
@@ -169,8 +190,8 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
             return {start, end}
         }
 
-        let start = ceilBy5(convertUTCToLocal(event.debut ?? dtNow) ?? dtNow)
-        let end = ceilBy5(convertUTCToLocal(event.fin ?? dtNow) ?? dtNow)        
+        let start = dateLocaleEvenement(event.debut)
+        let end = dateLocaleEvenement(event.fin)
 
         return {start, end}
     }
@@ -206,8 +227,12 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
 
     useEffect(() => {
         setRequestsEnabled(mode !== 'details')
-        return () => setRequestsEnabled(false)
-    }, [mode, setRequestsEnabled])
+        setFriendsRequestsEnabled(!indisponibilite)
+        return () => {
+            setRequestsEnabled(false)
+            setFriendsRequestsEnabled(false)
+        }
+    }, [mode, indisponibilite, setRequestsEnabled, setFriendsRequestsEnabled])
 
     // The recurrence's end follows the start, unless it is still after it (an existing
     // rule's UNTIL used to be overwritten as soon as the dates were computed).
@@ -226,6 +251,17 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
         if (event.id)
             setEventParicipantsControlUrl(`/evenements/${event.id}/participants`)
     }, [event])
+
+    // Details arrive asynchronously: replace the placeholder dates as soon as the
+    // actual event is loaded, so friend availability is searched on its real range.
+    useEffect(() => {
+        if (mode === 'create' || !event.debut || !event.fin) return
+        const debut = dateLocaleEvenement(event.debut)
+        const fin = dateLocaleEvenement(event.fin)
+        dateTimesCalculated.current = true
+        setStart(debut)
+        setEnd(fin)
+    }, [event.debut, event.fin, mode, setEnd, setStart])
 
     useImperativeHandle(ref, () => ({
         getValues: (): EventFormValues => ({
@@ -400,6 +436,28 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
                     />
                 </View>
             )}
+            {/* Extern calendar infos */}
+            {event.source !== 'sync' && event.couleur &&
+                <TouchableOpacity
+                    style={[s.champ, { backgroundColor: RenderCalendarColor(event.couleur, scheme), gap: 8 }]}
+                    onPress={() => {
+                        if(event.url_externe)
+                            redirigerVersLaSource(event.url_externe)
+                    }}
+                >
+                    <View style={ { flexDirection:'row', justifyContent:'space-between', alignItems:'center',  }}>
+                        <Text style={s.label}>
+                            Source : 
+                        </Text>
+                        <Text style={{color: colors.text, fontSize:16}}>
+                            {event.nom_calendrier} ({event.source})
+                        </Text>
+                    </View>
+                    {event.url_externe && <Text style={{ color: colors.muted, width: '100%', textAlign: 'center', fontSize: 12 }}>
+                        {t('details.clickSource', { source: event.source })}</Text>
+                    }
+                </TouchableOpacity>
+            }
             {/* Reccurence — an unavailability may repeat too, e.g. every night
                 (Philip — user story 20, review) */}
             {<View style={{ gap: 8 }}>

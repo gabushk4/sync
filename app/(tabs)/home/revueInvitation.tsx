@@ -113,7 +113,7 @@ export default function RevueInvitation() {
             couleur: creneauChoisi === c.debut ? colors.secondary : colors.or,
             cliquable: !c.deja_propose,
             creneau: c,
-        }) as Event & { creneau: Creneau }),
+        }) as unknown as Event & { creneau: Creneau }),
         // eslint-disable-next-line react-hooks/exhaustive-deps
         [report, jourMillis, colors.or, colors.secondary, creneauChoisi])
     const creneau = report?.creneaux.find((c) => c.debut === creneauChoisi)

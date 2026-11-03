@@ -7,6 +7,7 @@ export default function ProfileLayout() {
     return (
         <Stack
             screenOptions={{
+                headerTransparent: false,
                 headerBackButtonDisplayMode:'minimal'
             }}
         >
@@ -20,7 +21,10 @@ export default function ProfileLayout() {
                 name="settings" options={{ headerTitle: t('navigation.settings')}}
             />
             <Stack.Screen
-                name="importCalendar" options={{ headerTitle: t('navigation.importCalendar')}}
+                name="admin" options={{ headerTitle: t('admin.title') }}
+            />
+            <Stack.Screen
+                name="settings/calendars/local" options={{ headerTitle: t('navigation.localCalendar')}}
             />
             <Stack.Screen
                 name="settings/calendars/google" options={{ headerTitle: 'Google Agenda' }}

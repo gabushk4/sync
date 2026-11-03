@@ -25,7 +25,7 @@
     "minorSecurity":"child safety standards",
     "imports":"import and manage a calendar",
     "calendarImports":{
-        "system": "from system",
+        "local": "from device calendar or .ics file",
         "file": "from .ics file",
         "google": "from Google Agenda",
         "outlook": "from Outlook Calendar"

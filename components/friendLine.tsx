@@ -8,12 +8,14 @@ import { useTranslation } from "react-i18next"
 import { convertirTimestampDateLongue } from "@/functions/convertirTimestamp"
 import log from "@/functions/log"
 import { ListType } from "@/app/(modals)/listeAmis"
+import { Interval } from "@/types/availabilities"
 
 type Props = {
     friend: Participant;
     onPress: TouchableOpacityProps['onPress'];
     listType: ListType;
     selected: boolean;
+    suggestedIntervals?: Interval[];
     /** Has an unavailability over the event's range: greyed out, can't be picked. */
     indisponible?: boolean;
 }
@@ -22,13 +24,13 @@ type Props = {
  * One friend in the friends list.
  *
  * @author Philip — user story 20: `indisponible` greys the friend out with "unavailable
- *   then" instead of their friendship date, and they can't be picked — the app warns
- *   before inviting someone who said "don't disturb me then"
+ *   then" instead of their friendship date and suggestions, and they can't be picked —
+ *   the app warns before inviting someone who said "don't disturb me then"
  */
-export default function FriendLine({ friend, onPress, listType, selected, indisponible = false }: Props) {
+export default function FriendLine({ friend, onPress, listType, selected, suggestedIntervals = [], indisponible = false }: Props) {
     const { fonts } = useFont();
     const { colors } = usePalette();
-    const { t } = useTranslation('friends');
+    const { t, i18n } = useTranslation('friends');
 
     const dateAmitie = convertirTimestampDateLongue(friend.temps_amitie)
 
@@ -41,7 +43,19 @@ export default function FriendLine({ friend, onPress, listType, selected, indisp
                     <Text numberOfLines={1} style={{ fontFamily: fonts.body, color: colors.text, fontSize: 17 }}>{friend.pseudo}</Text>
                     {indisponible
                         ? <Text numberOfLines={1} style={{ fontFamily: fonts.body, color: colors.indisponible, fontSize: 13 }}>{t('list.unavailable')}</Text>
-                        : <Text numberOfLines={1} style={{ fontFamily: fonts.body, color: colors.muted, fontSize: 13 }}>{t('list.friendSince', { date: dateAmitie.substring(dateAmitie.indexOf('.') + 2) })}</Text>}
+                        : <>
+                        <Text numberOfLines={1} style={{ fontFamily: fonts.body, color: colors.muted, fontSize: 13 }}>{t('list.friendSince', { date: dateAmitie.substring(dateAmitie.indexOf('.') + 2) })}</Text>
+                        {suggestedIntervals.slice(0, 2).map((interval) => (
+                            <Text key={interval.id} numberOfLines={1} style={{ fontFamily: fonts.body, color: colors.primary, fontSize: 12 }}>
+                                {t('list.suggestedAvailability', { range: `${interval.debut.setLocale(i18n.language).toFormat('ccc d LLL HH:mm')}–${interval.fin.setLocale(i18n.language).toFormat('ccc d LLL HH:mm')}` })}
+                            </Text>
+                        ))}
+                        {suggestedIntervals.length > 2 && (
+                            <Text numberOfLines={1} style={{ fontFamily: fonts.body, color: colors.muted, fontSize: 12 }}>
+                                {t('list.moreSuggestions', { count: suggestedIntervals.length - 2 })}
+                            </Text>
+                        )}
+                        </>}
                 </View>
                 <View style={{ width: 40, height: '100%', justifyContent: 'center', alignItems: 'center' }}>
                     {listType === 'consult' &&

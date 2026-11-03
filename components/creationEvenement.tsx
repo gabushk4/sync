@@ -1,5 +1,5 @@
-import { useFocusEffect, useLocalSearchParams, useNavigation } from "expo-router";
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { useLocalSearchParams, useNavigation } from "expo-router";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import useEnvoiCreation, { avertirIndisponibles, corpsCreation } from "@/hooks/useEnvoiCreation";
 import { useTranslation } from "react-i18next";
 
@@ -211,15 +211,13 @@ const CreationEvenement = forwardRef<CreationHandle>(function CreationEvenement(
 
     useImperativeHandle(ref, () => ({ envoyer: postEvenement }))
 
-    useFocusEffect(useCallback(() => { 
-        const listener = navigation.addListener('beforeRemove', () => {
-            console.log('on back')
-            resetInvites()
-        })
-        return () => {
-            navigation.removeListener('beforeRemove', listener)
-        }
-    }, []))
+    // Invitees picked for this event are dropped once the screen is gone. From main
+    // (0276b25, SDK 58): 'removed' instead of a 'beforeRemove' listener, unsubscribed
+    // in a microtask — carried over here when create.tsx became this page.
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('removed', () => resetInvites())
+        return () => queueMicrotask(unsubscribe)
+    }, [navigation, resetInvites])
 
     useEffect(() => {
         log("email confirme", membre.emailConfirme)

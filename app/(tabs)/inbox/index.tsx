@@ -49,6 +49,7 @@ export default function Inbox(){
 
     // le bouton "+" au centre de la barre d'onglets ouvre la liste d'amis pour écrire à quelqu'un
     useNavFab("inbox", {
+        visible: true,
         href: '/(modals)/listeAmis',
         params: { type: 'message' },
         icon: null,
@@ -75,7 +76,7 @@ export default function Inbox(){
                             <NotificationItem key={demande.id} item={demande} index={index} vu={demande.statut_notification} />
                         ))}
                     </View>
-                ) : null}
+                ) : undefined}
                 ListEmptyComponent={
                     <View style={styles.vide}>
                         <Text style={{ color: colors.muted, fontFamily: fonts.body, fontSize: 15, textAlign: 'center' }}>

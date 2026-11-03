@@ -11,7 +11,7 @@ export function useActionFab(owner: string, { action, config }: { action: () => 
     // L'action locale est toujours à jour, mais n'est enregistrée qu'au focus
     const actionLocalRef = useRef(action);
     actionLocalRef.current = action;
-    const stableAction = useCallback(() => actionLocalRef.current(), []);
+    const stableAction = useCallback(() => action, []);
 
     const visible = config?.visible;
     

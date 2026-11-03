@@ -3,18 +3,17 @@ import { usePalette } from '@/contextes/contextePalette';
 
 import Radius from '@/constants/Radius';
 
-import { CalendrierGoogle } from '@/functions/googleAgenda';
+import type { CalendrierImport } from '@/functions/imports';
 
-import { L, S } from '@/constants/EventsSL';
-import { useEffect, useState } from 'react';
+import RenderCalendarColor from '@/functions/renderCalendarColor';
+import { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, View } from 'react-native';
 import { FlatList } from 'react-native-gesture-handler';
 import Overlay from './overlay';
-import RenderCalendarColor from '@/functions/renderCalendarColor';
 
-type Props = {
-    selectedCalendar: CalendrierGoogle | undefined;
-    onSave: (calendar: CalendrierGoogle, changes: Partial<CalendrierGoogle>) => void | Promise<void>;
+type Props<TCalendrier extends CalendrierImport> = {
+    selectedCalendar: TCalendrier | undefined;
+    onSave: (calendar: TCalendrier, changes: Partial<TCalendrier>) => void | Promise<void>;
     onClose: () => void;
 }
 
@@ -29,27 +28,21 @@ const CALENDAR_COLORS = [
     325,
 ]
 
-const MAX_COLORS_PER_LINE = 4;
-
-export default function CalendarOptions({ selectedCalendar, onSave, onClose }: Props) {
+export default function CalendarOptions<TCalendrier extends CalendrierImport>({ selectedCalendar, onSave, onClose }: Props<TCalendrier>) {
     const { colors } = usePalette();
     const { fonts } = useFont();
-    const scheme = useColorScheme()
+    const scheme = useColorScheme() ?? 'light'
     
     const [overlayVisible, setOverlayVisible] = useState(false);
     const [draftCalendar, setDraftCalendar] = useState(selectedCalendar);
     const [saving, setSaving] = useState(false);
 
-    useEffect(() => {
-        setDraftCalendar(selectedCalendar);
-    }, [selectedCalendar, colors.primary]);
-
     const modifications = selectedCalendar && draftCalendar
         ? Object.fromEntries(
             Object.keys(draftCalendar)
-                .filter(key => draftCalendar[key as keyof CalendrierGoogle] !== selectedCalendar[key as keyof CalendrierGoogle])
-                .map(key => [key, draftCalendar[key as keyof CalendrierGoogle]]),
-        ) as Partial<CalendrierGoogle>
+                .filter(key => draftCalendar[key as keyof TCalendrier] !== selectedCalendar[key as keyof TCalendrier])
+                .map(key => [key, draftCalendar[key as keyof TCalendrier]]),
+            ) as Partial<TCalendrier>
         : {};
 
     const enregistrer = async () => {

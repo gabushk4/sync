@@ -5,7 +5,7 @@
     "slug": "sync",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/icon.png",
     "scheme": ["sync", "com.alkemist.sync"],
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -17,8 +17,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#2e1443"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.alkemist.sync",
@@ -34,10 +34,15 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/icon.png"
     },
     "plugins": [
-      "expo-router",
+      [
+        "expo-router",
+        {
+          "apiRoutes": true
+        }
+      ],
       "expo-web-browser",
       "@react-native-vector-icons/ionicons",
       "@react-native-community/datetimepicker",

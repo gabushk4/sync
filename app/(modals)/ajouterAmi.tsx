@@ -64,7 +64,7 @@ export default function AjouterAmi() {
         log('email confirme', membre.emailConfirme);
         if (!membre.emailConfirme)
             getMembre()
-    }, [membre.emailConfirme]);
+    }, [membre.emailConfirme, getMembre]);
 
     return membre.emailConfirme ? (
         <ModalBase>
