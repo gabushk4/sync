@@ -23,6 +23,8 @@ type Props = {
     onPlageChangee?: () => void
     /** Inside another panel (the invitation decision one): no background nor padding of its own. */
     integre?: boolean
+    /** A block of the event's form (details page): its rounded card and label style. */
+    enBloc?: boolean
 }
 
 /**
@@ -43,7 +45,7 @@ type Props = {
  * @param {Props} props
  * @returns {JSX.Element | null}
  */
-export default function PanneauReport({ idEvenement, onPlageChangee, integre = false }: Props) {
+export default function PanneauReport({ idEvenement, onPlageChangee, integre = false, enBloc = false }: Props) {
     const { t } = useTranslation('events')
     const { colors } = usePalette()
     const { fonts } = useFont()
@@ -99,6 +101,8 @@ export default function PanneauReport({ idEvenement, onPlageChangee, integre = f
     const s = StyleSheet.create({
         panneau: integre
             ? { gap: 10 }
+            : enBloc
+            ? { backgroundColor: colors.card, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 12, gap: 10 }
             : {
                 backgroundColor: colors.card,
                 borderTopWidth: StyleSheet.hairlineWidth,
@@ -109,7 +113,10 @@ export default function PanneauReport({ idEvenement, onPlageChangee, integre = f
                 gap: 10,
             },
         entete: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-        titre: { color: colors.text, fontFamily: fonts.title, fontSize: 16 },
+        // in the form: the label style of its other blocks (Visibility, Participants…)
+        titre: enBloc
+            ? { color: colors.muted, fontFamily: fonts.body, fontSize: 20 }
+            : { color: colors.text, fontFamily: fonts.title, fontSize: 16 },
         texte: { color: colors.muted, fontFamily: fonts.body, fontSize: 14 },
         jour: { color: colors.text, fontFamily: fonts.title, fontSize: 13, marginTop: 2 },
         blocs: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },

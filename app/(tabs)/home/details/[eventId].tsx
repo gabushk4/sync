@@ -135,32 +135,19 @@ export default function Details(){
     }, [event.nature, navigation, t])
 
     const s = StyleSheet.create({
-        // Story #21: bottom panel holding the conversation block (same look as PanneauReport's)
-        panneau: {
-            backgroundColor: colors.card,
-            borderTopWidth: StyleSheet.hairlineWidth,
-            borderColor: colors.border,
-            paddingHorizontal: 16,
-            paddingTop: 10,
-            paddingBottom: 90, // room for the tab bar's FAB area
-            gap: 10,
-        },
-        entete: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-        titreConversation: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-        titre: { color: colors.text, fontFamily: fonts.title, fontSize: 16 },
-        floatingBtn: {
-            height: 64, 
-            width: 64,
-            //backgroundColor: colors.secondary,
-            position: 'absolute',
-            bottom: 16,
-            right: 16,
-            borderRadius: 100,
-            borderWidth: 1, 
-            borderColor: colors.error,
+        // Delete (creator) / leave: the form's last block, in red
+        blocSupprimer: {
+            flexDirection: 'row',
             alignItems: 'center',
-            justifyContent: 'center'
-        }
+            justifyContent: 'center',
+            gap: 8,
+            paddingVertical: 14,
+            borderRadius: 16,
+            borderWidth: 1,
+            borderColor: colors.error,
+            backgroundColor: colors.card,
+        },
+        texteSupprimer: { color: colors.error, fontFamily: fonts.body, fontSize: 18 }
     })
 
     // Not loaded yet: a spinner. EventForm computes its dates once, on its first focus:
@@ -183,6 +170,31 @@ export default function Details(){
                 mode={'details'}
                 masquerParticipants={!!invitation}
                 nature={event.nature}
+                // Story #21: a block under the participants (review: part of the form)
+                onOuvrirConversation={event.conversation_id && !invitation ? ouvrirConversation : undefined}
+                // Common availabilities / suggestions (Philip — user story 23) and delete /
+                // leave: blocks at the end of the form, like the others
+                blocsFin={invitation ? undefined : (
+                    <>
+                        {!!event.id && !indisponibilite && (
+                            <PanneauReport enBloc idEvenement={event.id} onPlageChangee={() => getDetails(event.id as string)} />
+                        )}
+                        {!isExternal && (
+                            <TouchableOpacity
+                                style={s.blocSupprimer}
+                                onPress={gestion.supprimerOuQuitter}
+                                accessibilityRole="button"
+                            >
+                                <Icon name={gestion.estEditeur ? 'trash-outline' : 'exit-outline'} color={colors.error} size={24} />
+                                <Text style={s.texteSupprimer}>
+                                    {gestion.estEditeur
+                                        ? t(indisponibilite ? 'details.deleteUnavailability' : 'details.deleteEvent')
+                                        : t('details.leaveEvent')}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+                    </>
+                )}
             />
             {invitation ? (
                 <>
@@ -201,37 +213,6 @@ export default function Details(){
                 </>
             ) : (
                 <>
-                    {/* Postponement votes: propose / vote (invitee), apply one (creator).
-                        Philip — user story 23. */}
-                    {/* Story #21: the group conversation is a block of the bottom panel, above
-                        the postponement ones (review: no floating button of its own). */}
-                    {event.conversation_id ? (
-                        <View style={s.panneau}>
-                            <TouchableOpacity
-                                style={s.entete}
-                                onPress={ouvrirConversation}
-                                accessibilityRole="button"
-                                accessibilityLabel={t('details.openConversation')}
-                            >
-                                <View style={s.titreConversation}>
-                                    <Icon name='chatbubbles-outline' color={colors.secondary} size={20} />
-                                    <Text style={s.titre}>{t('details.conversation')}</Text>
-                                </View>
-                                <Icon name='chevron-forward' color={colors.text} size={20} />
-                            </TouchableOpacity>
-                            {!indisponibilite && (
-                                <PanneauReport integre idEvenement={event.id as string} onPlageChangee={() => getDetails(event.id as string)} />
-                            )}
-                        </View>
-                    ) : (!!event.id && !indisponibilite && (
-                        <PanneauReport idEvenement={event.id} onPlageChangee={() => getDetails(event.id as string)} />
-                    ))}
-                    {/* quit (non-creators) / delete (creator) button */}
-                    {isExternal ? null : (
-                        <TouchableOpacity style={s.floatingBtn} onPress={gestion.supprimerOuQuitter}>
-                            <Icon name='trash-sharp' color={colors.error} size={28} />
-                        </TouchableOpacity>
-                    )}
                 </>
             )}
         </View>
