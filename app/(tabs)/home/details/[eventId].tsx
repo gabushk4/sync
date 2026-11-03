@@ -7,6 +7,7 @@ import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
 
 import { useAPI } from "@/contextes/contexteAPI";
+import { useConversations } from "@/contextes/contexteConversations";
 import { useMembre } from "@/contextes/contexteMembre";
 import { usePalette } from "@/contextes/contextePalette";
 
@@ -56,7 +57,20 @@ export default function Details(){
         onVoirHoraire: voirHoraire,
     })
 
-    const [event, setEvent] = useState<Event>(defaultEvent)
+    const [event, setEvent] = useState<Event>(defaultEvent)  
+
+    const isExternal = useMemo(() => event.nom_calendrier !== undefined && (event.source == 'google' || event.source === 'outlook' || event.source === 'device') ,[event])
+
+    // Story #21 : the shared event's group conversation (only sent when the member is in it)
+    const { rafraichirConversations } = useConversations()
+    const ouvrirConversation = () => {
+        if (!event.conversation_id) return
+        rafraichirConversations()
+        router.push({
+            pathname: '/(tabs)/inbox/[conversationId]',
+            params: { conversationId: event.conversation_id, titre: event.titre ?? '' },
+        })
+    }
 
     // Delete (editor) / leave (anyone else), shared with the notification card.
     // The occurrence that was opened (timeline / calendar `start` / `end`): deleting "this
@@ -85,14 +99,14 @@ export default function Details(){
         () => ({ event: JSON.stringify(event) }),
         [event]
     )
-
+    log("visible", !invitation || event.nom_calendrier == undefined)
     useNavFab("details", {
             icon: <Icon name="pencil" size={24} color={colors.text} />,
             href: '/(tabs)/home/edit/[event]' as const,
             params: FABParams,
             // No editing while deciding on an invitation, nor for a reader: the API only
             // lets an editor change an event (Philip — user story 20, review).
-            visible: !invitation && event.privilege_membre === 'editeur',
+            visible: !invitation && !isExternal && event.privilege_membre === 'editeur',
         })
 
     // An unavailability: its own form (reason, no participants) and no postponement
@@ -111,6 +125,18 @@ export default function Details(){
     }, [event])
 
     const s = StyleSheet.create({
+        conversationBtn: {
+            height: 64,
+            width: 64,
+            position: 'absolute',
+            bottom: 16,
+            left: 16,
+            borderRadius: 100,
+            borderWidth: 1,
+            borderColor: colors.secondary,
+            alignItems: 'center',
+            justifyContent: 'center'
+        },
         floatingBtn: {
             height: 64, 
             width: 64,
@@ -164,15 +190,27 @@ export default function Details(){
                 </>
             ) : (
                 <>
-                {/* Postponement votes: propose / vote (invitee), apply one (creator).
-                    Philip — user story 23. */}
-                {!!event.id && !indisponibilite && (
-                    <PanneauReport idEvenement={event.id} onPlageChangee={() => getDetails(event.id as string)} />
-                )}
-                {/* quit (non-creators) / delete (creator) button */}
-                <TouchableOpacity style={s.floatingBtn} onPress={gestion.supprimerOuQuitter}>
-                    <Icon name='trash-sharp' color={colors.error} size={28}/>
-                </TouchableOpacity>
+                    {/* Postponement votes: propose / vote (invitee), apply one (creator).
+                        Philip — user story 23. */}
+                    {!!event.id && !indisponibilite && (
+                        <PanneauReport idEvenement={event.id} onPlageChangee={() => getDetails(event.id as string)} />
+                    )}
+                    {event.conversation_id ? (
+                        <TouchableOpacity
+                            style={s.conversationBtn}
+                            onPress={ouvrirConversation}
+                            accessibilityRole="button"
+                            accessibilityLabel={t('details.openConversation')}
+                        >
+                            <Icon name='chatbubbles-outline' color={colors.secondary} size={28}/>
+                        </TouchableOpacity>
+                    ) : null}
+                    {/* quit (non-creators) / delete (creator) button */}
+                    {isExternal ? null : (
+                        <TouchableOpacity style={s.floatingBtn} onPress={gestion.supprimerOuQuitter}>
+                            <Icon name='trash-sharp' color={colors.error} size={28} />
+                        </TouchableOpacity>
+                    )}
                 </>
             )}
         </View>
