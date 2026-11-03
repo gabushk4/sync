@@ -1,9 +1,10 @@
 import Ionicons from '@react-native-vector-icons/ionicons'
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 import ToastAbs from '@/abstractions/toastAbs'
+import ConfirmationEnvoi from '@/components/confirmationEnvoi'
 import Spinner from '@/components/spinner'
 import { toastTypes } from '@/constants/toastConfig'
 import { useAPI } from '@/contextes/contexteAPI'
@@ -12,29 +13,7 @@ import { useMembre } from '@/contextes/contexteMembre'
 import { usePalette } from '@/contextes/contextePalette'
 import catcher from '@/functions/catcher'
 import { convertUTCToLocal } from '@/functions/convertirUTCenLocal'
-
-/** A slot the member may propose (participants' common free slot). Dates: UTC ISO. */
-type Creneau = { debut: string, fin: string, deja_propose: boolean }
-
-/** An open suggestion with its votes. Dates: UTC ISO. */
-type Suggestion = {
-    id: string
-    debut: string
-    fin: string
-    proposeur: string
-    oui: number
-    non: number
-    mon_vote: 'oui' | 'non' | null
-}
-
-/** GET /postpone/evenements/:id */
-type DonneesReport = {
-    est_createur: boolean
-    reportable: boolean
-    peut_proposer: boolean
-    suggestions: Suggestion[]
-    creneaux: Creneau[]
-}
+import useReportEvenement, { Creneau, Suggestion } from '@/hooks/useReportEvenement'
 
 type Props = {
     /** Public id of the event. */
@@ -46,16 +25,20 @@ type Props = {
 }
 
 /**
- * Postponement votes on an event's page (user story 23).
- * - An invitee: "propose another time" (folded list of the slots where every
- *   participant is free, next 7 days; tap one, then propose and confirm — the other
- *   invitees get a vote notification), and the open proposals with yes / no votes.
- * - The creator: the open proposals with their yes / no counts; tap one, then
- *   "change the time" moves the event (yes → attending, no → not attending, the
- *   others answer again). Nothing is shown to the creator while nobody proposed.
+ * Postponement on an event's page (user story 23).
+ * - "Common availabilities": a drop-down of the slots where every participant is free
+ *   (next 7 days), gold blocks by day. Tap one, then the send button: an invitee
+ *   proposes it (the other invitees vote), the creator moves the event there (the
+ *   invitees confirm again). Confirmed in place (ConfirmationEnvoi), no native alert.
+ * - The open proposals: an invitee votes yes / no on each; the creator sees their
+ *   counts, selects one and "change the time" moves the event (yes → attending, no →
+ *   not attending, the others answer again). Only while everyone is still free at
+ *   their time: the API closes the others (a vote / apply on one answers 409).
  * Recurring events and unavailabilities can't be postponed (the API says so).
  *
  * @author Philip — user story 23 (postponement votes)
+ * @author Philip — user story 23 (common free slots): gold blocks in a drop-down, for
+ *   the creator too (move), confirmed in place instead of an iOS / Android alert
  * @param {Props} props
  * @returns {JSX.Element | null}
  */
@@ -66,69 +49,13 @@ export default function PanneauReport({ idEvenement, onPlageChangee, integre = f
     const { api } = useAPI()
     const { membre } = useMembre()
 
-    const [donnees, setDonnees] = useState<DonneesReport | null>(null)
-    const [ouvertProposer, setOuvertProposer] = useState(false)
+    const { donnees, charger, enCours, setEnCours, plage, envoyerCreneau, alerterRefus } = useReportEvenement(idEvenement, { onPlageChangee })
+    const [ouvertCreneaux, setOuvertCreneaux] = useState(false)
     const [ouvertSuggestions, setOuvertSuggestions] = useState(false)
-    // Debut of the selected slot (invitee) or id of the selected suggestion (creator).
+    // Start of the selected common free slot.
+    const [creneauChoisi, setCreneauChoisi] = useState<string | null>(null)
+    // Id of the suggestion the creator selected to apply.
     const [selection, setSelection] = useState<string | null>(null)
-    // What is being sent: 'proposer', 'appliquer', or a suggestion id (vote).
-    const [enCours, setEnCours] = useState<string | null>(null)
-
-    const charger = useCallback(async () => {
-        try {
-            const reponse = await api.get(`/postpone/evenements/${idEvenement}`)
-            setDonnees(reponse.data)
-        } catch (error) {
-            catcher(error, t('postpone.loadFailed'))
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [idEvenement])
-
-    useEffect(() => {
-        if (!idEvenement) return
-        api.get(`/postpone/evenements/${idEvenement}`)
-            .then((reponse) => setDonnees(reponse.data))
-            .catch((error) => catcher(error, t('postpone.loadFailed')))
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [idEvenement])
-
-    /**
-     * "Tue 12 Nov from 14:00 to 15:00", in the member's timezone.
-     *
-     * @param {string} debut - UTC ISO.
-     * @param {string} fin - UTC ISO.
-     * @returns {string}
-     */
-    const plage = (debut: string, fin: string) => {
-        const d = convertUTCToLocal(debut, membre?.timezone)
-        const f = convertUTCToLocal(fin, membre?.timezone)
-        return t('postpone.range', { jour: d.toFormat('ccc d LLL'), debut: d.toFormat('HH:mm'), fin: f.toFormat('HH:mm') })
-    }
-
-    const proposer = () => {
-        const creneau = donnees?.creneaux.find((c) => c.debut === selection)
-        if (!creneau) return
-        Alert.alert(t('postpone.confirmTitle'), t('postpone.confirmMessage', { plage: plage(creneau.debut, creneau.fin) }), [
-            { text: t('postpone.cancel'), style: 'cancel' },
-            {
-                text: t('postpone.propose'), isPreferred: true, onPress: async () => {
-                    setEnCours('proposer')
-                    try {
-                        await api.post(`/postpone/evenements/${idEvenement}`, { debut: creneau.debut, fin: creneau.fin })
-                        ToastAbs.show({ type: toastTypes.success, text1: t('postpone.sentTitle'), text2: t('postpone.sentMessage'), position: 'top' })
-                        setSelection(null)
-                        setOuvertProposer(false)
-                        setOuvertSuggestions(true)
-                        await charger()
-                    } catch (error) {
-                        catcher(error, t('postpone.proposeFailed'))
-                    } finally {
-                        setEnCours(null)
-                    }
-                },
-            },
-        ])
-    }
 
     const voter = async (suggestion: Suggestion, vote: 'oui' | 'non') => {
         if (suggestion.mon_vote === vote) return
@@ -136,45 +63,36 @@ export default function PanneauReport({ idEvenement, onPlageChangee, integre = f
         try {
             await api.put(`/postpone/${suggestion.id}/vote`, { vote })
             await charger()
-        } catch (error) {
+        } catch (error: any) {
             catcher(error, t('postpone.voteFailed'))
+            // 409: the vote ended (someone isn't free then anymore): it leaves the list.
+            if (error?.response?.status === 409) await charger()
         } finally {
             setEnCours(null)
         }
     }
 
-    const appliquer = () => {
+    const envoyer = async () => {
+        const creneau = donnees?.creneaux.find((c) => c.debut === creneauChoisi)
+        if (creneau && await envoyerCreneau(creneau)) setCreneauChoisi(null)
+    }
+
+    const appliquer = async () => {
         const suggestion = donnees?.suggestions.find((s) => s.id === selection)
         if (!suggestion) return
-        Alert.alert(t('postpone.applyTitle'), t('postpone.applyMessage', {
-            plage: plage(suggestion.debut, suggestion.fin), oui: suggestion.oui, non: suggestion.non,
-        }), [
-            { text: t('postpone.cancel'), style: 'cancel' },
-            {
-                text: t('postpone.apply'), isPreferred: true, onPress: async () => {
-                    setEnCours('appliquer')
-                    try {
-                        await api.post(`/postpone/${suggestion.id}/appliquer`, {})
-                        ToastAbs.show({ type: toastTypes.success, text1: t('postpone.appliedTitle'), text2: t('postpone.appliedMessage'), position: 'top' })
-                        setSelection(null)
-                        await charger()
-                        onPlageChangee?.()
-                    } catch (error: any) {
-                        // Something in the creator's schedule at that time (same check as a creation).
-                        const conflits = error?.response?.status === 409 ? error.response.data?.evenements : null
-                        if (Array.isArray(conflits) && conflits.length) {
-                            Alert.alert(t('postpone.conflictTitle'), t('postpone.conflictMessage', {
-                                titres: conflits.map((c: any) => c.titre).filter(Boolean).join(', '),
-                            }))
-                        } else {
-                            catcher(error, t('postpone.applyFailed'))
-                        }
-                    } finally {
-                        setEnCours(null)
-                    }
-                },
-            },
-        ])
+        setEnCours('appliquer')
+        try {
+            await api.post(`/postpone/${suggestion.id}/appliquer`, {})
+            ToastAbs.show({ type: toastTypes.success, text1: t('postpone.appliedTitle'), text2: t('postpone.appliedMessage'), position: 'top' })
+            setSelection(null)
+            await charger()
+            onPlageChangee?.()
+        } catch (error: any) {
+            if (await alerterRefus(error)) setSelection(null)
+            else catcher(error, t('postpone.applyFailed'))
+        } finally {
+            setEnCours(null)
+        }
     }
 
     const s = StyleSheet.create({
@@ -192,6 +110,21 @@ export default function PanneauReport({ idEvenement, onPlageChangee, integre = f
         entete: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
         titre: { color: colors.text, fontFamily: fonts.title, fontSize: 16 },
         texte: { color: colors.muted, fontFamily: fonts.body, fontSize: 14 },
+        jour: { color: colors.text, fontFamily: fonts.title, fontSize: 13, marginTop: 2 },
+        blocs: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+        bloc: {
+            paddingVertical: 8,
+            paddingHorizontal: 10,
+            borderRadius: 10,
+            borderWidth: 2,
+            borderColor: 'transparent',
+            backgroundColor: colors.or,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+        },
+        blocChoisi: { borderColor: colors.text },
+        texteBloc: { color: colors.text, fontFamily: fonts.number, fontSize: 13 },
         ligne: {
             flexDirection: 'row',
             alignItems: 'center',
@@ -214,22 +147,24 @@ export default function PanneauReport({ idEvenement, onPlageChangee, integre = f
             alignItems: 'center',
             justifyContent: 'center',
         },
-        bouton: {
-            height: 46,
-            borderRadius: 10,
-            borderWidth: 1,
-            borderColor: colors.secondary,
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexDirection: 'row',
-            gap: 6,
-        },
-        texteBouton: { color: colors.text, fontFamily: fonts.title, fontSize: 14 },
     })
 
     if (!donnees) return null
-    const { est_createur, peut_proposer, suggestions, creneaux } = donnees
-    if (!peut_proposer && suggestions.length === 0) return null
+    const { est_createur, peut_proposer, peut_deplacer, suggestions, creneaux } = donnees
+    if (!peut_proposer && !peut_deplacer && suggestions.length === 0) return null
+
+    // Common free slots grouped by the member's local day, in order.
+    const parJour: { jour: string, creneaux: Creneau[] }[] = []
+    for (const c of creneaux) {
+        const jour = convertUTCToLocal(c.debut, membre?.timezone).toFormat('cccc d LLLL')
+        const groupe = parJour.find((g) => g.jour === jour)
+        if (groupe) groupe.creneaux.push(c)
+        else parJour.push({ jour, creneaux: [c] })
+    }
+    const heures = (c: Creneau) =>
+        `${convertUTCToLocal(c.debut, membre?.timezone).toFormat('HH:mm')} – ${convertUTCToLocal(c.fin, membre?.timezone).toFormat('HH:mm')}`
+    const creneau = creneaux.find((c) => c.debut === creneauChoisi)
+    const suggestionChoisie = suggestions.find((sg) => sg.id === selection)
 
     const compteVotes = (suggestion: Suggestion) => (
         <>
@@ -263,40 +198,43 @@ export default function PanneauReport({ idEvenement, onPlageChangee, integre = f
 
     return (
         <View style={s.panneau}>
-            {peut_proposer && (
+            {(peut_proposer || peut_deplacer) && (
                 <>
-                    <TouchableOpacity style={s.entete} onPress={() => setOuvertProposer((o) => !o)} accessibilityRole="button">
-                        <Text style={s.titre}>{t('postpone.title')}</Text>
-                        <Ionicons name={ouvertProposer ? 'chevron-up' : 'chevron-down'} size={20} color={colors.text} />
+                    <TouchableOpacity style={s.entete} onPress={() => setOuvertCreneaux((o) => !o)} accessibilityRole="button">
+                        <Text style={s.titre}>{t('postpone.commonSlots', { count: creneaux.length })}</Text>
+                        <Ionicons name={ouvertCreneaux ? 'chevron-up' : 'chevron-down'} size={20} color={colors.text} />
                     </TouchableOpacity>
-                    {ouvertProposer && (creneaux.length === 0
+                    {ouvertCreneaux && (creneaux.length === 0
                         ? <Text style={s.texte}>{t('postpone.noSlot')}</Text>
                         : <>
-                            {creneaux.map((c) => (
-                                <TouchableOpacity
-                                    key={c.debut}
-                                    style={[s.ligne, selection === c.debut && s.ligneSelection]}
-                                    onPress={() => setSelection(selection === c.debut ? null : c.debut)}
-                                    disabled={c.deja_propose || !!enCours}
-                                    accessibilityRole="radio"
-                                    accessibilityState={{ selected: selection === c.debut, disabled: c.deja_propose }}
-                                >
-                                    <Ionicons name="time-outline" size={16} color={c.deja_propose ? colors.muted : colors.text} />
-                                    <Text style={[s.plage, c.deja_propose && { color: colors.muted }]}>{plage(c.debut, c.fin)}</Text>
-                                    {c.deja_propose && <Text style={s.texte}>{t('postpone.alreadyProposed')}</Text>}
-                                </TouchableOpacity>
+                            {parJour.map((groupe) => (
+                                <View key={groupe.jour} style={{ gap: 4 }}>
+                                    <Text style={s.jour}>{groupe.jour}</Text>
+                                    <View style={s.blocs}>
+                                        {groupe.creneaux.map((c) => (
+                                            <TouchableOpacity
+                                                key={c.debut}
+                                                style={[s.bloc, creneauChoisi === c.debut && s.blocChoisi, c.deja_propose && { opacity: 0.45 }]}
+                                                onPress={() => setCreneauChoisi(creneauChoisi === c.debut ? null : c.debut)}
+                                                disabled={c.deja_propose || !!enCours}
+                                                accessibilityRole="radio"
+                                                accessibilityLabel={plage(c.debut, c.fin)}
+                                                accessibilityState={{ selected: creneauChoisi === c.debut, disabled: c.deja_propose }}
+                                            >
+                                                <Text style={s.texteBloc}>{heures(c)}</Text>
+                                                {c.deja_propose && <Text style={[s.texteBloc, { fontFamily: fonts.body }]}>· {t('postpone.alreadyProposed')}</Text>}
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                </View>
                             ))}
-                            <TouchableOpacity
-                                style={[s.bouton, !selection && { opacity: 0.5 }]}
-                                onPress={proposer}
-                                disabled={!selection || !!enCours}
-                                accessibilityRole="button"
-                            >
-                                {enCours === 'proposer'
-                                    ? <Spinner size={18} color={colors.text} />
-                                    : <Ionicons name="paper-plane-outline" size={18} color={colors.text} />}
-                                <Text style={s.texteBouton}>{t('postpone.propose')}</Text>
-                            </TouchableOpacity>
+                            <ConfirmationEnvoi
+                                libelle={t(peut_deplacer ? 'postpone.move' : 'postpone.propose')}
+                                question={creneau ? t(peut_deplacer ? 'postpone.confirmMove' : 'postpone.confirmPropose', { plage: plage(creneau.debut, creneau.fin) }) : ''}
+                                desactive={!creneau}
+                                enCours={enCours === 'creneau'}
+                                onConfirmer={envoyer}
+                            />
                         </>
                     )}
                 </>
@@ -341,17 +279,16 @@ export default function PanneauReport({ idEvenement, onPlageChangee, integre = f
                             : <View key={suggestion.id} style={s.ligne}>{contenu}</View>
                     })}
                     {ouvertSuggestions && est_createur && (
-                        <TouchableOpacity
-                            style={[s.bouton, !selection && { opacity: 0.5 }]}
-                            onPress={appliquer}
-                            disabled={!selection || !!enCours}
-                            accessibilityRole="button"
-                        >
-                            {enCours === 'appliquer'
-                                ? <Spinner size={18} color={colors.text} />
-                                : <Ionicons name="swap-horizontal" size={18} color={colors.text} />}
-                            <Text style={s.texteBouton}>{t('postpone.apply')}</Text>
-                        </TouchableOpacity>
+                        <ConfirmationEnvoi
+                            libelle={t('postpone.apply')}
+                            icone="swap-horizontal"
+                            question={suggestionChoisie ? t('postpone.applyMessage', {
+                                plage: plage(suggestionChoisie.debut, suggestionChoisie.fin), oui: suggestionChoisie.oui, non: suggestionChoisie.non,
+                            }) : ''}
+                            desactive={!suggestionChoisie}
+                            enCours={enCours === 'appliquer'}
+                            onConfirmer={appliquer}
+                        />
                     )}
                 </>
             )}

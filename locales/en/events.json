@@ -125,7 +125,8 @@
     "me": "Me",
     "loadFailed": "Unable to load the invitation's schedules",
     "retry": "Couldn't load the schedules. Tap to try again.",
-    "private": "Private"
+    "private": "Private",
+    "commonSlot": "Free"
   },
   "invitationDecision": {
     "accept": "Accept",
@@ -139,9 +140,6 @@
     "reasonShared": "reason shared",
     "createdTitle": "Unavailability added",
     "createdMessage": "Your friends will see you busy then",
-    "dayTaken": "You already have something that day",
-    "rangeTaken": "You already have something then",
-    "inTheWay": "Already planned: {{titres}}",
     "createFailed": "Unable to add the unavailability",
     "defaultTitle": "Unavailable",
     "leftOutTitle": "Not invited",
@@ -149,19 +147,15 @@
     "leftOut_other": "{{pseudos}} are unavailable then: no invitation sent"
   },
   "postpone": {
-    "title": "Propose another time",
     "suggestionsCount": "Proposed times ({{count}})",
     "noSlot": "No time when everyone is free in the next 7 days",
     "alreadyProposed": "already proposed",
     "proposedBy": "by {{pseudo}}",
     "propose": "Propose",
-    "confirmTitle": "Propose this time?",
-    "confirmMessage": "{{plage}}\nThe other participants will be able to vote.",
     "cancel": "Cancel",
     "sentTitle": "Proposal sent",
     "sentMessage": "The participants will vote",
     "apply": "Change the time",
-    "applyTitle": "Change the time?",
     "applyMessage": "{{plage}}\nYes ({{oui}}): attending · No ({{non}}): not attending · the others will have to answer again.",
     "appliedTitle": "Time changed",
     "appliedMessage": "The participants have been notified",
@@ -173,6 +167,16 @@
     "proposeFailed": "Unable to send the proposal",
     "voteFailed": "Unable to save your vote",
     "applyFailed": "Unable to change the time",
-    "range": "{{jour}} from {{debut}} to {{fin}}"
+    "range": "{{jour}} from {{debut}} to {{fin}}",
+    "move": "Move",
+    "movedTitle": "Event moved",
+    "movedMessage": "Invitees have to confirm again",
+    "moveFailed": "Unable to move the event",
+    "notFreeTitle": "Not everyone is free anymore",
+    "notFreeMessage": "{{pseudos}}: not free then anymore",
+    "commonSlots": "Common availabilities ({{count}})",
+    "confirmPropose": "Propose {{plage}}?",
+    "confirmMove": "Move the event {{plage}}?\nInvitees will confirm again.",
+    "confirm": "Confirm"
   }
 }

@@ -16,6 +16,9 @@ export type ThemeColors = {
     indisponible: string;
     /** Block of a group event (other participants) on the member's row (teal, fixed whatever the hue). Philip — user story 23. */
     groupe: string;
+    /** Block of a slot where every participant is free — a "good line-up" to propose or
+     * move an event to (gold, fixed whatever the hue). Philip — user story 23. */
+    or: string;
 };
 
 
@@ -37,6 +40,7 @@ export function generateTheme(h: number, scheme: 'light' | 'dark') : ThemeColors
             disponible: hsl(205, 75, 65),
             indisponible: hsl(0, 50, 32),
             groupe:     hsl(170, 45, 30),
+            or:         hsl(43, 75, 38),
             notification: hsl(0, 80, 50), // required by React Navigation
         };
     }
@@ -55,6 +59,7 @@ export function generateTheme(h: number, scheme: 'light' | 'dark') : ThemeColors
         disponible: hsl(205, 75, 45),
         indisponible: hsl(0, 75, 80),
         groupe:     hsl(170, 50, 75),
+        or:         hsl(45, 90, 62),
         notification: hsl(0, 80, 50), // required by React Navigation
     };
 }

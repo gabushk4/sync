@@ -15,6 +15,7 @@ import chargerDetailsEvenement from "@/functions/chargerDetailsEvenement";
 import log from "@/functions/log";
 
 import EventForm from "@/components/eventForm";
+import Spinner from "@/components/spinner";
 import useGestionEvenement from "@/hooks/useGestionEvenement";
 import { useNavFab } from "@/hooks/useNavFAB";
 import PanneauDecisionInvitation from "@/components/panneauDecisionInvitation";
@@ -125,9 +126,22 @@ export default function Details(){
         }
     })
 
+    // Not loaded yet: a spinner. EventForm computes its dates once, on its first focus:
+    // shown with the empty default event, it kept "now" as the dates and warned
+    // "Timestamp n'est pas une date" — the event's real dates never showed.
+    // Rectification (Philip — user story 20, review).
+    if (!event.id) {
+        return (
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                <Spinner size={32} color={colors.muted} />
+            </View>
+        )
+    }
+
     return (
         <View style={{flex:1}}>
             <EventForm
+                key={event.id}
                 event={event}
                 mode={'details'}
                 masquerParticipants={!!invitation}

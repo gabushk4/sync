@@ -23,6 +23,8 @@ import { getCommonFreeSlots } from '@/functions/availability'
 import couleurStatutInvitation, { assombrir } from '@/functions/couleurStatutInvitation'
 import { estJourFerie, paramsJour } from '@/functions/evenementsMembre'
 import { ouvrirDecisionInvitation } from '@/functions/ouvrirRevueInvitation'
+import useReportEvenement, { Creneau } from '@/hooks/useReportEvenement'
+import ConfirmationEnvoi from '@/components/confirmationEnvoi'
 import { Event } from '@/types/calendar'
 import { bornesLocales, InvitationInfo } from '@/types/invitation'
 
@@ -61,6 +63,10 @@ type Horaires = { leader: PersonneHoraire | null, invites: PersonneHoraire[], mo
  * Route param `invitation`: {@link InvitationInfo} as JSON.
  *
  * @author Philip — user story 8 (reviewing an invitation in conflict)
+ * @author Philip — user story 23 (common free slots): the member's own row shows, in
+ *   gold, the day's slots where every participant is free; tap one, then the send
+ *   button (above the row) proposes it, confirmed in place (ConfirmationEnvoi, like the
+ *   event's page)
  * @returns {JSX.Element}
  */
 export default function RevueInvitation() {
@@ -88,6 +94,29 @@ export default function RevueInvitation() {
     )
     const debutEvenement = invitation ? bornesLocales(invitation, membre.timezone).debut : undefined
     const jour = (debutEvenement ?? DateTime.now()).startOf('day')
+
+    // Common free slots (gold): tap one, then send to propose it (Philip — user story 23).
+    const { donnees: report, enCours: envoiCreneau, plage, envoyerCreneau } = useReportEvenement(invitation?.id_evenement)
+    // Start of the selected slot.
+    const [creneauChoisi, setCreneauChoisi] = useState<string | null>(null)
+    // The day's common free slots as timeline blocks (the selected one outlined in the
+    // theme's color).
+    const jourMillis = jour.toMillis()
+    const creneauxDuJour = useMemo<Event[]>(() => (report?.creneaux ?? [])
+        .map((c) => ({ c, debut: convertUTCToLocal(c.debut, membre.timezone), fin: convertUTCToLocal(c.fin, membre.timezone) }))
+        .filter(({ debut }) => debut.hasSame(jour, 'day'))
+        .map(({ c, debut, fin }) => ({
+            id: `creneau-${c.debut}`,
+            titre: t('invitationReview.commonSlot'),
+            debut,
+            fin,
+            couleur: creneauChoisi === c.debut ? colors.secondary : colors.or,
+            cliquable: !c.deja_propose,
+            creneau: c,
+        }) as Event & { creneau: Creneau }),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [report, jourMillis, colors.or, colors.secondary, creneauChoisi])
+    const creneau = report?.creneaux.find((c) => c.debut === creneauChoisi)
 
     const [horaires, setHoraires] = useState<Horaires | null>(null)
     // The request failed: a retry button instead of an endless spinner.
@@ -139,6 +168,12 @@ export default function RevueInvitation() {
      * @returns {void}
      */
     const ouvrirEvenement = (ev: Event) => {
+        // A common free slot (gold, in the member's row): selects it for the send button.
+        const creneauTouche = (ev as Event & { creneau?: Creneau }).creneau
+        if (creneauTouche) {
+            setCreneauChoisi(creneauChoisi === creneauTouche.debut ? null : creneauTouche.debut)
+            return
+        }
         if ((ev as any).est_invitation) {
             if (invitation) ouvrirDecisionInvitation(invitation, { depuisRevue: true })
             return
@@ -222,6 +257,7 @@ export default function RevueInvitation() {
         etoile: { position: 'absolute', top: RETRAIT_RANGEE, right: 8 },
         pseudo: { color: colors.muted, fontFamily: fonts.body, fontSize: 11, maxWidth: LARGEUR_COLONNE - 8 },
         chargement: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+        envoi: { paddingHorizontal: 16, paddingBottom: 8 },
     })
 
     /**
@@ -236,6 +272,9 @@ export default function RevueInvitation() {
      */
     const rangee = (personne: PersonneHoraire, role: 'leader' | 'invite' | 'moi') => {
         const evenements = evenementsDe(personne, role)
+        // The member's own row also holds the common free slots, in gold (they're free
+        // for everyone, the member included, so they never overlap the member's events).
+        const affiches = role === 'moi' && report?.peut_proposer ? [...evenements, ...creneauxDuJour] : evenements
         // The leader's row always (whoever they are), and every friend's.
         const dispoCommunes = role === 'leader' || (role === 'invite' && personne.ami)
             ? getCommonFreeSlots(mesOccupations, occupes(evenements), jour)
@@ -251,7 +290,7 @@ export default function RevueInvitation() {
             </View>
             <EventsList
                 owner={personne}
-                events={evenements}
+                events={affiches}
                 eventsColor={role === 'moi' ? colors.primary : undefined}
                 textColor={colors.text}
                 offsetSnap={L_HEURES + pxHeures}
@@ -309,6 +348,18 @@ export default function RevueInvitation() {
                             {horaires.leader && rangee(horaires.leader, 'leader')}
                             {horaires.invites.map((personne) => rangee(personne, 'invite'))}
                         </ScrollView>
+                        {/* The common free slot selected in the member's row: send, confirmed
+                            in place (no native alert). */}
+                        {creneau && (
+                            <View style={s.envoi}>
+                                <ConfirmationEnvoi
+                                    libelle={t('postpone.propose')}
+                                    question={t('postpone.confirmPropose', { plage: plage(creneau.debut, creneau.fin) })}
+                                    enCours={envoiCreneau === 'creneau'}
+                                    onConfirmer={async () => { if (await envoyerCreneau(creneau)) setCreneauChoisi(null) }}
+                                />
+                            </View>
+                        )}
                         {horaires.moi && rangee(horaires.moi, 'moi')}
                     </View>
                 </GestureDetector>
