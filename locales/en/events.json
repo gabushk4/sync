@@ -22,6 +22,9 @@
     "clickSource": "clic here to show in {source}",
     "openConversation": "Open the event's conversation",
     "conversation": "Event conversation",
+    "createConversation": "Create a group chat",
+    "conversationCreated": "Group chat created",
+    "createConversationFailed": "Couldn't create the group chat",
     "deleteEvent": "Delete event",
     "deleteUnavailability": "Delete unavailability",
     "leaveEvent": "Leave event"

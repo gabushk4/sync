@@ -251,13 +251,24 @@ export default function Home() {
   const accueilActifRef = useRef(false)
   const offsetAccueilRef = useRef<number | null>(null)
 
+  /**
+   * Scroll offset that puts the current time line in the middle of the rows (the
+   * visible part right of the photos' column). Same layout as the blocks (positionHeures).
+   *
+   * @param {DateTime} instant - Usually now.
+   * @param {DateTime} debutFenetre - Window start.
+   * @returns {number}
+   */
+  const offsetCentreSur = (instant: DateTime, debutFenetre: DateTime) =>
+    positionHeures(instant, debutFenetre) * (pxHeures + L_HEURES) - (WIN_W - WIDTH_COL) / 2
+
   // "Now" for the "back to today / now" tab, in the loaded window: it moves when the
   // window slides. Same wall-clock layout as the blocks (day × 24 + hour, see ListItem).
   // Rectification (Philip) of the seven-day window.
   useEffect(() => {
     const now = DateTime.now()
-    const jours = Math.round(now.startOf('day').diff(windowStart.startOf('day'), 'days').days)
-    definirOffsetMaintenant((jours * 24 + now.hour) * (pxHeures + L_HEURES))
+    // centered on the current time line, like the tab puts it (see retourMaintenant)
+    definirOffsetMaintenant(offsetCentreSur(now, windowStart))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [windowStart, pxHeures, L_HEURES])
 
@@ -756,7 +767,8 @@ export default function Home() {
     const now = DateTime.now();
     const start = now.startOf('day').minus({ days: 3 })
     chargerFenetre(start)
-    initialiserOffset((3 * 24 + now.hour) * (pxHeures + L_HEURES));
+    // the current time line in the middle of the rows (it used to be the hour's start, at the left)
+    initialiserOffset(offsetCentreSur(now, start));
     // hasSame: comparing only `.day` missed e.g. the 10th of another month.
     if (!todayDateTime?.hasSame(now, 'day')) {
       setTodayDateTime(now.startOf('day'));
