@@ -1,26 +1,21 @@
 import { useFocusEffect, useLocalSearchParams, useNavigation } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
+import useEnvoiCreation, { avertirIndisponibles, corpsCreation } from "@/hooks/useEnvoiCreation";
 import { useTranslation } from "react-i18next";
-
-import { useActionFab } from "@/hooks/useActionFAB";
 
 import { useAPI } from "@/contextes/contexteAPI";
 import { useInvites } from "@/contextes/contexteInvites";
 import { useMembre } from "@/contextes/contexteMembre";
-import { usePalette } from "@/contextes/contextePalette";
 
 import EventForm from "@/components/eventForm";
 import VoileEnvoi from "@/components/voileEnvoi";
 import catcher from "@/functions/catcher";
 import log from "@/functions/log";
 import { defaultEvent, Event } from "@/types/calendar";
-import Icon from "@react-native-vector-icons/ionicons";
 
 import ToastAbs from "@/abstractions/toastAbs";
 import { EventFormHandle } from "@/components/eventForm";
 import { toastTypes } from "@/constants/toastConfig";
-import { convertLocalToUTC } from "@/functions/convertirUTCenLocal";
-import formaterDatePourServeur from "@/functions/formaterDatePourServeur";
 import { Participant } from "@/types/invites";
 import { conflitsDeLaReponse, EvenementEnConflit, NouvelEvenement } from "@/types/conflit";
 import ConflitEvenement, { SortieConflit } from "@/components/conflitEvenement";
@@ -28,7 +23,15 @@ import { debutDejaPasse, plagePreremplie } from "@/functions/jourCreation";
 import { DateTime } from "luxon";
 
 /**
- * Event creation screen. Reads `start`/`end` route params (an ISO date each)
+ * What a creation page (event or unavailability) exposes to the screen hosting it:
+ * the screen's ✓ FAB sends the page currently shown.
+ *
+ * @author Philip — user story 20
+ */
+export type CreationHandle = { envoyer: () => Promise<void> }
+
+/**
+ * Event creation page. Reads `start`/`end` route params (an ISO date each)
  * to pre-fill the event's date range — used both when tapping a time slot in
  * the day timeline (`start` only) and when dragging a range in the month
  * calendar (`start` and `end` both set — user story 5). An overlap with existing
@@ -43,11 +46,12 @@ import { DateTime } from "luxon";
  * @author Philip — user story 25 / rectification (user story 20): opened from a
  *   friend's profile, this screen lives in the profile stack (app/(tabs)/profile/create,
  *   `depuis: 'profil'`), so leaving it goes straight back to that profile
+ * @author Philip — user story 20: a page of the creation screen (swipe to the
+ *   unavailability page), so the ✓ FAB belongs to the screen, which calls `envoyer`
  * @returns {JSX.Element}
  */
-export default function CreateEvent({ }) {
+const CreationEvenement = forwardRef<CreationHandle>(function CreationEvenement(_, ref) {
     const { t } = useTranslation('events')
-    const { colors } = usePalette()
     const navigation = useNavigation()
     
     const {api} = useAPI()
@@ -86,12 +90,9 @@ export default function CreateEvent({ }) {
     // The pickers only forbid the past.
     const minimumStart = maintenant
 
-    const [enChargement, setEnChargement] = useState(false)
-    // Set synchronously (a state update isn't visible yet to a second tap): a double
-    // tap on ✓ used to send the event twice. Rectification (Philip).
-    const envoiEnCoursRef = useRef(false)
-    
-    //log('setter end')
+    // One send at a time + spinner: a double tap on ✓ used to send the event twice
+    // (rectification), now shared with the unavailability page (user story 20).
+    const { enChargement, envoyerUneFois } = useEnvoiCreation()
 
     const [event] = useState<Event>(defaultEvent)
 
@@ -140,11 +141,11 @@ export default function CreateEvent({ }) {
      *
      * @author Philip — user story 8 (409 → conflict screen) and
      *   rectification (validation messages, back to the existing home screen)
+     * @author Philip — user story 20: friends left out because they're unavailable
+     *   then are named in a warning; sending shared with the unavailability page
      * @returns {Promise<void>}
      */
-    const postEvenement = async () => {
-        if (envoiEnCoursRef.current) return
-        envoiEnCoursRef.current = true
+    const postEvenement = () => envoyerUneFois(async (demarrerChargement) => {
         // Kept outside the try so the 409 handler can hand it to the conflict screen.
         let nouveau: NouvelEvenement | undefined
         try {
@@ -174,16 +175,11 @@ export default function CreateEvent({ }) {
             }
 
             if (valid) {
-                setEnChargement(true)
+                demarrerChargement()
 
                 nouveau = {
                     ...event,
-                    titre: values.titre,
-                    description: values.description,
-                    prive: values.prive,
-                    debut: formaterDatePourServeur(convertLocalToUTC(values.start)),
-                    fin: formaterDatePourServeur(convertLocalToUTC(values.end)),
-                    regle_recurrence: values.regleRecurrence,
+                    ...corpsCreation(values),
                     participants: invites.map((i) => ({ id: i.id, privilege: i.privilege }))
                 }
 
@@ -196,6 +192,7 @@ export default function CreateEvent({ }) {
                         text2: t('create.createdMessage'),
                         autoHide: true,
                     })
+                    avertirIndisponibles(response.data?.indisponibles)
                     quitterApresCreation()
                 }
             } else {
@@ -209,19 +206,10 @@ export default function CreateEvent({ }) {
             } else {
                 catcher(error, t('errors.createFailed'))
             }
-        } finally {
-            envoiEnCoursRef.current = false
-            setEnChargement(false)
-        }
-    }
-
-    useActionFab("eventCreate", {
-        action: postEvenement,
-        config: {
-            visible:true,
-            icon: <Icon name="checkmark" color={colors.text} size={28} />
         }
     })
+
+    useImperativeHandle(ref, () => ({ envoyer: postEvenement }))
 
     useFocusEffect(useCallback(() => { 
         const listener = navigation.addListener('beforeRemove', () => {
@@ -276,4 +264,6 @@ export default function CreateEvent({ }) {
             )}
         </>
     )
-}
+})
+
+export default CreationEvenement

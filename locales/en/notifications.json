@@ -6,8 +6,11 @@
 		"evenements": "events"
 	},
 	"expiration": {
-		"label": "expiration",
-		"expired": "expired"
+		"expired": "expired",
+		"expires": "expires {{quand}}",
+		"eventPastShort": "over",
+		"eventPast": "This event is already over.",
+		"invitationExpired": "This invitation expired: it is too late to answer it."
 	},
 	"list": {
 		"emptyState": "There's nothing for you...\nTake this moment for yourself!",
@@ -19,7 +22,6 @@
 		"refusee": "refused",
 		"en_attente": "pending"
 	},
-	"manage": "Manage",
 	"vote": {
 		"acceptee": "available",
 		"refusee": "not available",

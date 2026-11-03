@@ -63,8 +63,8 @@ type Props = {
     /** Hides the participants section (the invitation decision page shows its own list). */
     masquerParticipants?: boolean
     /** 'indisponibilite': unavailability form — optional title (the reason), no
-     * recurrence nor participants, and the privacy switch tells whether friends see
-     * the reason. Philip — user story 20. */
+     * participants, and the privacy switch tells whether friends see the reason. It may
+     * repeat like an event (e.g. every night). Philip — user story 20. */
     nature?: 'evenement' | 'indisponibilite'
     // setEvent n'est plus utilisé pour la synchronisation continue.
     // Garde-le seulement si un autre écran en dépend pour un aperçu readonly.
@@ -72,6 +72,21 @@ type Props = {
 }
 
 const dtNow = DateTime.now()
+
+/**
+ * Frequency ('DAILY', 'WEEKLY'…) and end (local) of a stored rule, as creerRegle writes
+ * it: 'DTSTART:20261218T010000Z\nFREQ=DAILY;UNTIL=20261231T010000Z'.
+ *
+ * @author Philip — user story 20 (review)
+ * @param {string | null | undefined} regle
+ * @returns {{ freq: string | null, until: DateTime | null }}
+ */
+function lireRegle(regle?: string | null): { freq: string | null, until: DateTime | null } {
+    const freq = regle?.match(/FREQ=([A-Z]+)/)?.[1] ?? null
+    const untilBrut = regle?.match(/UNTIL=(\d{8}T\d{6}Z?)/)?.[1]
+    const until = untilBrut ? DateTime.fromFormat(untilBrut.replace('Z', ''), "yyyyMMdd'T'HHmmss", { zone: 'utc' }).toLocal() : null
+    return { freq, until: until?.isValid ? until : null }
+}
 
 /**
  * Form for creating, editing, or viewing an event: title, description,
@@ -118,9 +133,12 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
     const [eventPrivate, setPrivate] = useState<boolean>(event.prive == 1)
 
     const [montrerRecPicker, setMontrerRecPicker] = useState(Platform.OS === 'ios')
+    // The frequency only ('DAILY'…); an existing event's rule is read in the [event]
+    // effect below. It held the whole stored rule, so "repeated every…" showed
+    // "DTSTART:…FREQ=DAILY;UNTIL=…". Philip — user story 20 (review).
     const [recurrence, setRecurrence] = useState<Recurrence>({
         title: t('recurrence.never'),
-        value: event.regle_recurrence ?? null,
+        value: null,
     })
     const [finRecurrence, setFinRecurrence] = useState<DateTime | null>(dtNow)
 
@@ -191,13 +209,20 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
         return () => setRequestsEnabled(false)
     }, [mode, setRequestsEnabled])
 
+    // The recurrence's end follows the start, unless it is still after it (an existing
+    // rule's UNTIL used to be overwritten as soon as the dates were computed).
     useEffect(() => {
-        setFinRecurrence(start.startOf('day'))
+        setFinRecurrence((prev) => (prev && prev > start ? prev : start.startOf('day')))
     }, [start])
-        
+
     useEffect(() => {
         setTitle(event.titre ?? '')
         setPrivate(event.prive == 1)
+        // Existing rule: its frequency and end (Philip — user story 20, review).
+        const { freq, until } = lireRegle(event.regle_recurrence)
+        const choix = recVals.find((v) => v.value === freq) ?? recVals[0]
+        setRecurrence({ title: choix.title, value: choix.value })
+        if (until) setFinRecurrence(until)
         if (event.id)
             setEventParicipantsControlUrl(`/evenements/${event.id}/participants`)
     }, [event])
@@ -209,7 +234,7 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
             prive: eventPrivate,
             start,
             end,
-            regleRecurrence: indisponibilite ? null : creerRegle(),
+            regleRecurrence: creerRegle(),
         }),
     }))
 
@@ -375,8 +400,9 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
                     />
                 </View>
             )}
-            {/* Reccurence (none for an unavailability) */}
-            {!indisponibilite && <View style={{ gap: 8 }}>
+            {/* Reccurence — an unavailability may repeat too, e.g. every night
+                (Philip — user story 20, review) */}
+            {<View style={{ gap: 8 }}>
                 <View style={[s.champ, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 4 }]}>
                     <Text style={s.label}>{t('form.recurrenceLabel')}</Text>
                     <MenuDeroulant

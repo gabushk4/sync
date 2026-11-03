@@ -61,7 +61,8 @@ export default function EditEvent() {
             champsModifies.push('prive')
         }
 
-        if (values.titre.length < 4) {
+        // An unavailability's title is its optional reason (Philip — user story 20).
+        if (event.nature !== 'indisponibilite' && values.titre.length < 4) {
             valid = false
             message = t('edit.titleTooShort')
         }
@@ -158,14 +159,21 @@ export default function EditEvent() {
         }
     }
 
-    useActionFab({
+    // Called with useActionFab's (owner, { action, config }) signature: it got a single
+    // object, so the ✓ never registered its action and the page couldn't be confirmed.
+    // Rectification (Philip — user story 20, review).
+    useActionFab("eventEdit", {
         action: verifAvantPatch,
-        icon: <Icon name="checkmark" color={colors.text} size={28} />,
+        config: {
+            visible: true,
+            icon: <Icon name="checkmark" color={colors.text} size={28} />,
+        },
     })
 
     return (
         <View style={{ flex: 1 }}>
-            <EventForm ref={formRef} event={event} mode={'edit'} />
+            {/* An unavailability keeps its own form: reason, no participants (user story 20). */}
+            <EventForm ref={formRef} event={event} mode={'edit'} nature={event.nature} />
         </View>
     )
 }

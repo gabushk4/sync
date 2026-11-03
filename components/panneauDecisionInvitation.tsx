@@ -25,6 +25,8 @@ type Props = {
     enCours: false | 'acceptee' | 'refusee'
     /** Shown under the participants: the postponement proposals (Philip — user story 23). */
     children?: ReactNode
+    /** Inside a notification's card: no background nor padding of its own, like PanneauReport. */
+    integre?: boolean
 }
 
 /**
@@ -38,7 +40,7 @@ type Props = {
  * @param {Props} props
  * @returns {JSX.Element}
  */
-export default function PanneauDecisionInvitation({ idEvenement, organisateur, voirHoraire, accepter, refuser, enCours, children }: Props) {
+export default function PanneauDecisionInvitation({ idEvenement, organisateur, voirHoraire, accepter, refuser, enCours, children, integre = false }: Props) {
     const { t } = useTranslation('events')
     const { colors } = usePalette()
     const { fonts } = useFont()
@@ -62,7 +64,7 @@ export default function PanneauDecisionInvitation({ idEvenement, organisateur, v
     }, [ouvert])
 
     const s = StyleSheet.create({
-        panneau: {
+        panneau: integre ? { gap: 10 } : {
             backgroundColor: colors.card,
             borderTopWidth: StyleSheet.hairlineWidth,
             borderColor: colors.border,

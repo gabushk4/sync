@@ -244,8 +244,8 @@ export default function ModalBase({ children, canDismiss = true, onDismiss = () 
             }
         });
         
-    useFocusEffect(React.useCallback(() => {        
-        Keyboard.addListener("keyboardWillShow", () => {
+    useFocusEffect(React.useCallback(() => {
+        const clavierAffiche = Keyboard.addListener("keyboardWillShow", () => {
             log("keyboard did show")
             setFullScreen(true)
             modalHeight.value = withSpring('90%', withSpringConfig)
@@ -262,8 +262,12 @@ export default function ModalBase({ children, canDismiss = true, onDismiss = () 
         const unsubscribe = modalEvents.onClose(fermerModalBase)
         
         return () => {
-            Keyboard.removeAllListeners("keyboardDidShow")    
-            Keyboard.removeAllListeners("keyboardWillShow") 
+            // Only this modal's own listener. removeAllListeners("keyboardDidShow" /
+            // "keyboardWillShow") also removed React Native's (KeyboardAvoidingView,
+            // ScrollView, TextInput) and the chat's: when those later removed theirs,
+            // iOS warned "Attempted to remove more RCTKeyboardObserver listeners than
+            // added", and they stopped reacting to the keyboard. Rectification (Philip).
+            clavierAffiche.remove()
             unsubscribe()
         }
     }, [isFocused]))   

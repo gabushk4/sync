@@ -7,6 +7,10 @@
     "invitationReview": "Horaires de l'invitation",
     "unavailability": "Indisponibilité"
   },
+  "creationPages": {
+    "event": "Évènement",
+    "unavailability": "Indisponibilité"
+  },
   "details": {
     "recurringEditTitle": "édition d'une récurrence",
     "recurringEditMessage": "voulez-vous éditer la série d'évènements ou seulement celui-ci?",
@@ -138,7 +142,11 @@
     "dayTaken": "Tu as déjà quelque chose cette journée-là",
     "rangeTaken": "Tu as déjà quelque chose sur cette plage",
     "inTheWay": "Déjà prévu : {{titres}}",
-    "createFailed": "Impossible d'ajouter l'indisponibilité"
+    "createFailed": "Impossible d'ajouter l'indisponibilité",
+    "defaultTitle": "Indisponible",
+    "leftOutTitle": "Pas invité",
+    "leftOut_one": "{{pseudos}} est indisponible à ce moment : pas d’invitation envoyée",
+    "leftOut_other": "{{pseudos}} sont indisponibles à ce moment : pas d’invitation envoyée"
   },
   "postpone": {
     "title": "Proposer une autre plage",

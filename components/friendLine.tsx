@@ -14,9 +14,18 @@ type Props = {
     onPress: TouchableOpacityProps['onPress'];
     listType: ListType;
     selected: boolean;
+    /** Has an unavailability over the event's range: greyed out, can't be picked. */
+    indisponible?: boolean;
 }
 
-export default function FriendLine({ friend, onPress, listType, selected }: Props) {
+/**
+ * One friend in the friends list.
+ *
+ * @author Philip — user story 20: `indisponible` greys the friend out with "unavailable
+ *   then" instead of their friendship date, and they can't be picked — the app warns
+ *   before inviting someone who said "don't disturb me then"
+ */
+export default function FriendLine({ friend, onPress, listType, selected, indisponible = false }: Props) {
     const { fonts } = useFont();
     const { colors } = usePalette();
     const { t } = useTranslation('friends');
@@ -24,13 +33,15 @@ export default function FriendLine({ friend, onPress, listType, selected }: Prop
     const dateAmitie = convertirTimestampDateLongue(friend.temps_amitie)
 
     return (
-        <View style={{ width: '100%', paddingHorizontal: 4, paddingVertical: 4 }}>
-            <TouchableOpacity style={{ minHeight: 72, width: '100%', flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: selected ? colors.secondary : colors.card, paddingHorizontal: 12, paddingVertical: 8 }}
-                onPress={onPress}>
+        <View style={{ width: '100%', paddingHorizontal: 4, paddingVertical: 4, opacity: indisponible ? 0.55 : 1 }}>
+            <TouchableOpacity style={{ minHeight: 72, width: '100%', flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 12, borderWidth: 1, borderColor: indisponible ? colors.indisponible : colors.border, backgroundColor: selected ? colors.secondary : colors.card, paddingHorizontal: 12, paddingVertical: 8 }}
+                onPress={onPress} disabled={indisponible}>
                 <ProfilPic size={52} pfp={friend.fp_url}/>
                 <View style={{ flex: 1, justifyContent: 'center', minWidth: 0 }}>
                     <Text numberOfLines={1} style={{ fontFamily: fonts.body, color: colors.text, fontSize: 17 }}>{friend.pseudo}</Text>
-                    <Text numberOfLines={1} style={{ fontFamily: fonts.body, color: colors.muted, fontSize: 13 }}>{t('list.friendSince', { date: dateAmitie.substring(dateAmitie.indexOf('.') + 2) })}</Text>
+                    {indisponible
+                        ? <Text numberOfLines={1} style={{ fontFamily: fonts.body, color: colors.indisponible, fontSize: 13 }}>{t('list.unavailable')}</Text>
+                        : <Text numberOfLines={1} style={{ fontFamily: fonts.body, color: colors.muted, fontSize: 13 }}>{t('list.friendSince', { date: dateAmitie.substring(dateAmitie.indexOf('.') + 2) })}</Text>}
                 </View>
                 <View style={{ width: 40, height: '100%', justifyContent: 'center', alignItems: 'center' }}>
                     {listType === 'consult' &&

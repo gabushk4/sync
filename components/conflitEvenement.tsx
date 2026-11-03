@@ -19,6 +19,7 @@ import { convertirTimestampDateCourte, convertirTimestampDateLongue, convertirTi
 import { convertUTCToLocal } from '@/functions/convertirUTCenLocal'
 import formaterDatePourServeur from '@/functions/formaterDatePourServeur'
 import { conflitsDeLaReponse, EvenementEnConflit } from '@/types/conflit'
+import titreEvenement from '@/functions/titreEvenement'
 import Ionicons from '@react-native-vector-icons/ionicons'
 
 /** Exit fade of the conflict screen (ms), and when it hands over to the create
@@ -270,7 +271,7 @@ export default function ConflitEvenement({ existants: existantsInitiaux, eveneme
      * @returns {void}
      */
     const confirmerRetrait = () => {
-        const titres = existants.map((ev) => `• ${ev.titre}`).join('\n')
+        const titres = existants.map((ev) => `• ${titreEvenement(ev)}`).join('\n')
         Alert.alert(
             t('conflict.confirmTitle'),
             t('conflict.confirmMessage', { count: existants.length, titres }),
@@ -526,7 +527,7 @@ export default function ConflitEvenement({ existants: existantsInitiaux, eveneme
                                     size={22}
                                 />
                                 <View style={{ flex: 1, gap: 2 }}>
-                                    <Text style={s.titreEvenement} numberOfLines={1}>{ev.titre}</Text>
+                                    <Text style={s.titreEvenement} numberOfLines={1}>{titreEvenement(ev)}</Text>
                                     {plage && <Text style={s.heureEvenement}>{plage}</Text>}
                                     <Text style={s.action}>{actionPour(ev)}</Text>
                                 </View>

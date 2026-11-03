@@ -7,6 +7,10 @@
     "invitationReview": "Invitation schedules",
     "unavailability": "Unavailability"
   },
+  "creationPages": {
+    "event": "Event",
+    "unavailability": "Unavailability"
+  },
   "details": {
     "recurringEditTitle": "Edit recurring event",
     "recurringEditMessage": "Do you want to edit the event series or only this occurrence?",
@@ -138,7 +142,11 @@
     "dayTaken": "You already have something that day",
     "rangeTaken": "You already have something then",
     "inTheWay": "Already planned: {{titres}}",
-    "createFailed": "Unable to add the unavailability"
+    "createFailed": "Unable to add the unavailability",
+    "defaultTitle": "Unavailable",
+    "leftOutTitle": "Not invited",
+    "leftOut_one": "{{pseudos}} is unavailable then: no invitation sent",
+    "leftOut_other": "{{pseudos}} are unavailable then: no invitation sent"
   },
   "postpone": {
     "title": "Propose another time",

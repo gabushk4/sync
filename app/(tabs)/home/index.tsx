@@ -27,7 +27,7 @@ import EventsList, { RETRAIT_RANGEE } from '@/components/eventsList';
 import ProfilPic from '@/components/pfp';
 import Spinner from '@/components/spinner';
 import Timeline from '@/components/timeline';
-import TrousHoraire from '@/components/trousHoraire';
+import TrousHoraire, { PlageChoisie } from '@/components/trousHoraire';
 import { useFont } from '@/contextes/contexteFont';
 import { useMembre } from '@/contextes/contexteMembre';
 import { useTimeline } from '@/contextes/contexteTimeline';
@@ -324,6 +324,8 @@ export default function Home() {
   // Pre-fills the create screen with the day currently displayed, at the suggested
   // hour (see debutCreationPourJour).
   const debutCreation = todayDateTime && debutCreationPourJour(todayDateTime)
+  // Range picked on the member's row (TrousHoraire), or null (Philip — user story 20).
+  const [plageChoisie, setPlageChoisie] = useState<PlageChoisie | null>(null)
 
 
   //SharedValues
@@ -469,8 +471,13 @@ export default function Home() {
                     url: ev.url,
                     type: ev.type,
                     nature: ev.nature,
-                    titre: ev.prive ? undefined : ev.titre,
+                    // The API decides: no title for a private event the member isn't in,
+                    // the title of one they share with this friend (Philip — rectification).
+                    titre: ev.titre ?? undefined,
                     prive: ev.prive,
+                    // A friend's unavailability in red too, like the member's own: their
+                    // friends see at a glance when not to invite them (Philip — user story 20).
+                    couleur: ev.nature === 'indisponibilite' ? colors.indisponible : undefined,
                     debut: start?.toMillis(),
                     fin: end?.toMillis()
                   }
@@ -764,14 +771,20 @@ export default function Home() {
 
   useNavFab("home", {
     href: '/home/create',
-    // Asks first: create an event or add an unavailability (Philip — user story 20).
-    menuCreation: true,
-    params: debutCreation ? { start: debutCreation.toISO() } : undefined,
+    // Straight to the creation screen; swipe there for an unavailability (Philip — user story 20).
+    // A range picked on the member's row (hold then drag) is what the "+" creates on.
+    params: plageChoisie
+      ? { start: plageChoisie.debut.toISO(), end: plageChoisie.fin.toISO() }
+      : debutCreation ? { start: debutCreation.toISO() } : undefined,
     icon: null,
     visible: true,
-    // No events in the past: on a day before today, the "+" shows an error instead.
-    bloque: todayDateTime && estJourPasse(todayDateTime) ? t('create.pastDate', { ns: 'events' }) : undefined,
+    // No events in the past: on a day before today, the "+" shows an error instead
+    // (a picked range is never in the past).
+    bloque: !plageChoisie && todayDateTime && estJourPasse(todayDateTime) ? t('create.pastDate', { ns: 'events' }) : undefined,
   })
+
+  // The picked range is dropped once the home screen is left (e.g. for the creation).
+  useFocusEffect(useCallback(() => () => setPlageChoisie(null), []))
 
   useFocusEffect(
     useCallback(() => {
@@ -1221,9 +1234,9 @@ export default function Home() {
                   timelineDays={JOURS_FENETRE}
                   getEvenements={() => {refreshAt(todayDateTime ?? DateTime.now())}}
                   horizontal={true}
-                  // Free stretches in pale blue: hold then drag to pick a range (create an
-                  // event / add an unavailability). Philip — user story 20.
-                  arrierePlan={<TrousHoraire evenements={evenementsHoraire} debutFenetre={windowStart} jours={JOURS_FENETRE} />}
+                  // Free stretches in pale blue: hold then drag to pick a range, then "+"
+                  // creates on it (event, or unavailability by swiping). Philip — user story 20.
+                  arrierePlan={<TrousHoraire evenements={evenementsHoraire} debutFenetre={windowStart} jours={JOURS_FENETRE} selection={plageChoisie} onSelection={setPlageChoisie} />}
                 />
                 {/* Fully booked day: a fixed card over the (still mounted) timeline, so
                     it doesn't scroll and the timeline comes back as it was on a normal day. */}

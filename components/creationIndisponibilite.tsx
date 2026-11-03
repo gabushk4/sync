@@ -1,51 +1,52 @@
 import { useLocalSearchParams, useNavigation } from "expo-router";
-import { useRef, useState } from "react";
+import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DateTime } from "luxon";
-import Icon from "@react-native-vector-icons/ionicons";
 
-import { useActionFab } from "@/hooks/useActionFAB";
 import { useAPI } from "@/contextes/contexteAPI";
-import { usePalette } from "@/contextes/contextePalette";
 
+import { CreationHandle } from "@/components/creationEvenement";
 import EventForm, { EventFormHandle } from "@/components/eventForm";
 import VoileEnvoi from "@/components/voileEnvoi";
 import ToastAbs from "@/abstractions/toastAbs";
 import { toastTypes } from "@/constants/toastConfig";
+import ConflitEvenement, { SortieConflit } from "@/components/conflitEvenement";
 import catcher from "@/functions/catcher";
-import { convertLocalToUTC } from "@/functions/convertirUTCenLocal";
-import formaterDatePourServeur from "@/functions/formaterDatePourServeur";
-import { debutDejaPasse, estJourneeEntiere, plagePreremplie } from "@/functions/jourCreation";
+import { debutDejaPasse, plagePreremplie } from "@/functions/jourCreation";
+import titreEvenement from "@/functions/titreEvenement";
+import useEnvoiCreation, { corpsCreation } from "@/hooks/useEnvoiCreation";
 import { defaultEvent, Event } from "@/types/calendar";
-import { conflitsDeLaReponse } from "@/types/conflit";
-
-/** Conflicting titles listed in the error message before "…". */
-const MAX_TITRES_CONFLIT = 3
+import { conflitsDeLaReponse, EvenementEnConflit, NouvelEvenement } from "@/types/conflit";
 
 /**
- * Unavailability screen: a stretch where the member is busy, stored as an event of
+ * Unavailability page: a stretch where the member is busy, stored as an event of
  * nature 'indisponibilite' (same conflicts and display as an event). The form is the
- * event one without recurrence nor participants: an optional title (the reason), a
- * description, whether friends see the reason, start / end and "all day".
- * Opened from the "what to add?" menu (`start` / `end` route params, ISO), like the
- * event creation. Overlapping something already in the schedule (e.g. "all day" on
- * a day that already holds an event) is only checked on confirming: the API's 409
- * then shows an error listing what is in the way.
+ * event one without participants: an optional title (the reason), a description,
+ * whether friends see the reason, start / end, "all day" and a recurrence (e.g. every
+ * night). While it lasts, friends can't invite the member (see the API's
+ * trouverIndisponibles).
+ * Second page of the creation screen (swipe from the event page), with the same
+ * `start` / `end` route params (ISO). Overlapping something already in the schedule
+ * (e.g. "all day" on a day that already holds an event) is only checked on
+ * confirming: the API's 409 then opens the conflict screen, like an event's.
  *
  * @author Philip — user story 20
+ * @author Philip — user story 20 (review): recurring unavailabilities, sending shared
+ *   with the event page (useEnvoiCreation), and a conflict opens the same conflict screen
+ *   as an event (remove what is in the way, or go back) instead of a short error toast
+ *   that left nothing to do but tap ✓ again
  * @returns {JSX.Element}
  */
-export default function Indisponibilite() {
+const CreationIndisponibilite = forwardRef<CreationHandle>(function CreationIndisponibilite(_, ref) {
     const { t } = useTranslation('events')
-    const { colors } = usePalette()
     const navigation = useNavigation()
     const { api } = useAPI()
 
     const formRef = useRef<EventFormHandle>(null)
     const [event] = useState<Event>(defaultEvent)
-    const [enChargement, setEnChargement] = useState(false)
-    // Set synchronously: a double tap on ✓ would otherwise send it twice.
-    const envoiEnCoursRef = useRef(false)
+    const { enChargement, envoyerUneFois } = useEnvoiCreation()
+    // Conflict screen over this page (409 answer), or null.
+    const [conflit, setConflit] = useState<{ existants: EvenementEnConflit[], nouvelle: NouvelEvenement } | null>(null)
 
     const { start, end } = useLocalSearchParams<{ start?: string, end?: string }>()
     const maintenant = DateTime.now()
@@ -58,30 +59,25 @@ export default function Indisponibilite() {
      * @author Philip — user story 20
      * @returns {Promise<void>}
      */
-    const envoyer = async () => {
-        if (envoiEnCoursRef.current) return
-        envoiEnCoursRef.current = true
-        let jourEntier = false
+    const envoyer = () => envoyerUneFois(async (demarrerChargement) => {
+        // Kept outside the try so the 409 handler can hand it to the conflict screen.
+        let nouvelle: NouvelEvenement | undefined
         try {
             const values = formRef.current?.getValues()
             if (!values) return
-            jourEntier = estJourneeEntiere(values.start, values.end)
             if (debutDejaPasse(values.start, values.end)) {
                 ToastAbs.show({ type: toastTypes.error, text2: t('create.pastStart') })
                 return
             }
 
-            setEnChargement(true)
-            const response = await api.post('/evenements/', {
+            demarrerChargement()
+            nouvelle = {
                 nature: 'indisponibilite',
-                // Empty: the API names it "Indisponible".
-                titre: values.titre.trim(),
-                description: values.description,
-                prive: values.prive,
-                debut: formaterDatePourServeur(convertLocalToUTC(values.start)),
-                fin: formaterDatePourServeur(convertLocalToUTC(values.end)),
+                // An empty title (no reason) is shown as "Unavailable" (titreEvenement).
+                ...corpsCreation(values),
                 participants: [],
-            })
+            }
+            const response = await api.post('/evenements/', nouvelle)
             if (response.status === 201) {
                 ToastAbs.show({
                     type: toastTypes.success,
@@ -92,30 +88,31 @@ export default function Indisponibilite() {
                 navigation.dispatch({ type: 'POP_TO_TOP' })
             }
         } catch (error: any) {
-            if (error.response?.status === 409) {
-                const titres = [...new Set(conflitsDeLaReponse(error.response.data).map((c) => c.titre))]
-                const liste = titres.slice(0, MAX_TITRES_CONFLIT).join(', ') + (titres.length > MAX_TITRES_CONFLIT ? '…' : '')
-                ToastAbs.show({
-                    type: toastTypes.error,
-                    text1: jourEntier ? t('unavailability.dayTaken') : t('unavailability.rangeTaken'),
-                    text2: t('unavailability.inTheWay', { titres: liste }),
-                })
+            if (error.response?.status === 409 && nouvelle) {
+                // Same conflict screen as an event: what is in the way, which can be
+                // removed to create the unavailability, or back to adjust it.
+                setConflit({ existants: conflitsDeLaReponse(error.response.data), nouvelle })
             } else {
                 catcher(error, t('unavailability.createFailed'))
             }
-        } finally {
-            envoiEnCoursRef.current = false
-            setEnChargement(false)
-        }
-    }
-
-    useActionFab("unavailabilityCreate", {
-        action: envoyer,
-        config: {
-            visible: true,
-            icon: <Icon name="checkmark" color={colors.text} size={28} />
         }
     })
+
+    /**
+     * The conflict screen is left: closes it; created (or dropped) → back to the home
+     * timeline, "adjust" → back to where the creation started, else stays on the form.
+     *
+     * @author Philip — user story 20 (review)
+     * @param {SortieConflit} sortie
+     * @returns {void}
+     */
+    const quitterConflit = (sortie: SortieConflit) => {
+        setConflit(null)
+        if (sortie === 'retour') navigation.goBack()
+        else if (sortie === 'accueil') navigation.dispatch({ type: 'POP_TO_TOP' })
+    }
+
+    useImperativeHandle(ref, () => ({ envoyer }))
 
     return (
         <>
@@ -128,6 +125,16 @@ export default function Indisponibilite() {
                 constraints={{ maximumStart: finDemandee, minimumStart: maintenant }}
             />
             {enChargement && <VoileEnvoi />}
+            {conflit && (
+                <ConflitEvenement
+                    existants={conflit.existants}
+                    evenement={{ titre: titreEvenement(conflit.nouvelle), debut: conflit.nouvelle.debut, fin: conflit.nouvelle.fin }}
+                    confirmer={() => api.post('/evenements/', conflit.nouvelle)}
+                    onSortie={quitterConflit}
+                />
+            )}
         </>
     )
-}
+})
+
+export default CreationIndisponibilite
