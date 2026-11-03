@@ -29,6 +29,8 @@ export type Event = {
   url_externe?: string;
   nom_calendrier?: string;
   compte_origine?: string;
+  // Story #21: public id of the shared event's group conversation, when the member is in it.
+  conversation_id?: string | null;
 };
 
 export const defaultEvent = <Event>{
