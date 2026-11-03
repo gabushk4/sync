@@ -1,5 +1,5 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import { FabConfig, useFabActions } from '@/contextes/contexteFAB'; 
 import log from '@/functions/log';
 
@@ -14,13 +14,14 @@ export function useActionFab(owner: string, { action, config }: { action: () => 
     // returned the function: every ✓ (create, unavailability, edit) did nothing.
     // Rectification (Philip).
     const actionLocalRef = useRef(action);
-    actionLocalRef.current = action;
-    // Calls the CURRENT action. `() => action` only returned the function without calling it,
-    // so pressing the FAB did nothing (e.g. ✓ on event creation).
-    const stableAction = useCallback(() => { actionLocalRef.current?.() }, []);
+    useEffect(() => {
+        actionLocalRef.current = action;
+    }, [action])
 
-    const visible = config?.visible;
-    
+    const stableAction = useCallback(() => {
+        actionLocalRef.current();    
+    }, [])
+
     // Gère l'icône + le montage/démontage lié au focus de l'écran
     useFocusEffect(
         useCallback(() => {
@@ -29,6 +30,6 @@ export function useActionFab(owner: string, { action, config }: { action: () => 
                 log("action fab cleansed by", owner)
                 release(owner)
             };
-        },  [owner, visible, setFabConfig, release, stableAction])
+        },  [owner, setFabConfig, release, stableAction])
     );
 }

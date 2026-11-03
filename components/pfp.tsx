@@ -1,9 +1,7 @@
-import { Image, ImageSourcePropType, StyleSheet, useColorScheme, View, ViewStyle } from "react-native";
-import { FPType } from "@/types/pfp";
-import { usePalette } from "@/contextes/contextePalette";
-import { useEffect, useState } from "react";
 import { useAPI } from "@/contextes/contexteAPI";
-import log from "@/functions/log";
+import { usePalette } from "@/contextes/contextePalette";
+import { FPType } from "@/types/pfp";
+import { Image, ImageSourcePropType, StyleSheet, useColorScheme, View, ViewStyle } from "react-native";
 
 
 type Props = {
@@ -21,20 +19,11 @@ export default function ProfilPic({ size, pfp, style}: Props) {
         pfpDefault: colorScheme === 'dark' ? require('@/assets/icones/profil-dark-icon.png') : require('@/assets/icones/profil-light-icon.png')
     }
 
-    const [source, setSource] = useState<ImageSourcePropType>()
-
-    useEffect(() => {
-        log(pfp)
-    if (!pfp || pfp === 'null' || pfp === 'undefined') {
-        setSource(icones.pfpDefault)
-    }
-    else if (typeof pfp === 'string') {
-        setSource({ uri: `${APIBaseURL}${pfp}` })
-    }
-    else {
-        setSource({ uri: pfp?.uri })
-    }
-}, [pfp])
+    const source: ImageSourcePropType = !pfp || pfp === 'null' || pfp === 'undefined'
+        ? icones.pfpDefault
+        : typeof pfp === 'string'
+            ? { uri: `${APIBaseURL}${pfp}` }
+            : { uri: pfp.uri }
     
     const s = StyleSheet.create({
         imageContainer: {

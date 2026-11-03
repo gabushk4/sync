@@ -1,7 +1,7 @@
 import ModalBase from "@/components/modalBase";
 import { useEffect, useMemo } from "react";
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
+import { Dimensions, StyleSheet, TouchableOpacity, View, } from 'react-native';
 
 import { useMembre } from "@/contextes/contexteMembre";
 
