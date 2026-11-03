@@ -112,15 +112,18 @@ const Fab = React.memo(function Fab() {
         }
     };
 
-    return (
-        <AnimatedTouchableOpacity
-        disabled={!shown}
-        onPress={onPress}
-        style={[s.fab, animatedStyle, { borderColor: colors.border, backgroundColor: colors.secondary }]}
-        >
-        {display.icon ?? <Icon name="add" color={colors.text} size={24} />}
-        </AnimatedTouchableOpacity>
-    );
+    
+    return  shown ? (
+        <>
+            <AnimatedTouchableOpacity
+            disabled={!shown}
+            onPress={onPress}
+            style={[s.fab, animatedStyle, { borderColor: colors.border, backgroundColor: colors.secondary }]}
+            >
+            {display.icon ?? <Icon name="add" color={colors.text} size={24} />}
+            </AnimatedTouchableOpacity>
+        </>
+    ) : null;
 });
 
 export function CustomTabBar(props: BottomTabBarProps) {

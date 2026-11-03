@@ -18,7 +18,7 @@ export default function ConversationItem({ conversation, onPress }: Props) {
     const { colors } = usePalette()
     const { fonts } = useFont()
 
-    const { ami, dernierMessage, nonLus } = conversation
+    const { ami, dernierMessage, nonLus, evenementId } = conversation
 
     const apercu = dernierMessage
         ? dernierMessage.type === 'vocal'
@@ -34,13 +34,17 @@ export default function ConversationItem({ conversation, onPress }: Props) {
                 ? <Image source={{ uri: ami.fp_url }} style={styles.avatar} />
                 : (
                     <View style={[styles.avatar, styles.avatarPlaceholder, { backgroundColor: colors.card }]}>
-                        <Icon name="person" size={22} color={colors.muted} />
+                        {/* Story #21: an event's group conversation */}
+                        <Icon name={evenementId ? "calendar" : "person"} size={22} color={colors.muted} />
                     </View>
                 )
             }
 
             <View style={styles.texteConteneur}>
-                <Text style={[styles.pseudo, { color: colors.text, fontFamily: fonts.body }]}>{ami.pseudo}</Text>
+                <View style={styles.ligneTitre}>
+                    {evenementId && ami.fp_url ? <Icon name="calendar-outline" size={14} color={colors.muted} /> : null}
+                    <Text numberOfLines={1} style={[styles.pseudo, { color: colors.text, fontFamily: fonts.body }]}>{ami.pseudo}</Text>
+                </View>
                 <Text 
                     numberOfLines={1}
                     style={[styles.apercu,
@@ -82,7 +86,8 @@ const styles = StyleSheet.create({
     avatar: { width: 48, height: 48, borderRadius: 24 },
     avatarPlaceholder: { alignItems: 'center', justifyContent: 'center' },
     texteConteneur: { flex: 1, gap: 2 },
-    pseudo: { fontSize: 16 },
+    ligneTitre: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    pseudo: { fontSize: 16, flexShrink: 1 },
     apercu: { fontSize: 14 },
     droite: { alignItems: 'flex-end', gap: 6 },
     heure: { fontSize: 12 },

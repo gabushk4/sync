@@ -30,6 +30,11 @@ function formatDate(dateTime, formatKey) {
     
 
     const weekday = languageFormats.weekdaysShort[dateTime.weekday - 1];
+    if (formatKey === "dayShort") {
+        return language === "en"
+            ? `${weekday}, ${month} ${dateTime.day}`
+            : `${weekday} ${dateTime.day} ${month}`;
+    }
     return language === "en"
         ? `${weekday}, ${month} ${dateTime.day}, ${dateTime.year}`
         : `${weekday} ${dateTime.day} ${month} ${dateTime.year}`;
@@ -75,6 +80,19 @@ function convertirTimestampDateCourte(timestamp) {
 }
 
 
+/**
+ * Weekday, day and month, without the year: "mar. 3 nov." / "Tue, Nov 3".
+ * Like the other helpers here, it uses formats.json, not Luxon's month names
+ * (`LLL` in toFormat), which come out as "null" on the phone (no Intl month names).
+ *
+ * @param {string || DateTime || JSDate} timestamp
+ * @returns {string}
+ */
+function convertirTimestampJourCourt(timestamp) {
+    const dateTime = toDateTime(timestamp)?.setLocale(getCurrentLocale());
+    if (!dateTime?.isValid) return '???'
+    return formatDate(dateTime, "dayShort");
+}
 
 function convertirTimestampDateLongue(timestamp) {
     const dateTime = toDateTime(timestamp)?.setLocale(getCurrentLocale());
@@ -123,4 +141,4 @@ function convertToWhen(timestamp) {
 }
 
 
-export { convertirTimestampDateCourte, convertirTimestampDateLongue, convertirTimestampHeure, convertToWhen };
+export { convertirTimestampDateCourte, convertirTimestampDateLongue, convertirTimestampHeure, convertirTimestampJourCourt, convertToWhen };

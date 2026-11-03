@@ -26,6 +26,8 @@ export type Conversation = {
         auteurId: string
     }
     nonLus: number
+    /** Story #21: public id of the event this group conversation belongs to */
+    evenementId?: string
 }
 
 export type MessageBrut = Omit<Message,'envoyeLe'> & {envoyeLe: string}

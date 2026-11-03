@@ -35,7 +35,48 @@
 		"reportedAt": "Date: {{date}}",
 		"appVersion": "App version: {{version}}",
 		"device": "Device: {{device}}",
-		"unknown": "Unknown"
+		"unknown": "Unknown",
+		"exportsTab": "Exports",
+		"deletionsTab": "Deletions",
+		"close": "Close",
+		"cancel": "Cancel",
+		"relaunch": "Retry",
+		"unknownMember": "Unknown member",
+		"statusLabel": "Status: {{statut}}",
+		"requestedAt": "Requested {{date}}",
+		"statuses": {
+			"en_attente": "To do",
+			"en_cours": "In progress",
+			"confirmee": "Confirmed",
+			"completee": "Done",
+			"echouee": "Failed"
+		},
+		"exports": {
+			"empty": "No export requests.",
+			"loadFailed": "Could not load export requests.",
+			"launch": "Start export",
+			"done": "Export generated and emailed.",
+			"failed": "The export failed.",
+			"attempts_one": "{{count}} attempt",
+			"attempts_other": "{{count}} attempts",
+			"linkExpires": "Link valid until {{date}}",
+			"emailFailedTitle": "Email not sent",
+			"emailFailedMessage": "The export is ready, but the email to {{email}} wasn't sent. Copy the download link to pass it on.",
+			"copyLink": "Copy link",
+			"linkCopied": "Link copied."
+		},
+		"deletions": {
+			"empty": "No deletion requests.",
+			"loadFailed": "Could not load deletion requests.",
+			"launch": "Anonymize",
+			"done": "Member anonymized.",
+			"failed": "Anonymization failed.",
+			"waitingEmail": "Waiting for email confirmation",
+			"doneBy": "Handled by @{{pseudo}}",
+			"confirmTitle": "Anonymize this member?",
+			"confirmMessage": "{{pseudo}}'s data will be deleted or anonymized. This can't be undone.",
+			"confirmAction": "Anonymize"
+		}
 	},
 	"friendMood": "Mood",
 	"moodEmpty": "No mood shared right now.",
@@ -49,7 +90,8 @@
 		"slot": "from {{debut}} to {{fin}}",
 		"empty": "No common availability with {{pseudo}} this week.",
 		"create": "create an event with {{pseudo}}: {{creneau}}",
-		"retry": "couldn't load the availabilities, retry",		"loadFailed": "unable to load common availabilities"
+		"retry": "couldn't load the availabilities, retry",
+		"loadFailed": "unable to load common availabilities"
 	},
 	"errors": {
 		"widgetsLoadFailed": "error loading widgets",

@@ -31,6 +31,11 @@ export type Event = {
   url_externe?: string;
   nom_calendrier?: string;
   compte_origine?: string;
+  // Story #21: public id of the shared event's group conversation, when the member is in it.
+  conversation_id?: string | null;
+  // Story #21: no conversation yet, the member created the event and an invitee accepted:
+  // they can create it (POST /evenements/:id/conversation).
+  peut_creer_conversation?: boolean;
 };
 
 export const defaultEvent = <Event>{

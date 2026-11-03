@@ -1,11 +1,12 @@
 {
   "navigation": {
-    "create": "Create an event",
-    "details": "Details",
-    "edit": "Edit",
+    "create": "New event",
+    "details": "Event details",
+    "edit": "Edit event",
     "calendar": "Calendar",
     "invitationReview": "Invitation schedules",
-    "unavailability": "Unavailability"
+    "unavailability": "New unavailability",
+    "unavailabilityDetails": "Unavailability details"
   },
   "creationPages": {
     "event": "Event",
@@ -18,7 +19,15 @@
     "editOccurrence": "This occurrence",
     "deletedTitle": "Deleted",
     "deletedMessage": "It has been filed away where nobody looks; what was filed? No idea.",
-    "clickSource": "clic here to show in {source}"
+    "clickSource": "clic here to show in {source}",
+    "openConversation": "Open the event's conversation",
+    "conversation": "Event conversation",
+    "createConversation": "Create a group chat",
+    "conversationCreated": "Group chat created",
+    "createConversationFailed": "Couldn't create the group chat",
+    "deleteEvent": "Delete event",
+    "deleteUnavailability": "Delete unavailability",
+    "leaveEvent": "Leave event"
   },
   "edit": {
     "defaultError": "Unable to edit the event",
@@ -35,7 +44,11 @@
     "pastDate": "Can't create an event in the past.",
     "pastRange": "The selection starts before today.",
     "pastStart": "The start time has already passed.",
-    "titleRequired": "The event must have a name."
+    "titleRequired": "The event must have a name.",
+    "conversationTitle": "Group conversation",
+    "conversationMessage": "Create a conversation with this event's participants? Each invitee joins it when they accept.",
+    "conversationYes": "Create",
+    "conversationNo": "No thanks"
   },
   "form": {
     "titlePlaceholder": "title...",

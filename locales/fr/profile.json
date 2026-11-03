@@ -35,7 +35,48 @@
 		"reportedAt": "Date : {{date}}",
 		"appVersion": "Version de l’app : {{version}}",
 		"device": "Appareil : {{device}}",
-		"unknown": "Inconnue"
+		"unknown": "Inconnue",
+		"exportsTab": "Exports",
+		"deletionsTab": "Suppressions",
+		"close": "Fermer",
+		"cancel": "Annuler",
+		"relaunch": "Relancer",
+		"unknownMember": "Membre inconnu",
+		"statusLabel": "Statut : {{statut}}",
+		"requestedAt": "Demandé le {{date}}",
+		"statuses": {
+			"en_attente": "À traiter",
+			"en_cours": "En cours",
+			"confirmee": "Confirmée",
+			"completee": "Terminée",
+			"echouee": "Échouée"
+		},
+		"exports": {
+			"empty": "Aucune demande d'export.",
+			"loadFailed": "Impossible de charger les demandes d'export.",
+			"launch": "Lancer l'export",
+			"done": "Export généré et envoyé par courriel.",
+			"failed": "L'export a échoué.",
+			"attempts_one": "{{count}} tentative",
+			"attempts_other": "{{count}} tentatives",
+			"linkExpires": "Lien valide jusqu'au {{date}}",
+			"emailFailedTitle": "Courriel non envoyé",
+			"emailFailedMessage": "L'export est prêt, mais le courriel à {{email}} n'est pas parti. Copie le lien de téléchargement pour le lui transmettre.",
+			"copyLink": "Copier le lien",
+			"linkCopied": "Lien copié."
+		},
+		"deletions": {
+			"empty": "Aucune demande de suppression.",
+			"loadFailed": "Impossible de charger les demandes de suppression.",
+			"launch": "Anonymiser",
+			"done": "Membre anonymisé.",
+			"failed": "L'anonymisation a échoué.",
+			"waitingEmail": "Attend la confirmation par courriel",
+			"doneBy": "Traitée par @{{pseudo}}",
+			"confirmTitle": "Anonymiser ce membre ?",
+			"confirmMessage": "Les données de {{pseudo}} seront supprimées ou anonymisées. Cette action est définitive.",
+			"confirmAction": "Anonymiser"
+		}
 	},
 	"friendMood": "État d'âme",
 	"moodEmpty": "Aucun état d'âme partagé pour le moment.",
@@ -49,7 +90,8 @@
 		"slot": "de {{debut}} à {{fin}}",
 		"empty": "Aucune disponibilité commune avec {{pseudo}} cette semaine.",
 		"create": "créer un évènement avec {{pseudo}} : {{creneau}}",
-		"retry": "impossible de charger les disponibilités, réessayer",		"loadFailed": "impossible de charger les disponibilités communes"
+		"retry": "impossible de charger les disponibilités, réessayer",
+		"loadFailed": "impossible de charger les disponibilités communes"
 	},
 	"errors": {
 		"widgetsLoadFailed": "erreur lors du chargement des widgets",

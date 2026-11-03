@@ -2,5 +2,27 @@
 	"requests": {
 		"title": "Demandes d'ami",
 		"empty": "Aucune demande d'ami en attente."
+	},
+	"infos": {
+		"title": "Infos",
+		"loadFailed": "Impossible de charger les infos de la conversation",
+		"members_one": "{{count}} membre",
+		"members_other": "{{count}} membres",
+		"membersTitle": "Membres ({{count}})",
+		"event": "Évènement",
+		"admin": "Organisateur",
+		"you": "toi",
+		"openProfile": "Voir le profil de {{pseudo}}",
+		"createdOn": "Conversation créée le {{date}}",
+		"eventGroup": "Groupe de discussion de « {{titre}} »",
+		"open": "Infos de la conversation {{nom}}",
+		"delete": "Supprimer la conversation",
+		"deleteTitle": "Supprimer la conversation ?",
+		"deleteMessage": "Tous les messages seront supprimés pour tous les membres. C'est définitif.",
+		"deleteMessageEvent": "Tous les messages seront supprimés pour tous les membres. Tu pourras en créer une nouvelle depuis l'évènement.",
+		"deleteConfirm": "Supprimer",
+		"cancel": "Annuler",
+		"deleted": "Conversation supprimée",
+		"deleteFailed": "Impossible de supprimer la conversation"
 	}
 }

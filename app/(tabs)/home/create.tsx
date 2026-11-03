@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useNavigation } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Alert } from 'react-native';
 import Icon from "@react-native-vector-icons/ionicons";
 
 import { useActionFab } from "@/hooks/useActionFAB";

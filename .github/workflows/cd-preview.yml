@@ -2,7 +2,7 @@ name: CD - Preview
 
 on:
   push:
-    branches: [main]
+    branches: [preview]
 
 permissions:
   contents: read
@@ -63,8 +63,8 @@ jobs:
 
       - name: Natif inchangé -> update OTA
         if: steps.check.outputs.has_build == 'true'
-        run: eas update --channel preview --platform ${{ matrix.platform }} --message "preview ${{ github.sha }}" --non-interactive
-
-      - name: Natif changé -> nouveau build preview
+        run: eas update --channel development --platform ${{ matrix.platform }} --message "dev ${{ github.sha }}" --non-interactive
+      
+      - name: Natif changé -> nouveau dev build
         if: steps.check.outputs.has_build == 'false'
-        run: eas build --platform ${{ matrix.platform }} --profile preview --non-interactive --no-wait
+        run: eas build --platform ${{ matrix.platform }} --profile development --non-interactive --no-wait

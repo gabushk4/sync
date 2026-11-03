@@ -3,13 +3,15 @@ import { getCommonFreeSlots } from '../functions/availability.js';
 
 const zone = 'America/Montreal';
 // `zone` doit être défini comme dans ton fichier actuel (ex. 'America/Toronto')
+const realNow = Settings.now;
 
 // The time is computed once, before Luxon's clock is replaced: computing it inside
 // `Settings.now` called Luxon, which read `Settings.now` again — endless recursion
 // ("Maximum call stack size exceeded"). Rectification (Philip).
 const figerHorloge = (iso) => {
-  const millis = DateTime.fromISO(iso, { zone }).toMillis()
-  Settings.now = () => millis
+  Settings.now = realNow;
+  const timestamp = DateTime.fromISO(iso, { zone }).toMillis();
+  Settings.now = () => timestamp;
 }
 
 describe('getCommonFreeSlots', () => {
@@ -20,7 +22,7 @@ describe('getCommonFreeSlots', () => {
   })
 
   afterEach(() => {
-    Settings.now = () => Date.now() // remet l'horloge réelle
+    Settings.now = realNow // remet l'horloge réelle
   })
 
   test('jour de changement heure (25 h) : 2 creneaux autour evenement', () => {

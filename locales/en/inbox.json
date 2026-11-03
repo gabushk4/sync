@@ -2,5 +2,27 @@
 	"requests": {
 		"title": "Friend requests",
 		"empty": "You have no pending friend requests."
+	},
+	"infos": {
+		"title": "Info",
+		"loadFailed": "Couldn't load the conversation's info",
+		"members_one": "{{count}} member",
+		"members_other": "{{count}} members",
+		"membersTitle": "Members ({{count}})",
+		"event": "Event",
+		"admin": "Organizer",
+		"you": "you",
+		"openProfile": "See {{pseudo}}'s profile",
+		"createdOn": "Conversation created on {{date}}",
+		"eventGroup": "{{titre}}'s group chat",
+		"open": "{{nom}} conversation info",
+		"delete": "Delete conversation",
+		"deleteTitle": "Delete this conversation?",
+		"deleteMessage": "All messages will be deleted for every member. This can't be undone.",
+		"deleteMessageEvent": "All messages will be deleted for every member. You can create a new one from the event.",
+		"deleteConfirm": "Delete",
+		"cancel": "Cancel",
+		"deleted": "Conversation deleted",
+		"deleteFailed": "Couldn't delete the conversation"
 	}
 }
