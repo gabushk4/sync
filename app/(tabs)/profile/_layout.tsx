@@ -15,6 +15,9 @@ export default function ProfileLayout() {
                 name="index" options={{headerTitle:t('navigation.profile')}}
             />
             <Stack.Screen
+                name="[membreId]" options={{ headerTitle: t('navigation.profile') }}
+            />
+            <Stack.Screen
                 name="edit" options={{headerTitle:t('navigation.edit')}}
             />
             <Stack.Screen

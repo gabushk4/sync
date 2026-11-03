@@ -111,6 +111,7 @@ export default function ListItem({ event, horizontal, displayedDate, listOffset,
             position: 'absolute',
             left,
             top,
+            overflow: 'hidden',
             ...(horizontal ? { width: taille, height: '100%' } : { height: taille, width: '100%' }),
         },
         texte: {
@@ -145,7 +146,7 @@ export default function ListItem({ event, horizontal, displayedDate, listOffset,
             disabled={event.cliquable === false}
             onPress={() => onPress ? onPress(event) : ouvrirDetailsEvenement({ id: event.id, debut, fin })}
         >
-            <EventBloc event={event} blockColor={event.couleur ? RenderCalendarColor(event.couleur, scheme) : eventsColor} horizontal={horizontal} displayDate={displayedDate} />
+            <EventBloc event={event} blockColor={event.couleur ? RenderCalendarColor(event.couleur, scheme) : eventsColor} horizontal={horizontal} displayDate={displayedDate} size={taille} />
             <Animated.View style={[s.texte, texteAnime]}>
                 <Text style={s.heure} numberOfLines={1}>{startText}</Text>
                 {/* An unavailability without a (shared) reason reads "Unavailable" (Philip — user story 20). */}
