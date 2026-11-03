@@ -13,6 +13,8 @@ import { useMembre } from "@/contextes/contexteMembre";
 import { usePalette } from "@/contextes/contextePalette";
 
 import catcher from "@/functions/catcher";
+import ToastAbs from "@/abstractions/toastAbs";
+import { toastTypes } from "@/constants/toastConfig";
 import chargerDetailsEvenement from "@/functions/chargerDetailsEvenement";
 import log from "@/functions/log";
 
@@ -65,6 +67,23 @@ export default function Details(){
 
     // Story #21 : the shared event's group conversation (only sent when the member is in it)
     const { rafraichirConversations } = useConversations()
+    // Story #21: the event has no conversation yet, its creator makes one (an invitee accepted)
+    const [creationConversation, setCreationConversation] = useState(false)
+    const creerConversation = async () => {
+        if (!event.id || creationConversation) return
+        setCreationConversation(true)
+        try {
+            await api.post(`/evenements/${event.id}/conversation`, {})
+            ToastAbs.show({ type: toastTypes.success, text2: t('details.conversationCreated') })
+            rafraichirConversations()
+            // reloaded: the block becomes the one that opens the conversation
+            await getDetails(event.id as string)
+        } catch (error) {
+            catcher(error, t('details.createConversationFailed'))
+        } finally {
+            setCreationConversation(false)
+        }
+    }
     const ouvrirConversation = () => {
         if (!event.conversation_id) return
         rafraichirConversations()
@@ -172,6 +191,8 @@ export default function Details(){
                 nature={event.nature}
                 // Story #21: a block under the participants (review: part of the form)
                 onOuvrirConversation={event.conversation_id && !invitation ? ouvrirConversation : undefined}
+                onCreerConversation={!event.conversation_id && event.peut_creer_conversation && !invitation ? creerConversation : undefined}
+                creationConversationEnCours={creationConversation}
                 // Common availabilities / suggestions (Philip — user story 23) and delete /
                 // leave: blocks at the end of the form, like the others
                 blocsFin={invitation ? undefined : (

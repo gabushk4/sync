@@ -22,6 +22,9 @@
     "clickSource": "clique ici pour afficher dans {{source}}",
     "openConversation": "Ouvrir la conversation de l'évènement",
     "conversation": "Conversation de l'évènement",
+    "createConversation": "Créer une conversation de groupe",
+    "conversationCreated": "Conversation de groupe créée",
+    "createConversationFailed": "Impossible de créer la conversation",
     "deleteEvent": "Supprimer l'évènement",
     "deleteUnavailability": "Supprimer l'indisponibilité",
     "leaveEvent": "Quitter l'évènement"

@@ -1,11 +1,14 @@
 import Icon from '@react-native-vector-icons/ionicons'
-import { router, useFocusEffect, useLocalSearchParams, useSegments } from 'expo-router'
+import { router, useFocusEffect, useLocalSearchParams, useNavigation, useSegments } from 'expo-router'
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
+import ToastAbs from '@/abstractions/toastAbs'
 import ProfilPic from '@/components/pfp'
+import { toastTypes } from '@/constants/toastConfig'
 import { useAPI } from '@/contextes/contexteAPI'
+import { useConversations } from '@/contextes/contexteConversations'
 import { useFont } from '@/contextes/contexteFont'
 import { useMembre } from '@/contextes/contexteMembre'
 import { usePalette } from '@/contextes/contextePalette'
@@ -44,6 +47,38 @@ export default function InfosConversationEcran() {
 
     const [infos, setInfos] = useState<InfosConversation | null>(null)
     const [erreur, setErreur] = useState(false)
+    const navigation = useNavigation()
+    const { rafraichirConversations } = useConversations()
+    const [suppressionEnCours, setSuppressionEnCours] = useState(false)
+
+    /**
+     * Deletes the conversation (its admins), after a confirmation: messages included, for
+     * every member. An event's conversation can be created again from the event's page.
+     * Then back past the deleted conversation's screen (to the list, or to the event).
+     */
+    const supprimer = () => {
+        Alert.alert(t('infos.deleteTitle'), t(infos?.evenement ? 'infos.deleteMessageEvent' : 'infos.deleteMessage'), [
+            { text: t('infos.cancel'), style: 'cancel' },
+            {
+                text: t('infos.deleteConfirm'),
+                style: 'destructive',
+                onPress: async () => {
+                    setSuppressionEnCours(true)
+                    try {
+                        await api.delete(`/conversations/${encodeURIComponent(conversationId)}`)
+                        ToastAbs.show({ type: toastTypes.success, text2: t('infos.deleted') })
+                        rafraichirConversations()
+                        // this screen and the conversation's
+                        navigation.dispatch({ type: 'POP', payload: { count: 2 } })
+                    } catch (error) {
+                        catcher(error, t('infos.deleteFailed'))
+                    } finally {
+                        setSuppressionEnCours(false)
+                    }
+                },
+            },
+        ])
+    }
 
     useFocusEffect(useCallback(() => {
         let actif = true
@@ -96,6 +131,12 @@ export default function InfosConversationEcran() {
         role: { color: colors.secondary, fontFamily: fonts.body, fontSize: 13 },
         icone: { width: 40, height: 40, borderRadius: 100, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary },
         centre: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
+        supprimer: {
+            flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+            paddingVertical: 14, borderRadius: 16, borderWidth: 1, borderColor: colors.error,
+            backgroundColor: colors.card,
+        },
+        texteSupprimer: { color: colors.error, fontFamily: fonts.body, fontSize: 17 },
     })
 
     if (!infos) {
@@ -187,6 +228,22 @@ export default function InfosConversationEcran() {
                     )
                 })}
             </View>
+
+            {/* Its admins can delete it (an event's can be created again from the event) */}
+            {infos.mon_role === 'editeur' && (
+                <TouchableOpacity
+                    style={s.supprimer}
+                    onPress={supprimer}
+                    disabled={suppressionEnCours}
+                    accessibilityRole="button"
+                    accessibilityState={{ busy: suppressionEnCours }}
+                >
+                    {suppressionEnCours
+                        ? <ActivityIndicator color={colors.error} />
+                        : <Icon name="trash-outline" size={22} color={colors.error} />}
+                    <Text style={s.texteSupprimer}>{t('infos.delete')}</Text>
+                </TouchableOpacity>
+            )}
 
             {infos.cree_le && (
                 <Text style={[s.detail, { textAlign: 'center' }]}>

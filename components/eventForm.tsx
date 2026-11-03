@@ -15,7 +15,7 @@ import { useFocusEffect } from 'expo-router'
 import { DateTime } from 'luxon'
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, View } from 'react-native'
+import { ActivityIndicator, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, View } from 'react-native'
 
 import SwitchAbs from '@/abstractions/switchAbs'
 import { useEventDraft } from '@/contextes/contexteEventDraft'
@@ -71,6 +71,11 @@ type Props = {
     /** Story #21: opens the event's group conversation; given only when the member is in it
      * (a block under the participants, like the form's other blocks). */
     onOuvrirConversation?: () => void
+    /** Story #21: creates the group conversation of an event that has none (its creator,
+     * once an invitee accepted); shown where the conversation's block would be. */
+    onCreerConversation?: () => void
+    /** The conversation is being created (the block shows a spinner). */
+    creationConversationEnCours?: boolean
     /** Blocks drawn after the others (details page: common availabilities / suggestions,
      * delete or leave). */
     blocsFin?: React.ReactNode
@@ -123,7 +128,7 @@ function lireRegle(regle?: string | null): { freq: string | null, until: DateTim
  */
 const EventForm = forwardRef<EventFormHandle, Props>(
 
-function EventForm({ event, prefills, constraints, mode, masquerParticipants = false, nature = 'evenement', onOuvrirConversation, blocsFin }, ref) {
+function EventForm({ event, prefills, constraints, mode, masquerParticipants = false, nature = 'evenement', onOuvrirConversation, onCreerConversation, creationConversationEnCours = false, blocsFin }, ref) {
     const { t } = useTranslation('events')
     const indisponibilite = nature === 'indisponibilite'
     const { colors } = usePalette()
@@ -583,6 +588,22 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
                         <Icon name='chatbubbles-outline' color={colors.text} size={28} />
                         <Icon name='chevron-forward' color={colors.muted} size={20} />
                     </View>
+                </TouchableOpacity>
+            )}
+
+            {/* Story #21: no conversation yet, its creator can make one */}
+            {!onOuvrirConversation && onCreerConversation && (
+                <TouchableOpacity
+                    style={[s.champ, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+                    onPress={onCreerConversation}
+                    disabled={creationConversationEnCours}
+                    accessibilityRole="button"
+                    accessibilityState={{ busy: creationConversationEnCours }}
+                >
+                    <Text style={s.label}>{t('details.createConversation')}</Text>
+                    {creationConversationEnCours
+                        ? <ActivityIndicator color={colors.text} />
+                        : <Icon name='add-circle-outline' color={colors.secondary} size={28} />}
                 </TouchableOpacity>
             )}
 
