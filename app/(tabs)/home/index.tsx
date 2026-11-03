@@ -8,20 +8,19 @@ import ouvrirDetailsEvenement from '@/functions/ouvrirDetailsEvenement';
 import { useNavFab } from '@/hooks/useNavFAB';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { router, useFocusEffect } from 'expo-router';
+import { DateTime } from 'luxon';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Animated, { cancelAnimation, scrollTo, useAnimatedReaction, useAnimatedRef, useAnimatedStyle, useSharedValue, withDecay, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
-
-import { DateTime } from 'luxon';
 
 import { Dimensions, Easing, Image, Keyboard, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { getCommonFreeSlotsSurPlage } from '@/functions/availability';
-import { heuresVersDate, positionHeures } from '@/functions/positionTimeline';
 import catcher from '@/functions/catcher';
 import { convertUTCToLocal } from '@/functions/convertirUTCenLocal';
 import log from '@/functions/log';
+import { heuresVersDate, positionHeures } from '@/functions/positionTimeline';
 
 
 import EventsList, { RETRAIT_RANGEE } from '@/components/eventsList';
@@ -40,11 +39,11 @@ import { withSpringConfig } from '@/constants/ReanimatedConfs';
 import { calendrierEvents } from '@/events/calendrierEvents';
 import { rechercheAmiEvents } from '@/events/rechercheAmiEvents';
 import AutoRefresh from '@/functions/autoRefresh';
+import { convertirTimestampHeure } from '@/functions/convertirTimestamp';
 import { estJourFerie, formaterEvenementsMembre, joursFeriesDuJour, paramsPlage } from '@/functions/evenementsMembre';
 import { debutCreationPourJour, estJourPasse } from '@/functions/jourCreation';
 import { Friend } from '@/types/calendar';
 import { scheduleOnRN } from 'react-native-worklets';
-import { convertirTimestampHeure } from '@/functions/convertirTimestamp';
 
 //Constants
 const WIDTH_COL = 80;

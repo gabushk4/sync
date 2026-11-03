@@ -1,12 +1,11 @@
-import React, { version as reactVersion, useEffect, useMemo, useState } from 'react'
-import { Dimensions, KeyboardAvoidingView, PanResponder, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import React, { version as reactVersion, useEffect, useState } from 'react'
+import { Dimensions, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import Constants from 'expo-constants'
 import * as Device from 'expo-device'
 import * as Network from 'expo-network'
 import Icon from '@react-native-vector-icons/ionicons'
 import { router, usePathname } from 'expo-router'
 import { useTranslation } from 'react-i18next'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { useAPI } from '@/contextes/contexteAPI'
 import { useFont } from '@/contextes/contexteFont'
@@ -15,6 +14,7 @@ import catcher from '@/functions/catcher'
 import ToastAbs from '@/abstractions/toastAbs'
 import { toastTypes } from '@/constants/toastConfig'
 import { useSignalements } from '@/contextes/contexteSignalements'
+import ModalBase from '@/components/modalBase'
 
 type TechnicalInfo = { label: string; value: string }
 
@@ -24,7 +24,6 @@ export default function ReportBug() {
   const { api } = useAPI()
   const { colors } = usePalette()
   const { fonts } = useFont()
-  const insets = useSafeAreaInsets()
   const { erreursCapturees, retirerErreursCapturees } = useSignalements()
   const pathname = usePathname()
   const [messageQuand, setMessageQuand] = useState('')
@@ -35,14 +34,6 @@ export default function ReportBug() {
   const erreursSelectionneesDisponibles = erreursSelectionnees.filter((id) => idsErreursCapturees.has(id))
   const [sending, setSending] = useState(false)
   const canSend = !!messageQuand.trim() && !!messageExpl.trim() && !sending
-  const fermetureParGlissement = useMemo(() => PanResponder.create({
-    onStartShouldSetPanResponder: () => false,
-    onMoveShouldSetPanResponder: (_, gesture) => gesture.dy > 6 && Math.abs(gesture.dy) > Math.abs(gesture.dx),
-    onPanResponderRelease: (_, gesture) => {
-      if (gesture.dy > 72 || gesture.vy > 0.8) router.back()
-    },
-  }), [])
-
   useEffect(() => {
     let actif = true
 
@@ -137,13 +128,10 @@ export default function ReportBug() {
   }
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.48)' }}>
-      <View style={{ height: '92%', maxHeight: '94%', width: '100%', overflow: 'hidden', backgroundColor: colors.card, borderTopLeftRadius: 28, borderTopRightRadius: 28, borderWidth: 1, borderColor: colors.border }}>
-        <View {...fermetureParGlissement.panHandlers} accessibilityRole="button" accessibilityLabel={t('bugReport.close')} style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 8 }}>
-          <View style={{ width: 42, height: 4, borderRadius: 4, backgroundColor: colors.muted, opacity: 0.65, marginBottom: 12 }} />
-          <Text style={{ color: colors.text, fontFamily: fonts.title, fontSize: 20 }}>{t('bugReport.title')}</Text>
-        </View>
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 20 }} keyboardShouldPersistTaps="handled">
+    <ModalBase>
+      <View style={{ flex: 1, width: '100%', minHeight: 0 }}>
+        <Text style={{ color: colors.text, fontFamily: fonts.title, fontSize: 20, textAlign: 'center', paddingVertical: 8 }}>{t('bugReport.title')}</Text>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 4, paddingTop: 8, paddingBottom: 20 }} keyboardShouldPersistTaps="handled">
 
         <Text style={styles.titreSection}>{t('bugReport.when')}</Text>
         <TextInput
@@ -217,15 +205,12 @@ export default function ReportBug() {
         )}
 
         </ScrollView>
-        <View style={{ flexDirection: 'row', gap: 12, paddingHorizontal: 20, paddingTop: 12, paddingBottom: Math.max(insets.bottom, 16), borderTopWidth: 1, borderColor: colors.border, backgroundColor: colors.card }}>
-          <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={t('bugReport.close')} style={{ flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12 }}>
-            <Text style={{ color: colors.muted, fontFamily: fonts.title }}>{t('bugReport.cancel')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={submit} accessibilityRole="button" disabled={!canSend} style={{ flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12, paddingHorizontal: 12, backgroundColor: canSend ? colors.secondary : colors.border, opacity: sending ? 0.7 : 1 }}>
-            <Text style={{ color: colors.text, fontFamily: fonts.title }}>{sending ? t('bugReport.sending') : t('bugReport.sendShort')}</Text>
+        <View style={{ alignItems: 'flex-end', paddingHorizontal: 4, paddingTop: 12, paddingBottom: 8, borderTopWidth: 1, borderColor: colors.border, backgroundColor: colors.card }}>
+          <TouchableOpacity onPress={submit} accessibilityRole="button" accessibilityLabel={sending ? t('bugReport.sending') : t('bugReport.sendShort')} accessibilityState={{ disabled: !canSend }} disabled={!canSend} style={{ width: 56, height: 56, alignItems: 'center', justifyContent: 'center', borderRadius: 28, borderWidth: 1, borderColor: colors.border, backgroundColor: canSend ? colors.secondary : colors.card, opacity: sending ? 0.7 : 1 }}>
+            <Icon name="checkmark" color={colors.text} size={30} />
           </TouchableOpacity>
         </View>
       </View>
-    </KeyboardAvoidingView>
+    </ModalBase>
   )
 }
