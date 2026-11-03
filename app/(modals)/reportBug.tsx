@@ -1,5 +1,5 @@
-import React, { version as reactVersion, useEffect, useState } from 'react'
-import { Dimensions, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import React, { version as reactVersion, useEffect, useMemo, useState } from 'react'
+import { Dimensions, KeyboardAvoidingView, PanResponder, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import Constants from 'expo-constants'
 import * as Device from 'expo-device'
 import * as Network from 'expo-network'
@@ -31,8 +31,17 @@ export default function ReportBug() {
   const [messageExpl, setMessageExpl] = useState('')
   const [infos, setInfos] = useState<TechnicalInfo[]>([])
   const [erreursSelectionnees, setErreursSelectionnees] = useState<string[]>(() => erreursCapturees.slice(0, 4).map((erreur) => erreur.id))
+  const idsErreursCapturees = new Set(erreursCapturees.map((erreur) => erreur.id))
+  const erreursSelectionneesDisponibles = erreursSelectionnees.filter((id) => idsErreursCapturees.has(id))
   const [sending, setSending] = useState(false)
   const canSend = !!messageQuand.trim() && !!messageExpl.trim() && !sending
+  const fermetureParGlissement = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => false,
+    onMoveShouldSetPanResponder: (_, gesture) => gesture.dy > 6 && Math.abs(gesture.dy) > Math.abs(gesture.dx),
+    onPanResponderRelease: (_, gesture) => {
+      if (gesture.dy > 72 || gesture.vy > 0.8) router.back()
+    },
+  }), [])
 
   useEffect(() => {
     let actif = true
@@ -68,15 +77,6 @@ export default function ReportBug() {
     return () => { actif = false }
   }, [pathname, t])
 
-  useEffect(() => {
-    setErreursSelectionnees((selection) => {
-      const idsDisponibles = new Set(erreursCapturees.map((erreur) => erreur.id))
-      const conserves = selection.filter((id) => idsDisponibles.has(id))
-      const nouveaux = erreursCapturees.map((erreur) => erreur.id).filter((id) => !conserves.includes(id))
-      return [...nouveaux, ...conserves].slice(0, 4)
-    })
-  }, [erreursCapturees])
-
   const submit = async () => {
     if (!canSend) return
     setSending(true)
@@ -87,7 +87,7 @@ export default function ReportBug() {
       ...infos.map(({ label, value }) => `${label}: ${value}`),
       `${t('bugReport.reportedAt')}: ${new Date().toISOString()}`,
     ].join('\n\n')
-    const erreursAJoindre = erreursCapturees.filter((erreur) => erreursSelectionnees.includes(erreur.id)).slice(0, 4)
+    const erreursAJoindre = erreursCapturees.filter((erreur) => erreursSelectionneesDisponibles.includes(erreur.id)).slice(0, 4)
     const sectionsErreurs = erreursAJoindre.map((erreur, index) => [
       `${t('bugReport.caughtError')} ${index + 1} · ${erreur.horodatage}`,
       erreur.titre,
@@ -137,17 +137,13 @@ export default function ReportBug() {
   }
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: insets.top + 12, paddingBottom: 8 }}>
-        <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={t('bugReport.close')} style={{ minWidth: 72, paddingVertical: 10 }}>
-            <Text style={{ color: colors.muted, fontFamily: fonts.body }}>{t('bugReport.cancel')}</Text>
-        </TouchableOpacity>
-        <Text style={{ color: colors.text, fontFamily: fonts.title, fontSize: 20 }}>{t('bugReport.title')}</Text>
-        <TouchableOpacity onPress={submit} accessibilityRole="button" disabled={!canSend} style={{ minWidth: 72, alignItems: 'flex-end', paddingVertical: 10 }}>
-            <Text style={{ color: canSend ? colors.secondary : colors.muted, fontFamily: fonts.title }}>{sending ? t('bugReport.sending') : t('bugReport.sendShort')}</Text>
-        </TouchableOpacity>
-      </View>
-      <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 20, paddingTop: 8, paddingBottom: 32 }} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.48)' }}>
+      <View style={{ height: '92%', maxHeight: '94%', width: '100%', overflow: 'hidden', backgroundColor: colors.card, borderTopLeftRadius: 28, borderTopRightRadius: 28, borderWidth: 1, borderColor: colors.border }}>
+        <View {...fermetureParGlissement.panHandlers} accessibilityRole="button" accessibilityLabel={t('bugReport.close')} style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 8 }}>
+          <View style={{ width: 42, height: 4, borderRadius: 4, backgroundColor: colors.muted, opacity: 0.65, marginBottom: 12 }} />
+          <Text style={{ color: colors.text, fontFamily: fonts.title, fontSize: 20 }}>{t('bugReport.title')}</Text>
+        </View>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 20 }} keyboardShouldPersistTaps="handled">
 
         <Text style={styles.titreSection}>{t('bugReport.when')}</Text>
         <TextInput
@@ -191,17 +187,20 @@ export default function ReportBug() {
         ) : (
           <View style={{ marginTop: 8, gap: 8 }}>
             {erreursCapturees.map((erreur) => {
-              const selectionnee = erreursSelectionnees.includes(erreur.id)
-              const limiteAtteinte = erreursSelectionnees.length >= 4 && !selectionnee
+              const selectionnee = erreursSelectionneesDisponibles.includes(erreur.id)
+              const limiteAtteinte = erreursSelectionneesDisponibles.length >= 4 && !selectionnee
               return (
                 <TouchableOpacity
                   key={erreur.id}
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: selectionnee, disabled: limiteAtteinte }}
                   disabled={limiteAtteinte}
-                  onPress={() => setErreursSelectionnees((selection) => selectionnee
-                    ? selection.filter((id) => id !== erreur.id)
-                    : [erreur.id, ...selection].slice(0, 4))}
+                  onPress={() => setErreursSelectionnees((selection) => {
+                    const valides = selection.filter((id) => idsErreursCapturees.has(id))
+                    return selectionnee
+                      ? valides.filter((id) => id !== erreur.id)
+                      : [erreur.id, ...valides].slice(0, 4)
+                  })}
                   style={{ padding: 12, borderRadius: 10, borderWidth: 1, borderColor: selectionnee ? colors.secondary : colors.border, backgroundColor: colors.card, opacity: limiteAtteinte ? 0.55 : 1 }}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -217,7 +216,16 @@ export default function ReportBug() {
           </View>
         )}
 
-      </ScrollView>
+        </ScrollView>
+        <View style={{ flexDirection: 'row', gap: 12, paddingHorizontal: 20, paddingTop: 12, paddingBottom: Math.max(insets.bottom, 16), borderTopWidth: 1, borderColor: colors.border, backgroundColor: colors.card }}>
+          <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={t('bugReport.close')} style={{ flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12 }}>
+            <Text style={{ color: colors.muted, fontFamily: fonts.title }}>{t('bugReport.cancel')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={submit} accessibilityRole="button" disabled={!canSend} style={{ flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12, paddingHorizontal: 12, backgroundColor: canSend ? colors.secondary : colors.border, opacity: sending ? 0.7 : 1 }}>
+            <Text style={{ color: colors.text, fontFamily: fonts.title }}>{sending ? t('bugReport.sending') : t('bugReport.sendShort')}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </KeyboardAvoidingView>
   )
 }
