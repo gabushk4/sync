@@ -162,8 +162,6 @@
   },
   "postpone": {
     "suggestionsCount": "Proposed times ({{count}})",
-    "noSlot": "No time when everyone is free in the next 7 days",
-    "alreadyProposed": "already proposed",
     "proposedBy": "by {{pseudo}}",
     "propose": "Propose",
     "cancel": "Cancel",
@@ -182,15 +180,12 @@
     "voteFailed": "Unable to save your vote",
     "applyFailed": "Unable to change the time",
     "range": "{{jour}} from {{debut}} to {{fin}}",
-    "move": "Move",
     "movedTitle": "Event moved",
     "movedMessage": "Invitees have to confirm again",
     "moveFailed": "Unable to move the event",
     "notFreeTitle": "Not everyone is free anymore",
     "notFreeMessage": "{{pseudos}}: not free then anymore",
-    "commonSlots": "Common availabilities ({{count}})",
     "confirmPropose": "Propose {{plage}}?",
-    "confirmMove": "Move the event {{plage}}?\nInvitees will confirm again.",
     "confirm": "Confirm"
   }
 }

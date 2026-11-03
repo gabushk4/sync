@@ -10,7 +10,8 @@
 		"expires": "expires {{quand}}",
 		"eventPastShort": "over",
 		"eventPast": "This event is already over.",
-		"invitationExpired": "This invitation expired: it is too late to answer it."
+		"invitationExpired": "This invitation expired: it is too late to answer it.",
+		"left": "You left this event: you're no longer part of it."
 	},
 	"list": {
 		"emptyState": "There's nothing for you...\nTake this moment for yourself!",
@@ -20,7 +21,8 @@
 	"answer": {
 		"acceptee": "accepted",
 		"refusee": "refused",
-		"en_attente": "pending"
+		"en_attente": "pending",
+		"annulee": "cancelled"
 	},
 	"vote": {
 		"acceptee": "available",

@@ -30,6 +30,8 @@ type Props = {
     invitation: InvitationInfo | null
     /** The member never answered and the invitation expired: nothing to do anymore. */
     invitationExpiree: boolean
+    /** The member left the event (invitation 'annulee'): nothing to do anymore. */
+    quitte?: boolean
     /** The card's decision logic (accept / refuse, conflict screen). */
     decision: ReturnType<typeof useDecisionInvitation>
     /** The event was deleted / left: the feed refreshes. */
@@ -44,13 +46,15 @@ type Props = {
  *   schedule", accept / refuse and proposing another time (PanneauDecisionInvitation);
  * - creator (editor): the postponement proposals to apply, edit and delete;
  * - participant: proposing another time / voting, and leaving.
- * An expired invitation offers nothing, and a past event only its deletion (creator).
+ * An expired invitation or a left event offers nothing, and a past event only its
+ * deletion (creator).
  *
  * @author Philip — rectification (event managed from its notification)
+ * @author Philip — rectification: a left event reads "cancelled", without actions
  * @param {Props} props
  * @returns {JSX.Element}
  */
-export default function PanneauGestionEvenement({ idEvenement, event, erreur, recharger, passe, invitation, invitationExpiree, decision, onTermine }: Props) {
+export default function PanneauGestionEvenement({ idEvenement, event, erreur, recharger, passe, invitation, invitationExpiree, quitte = false, decision, onTermine }: Props) {
     const { t } = useTranslation('events')
     const { t: tNotifs } = useTranslation('notifications')
     const { colors } = usePalette()
@@ -58,9 +62,10 @@ export default function PanneauGestionEvenement({ idEvenement, event, erreur, re
 
     const gestion = useGestionEvenement(event ?? defaultEvent, { onTermine })
 
+    // The feed stack's edit: saving comes back to the notification, which reloads.
     const modifier = () => {
         if (!event) return
-        router.push({ pathname: '/(tabs)/home/edit/[event]', params: { event: JSON.stringify(event) } } as any)
+        router.push({ pathname: '/(tabs)/feed/edit/[event]', params: { event: JSON.stringify(event) } } as any)
     }
 
     const s = StyleSheet.create({
@@ -98,6 +103,7 @@ export default function PanneauGestionEvenement({ idEvenement, event, erreur, re
         : null
 
     const actions = () => {
+        if (quitte) return <Text style={s.description}>{tNotifs('expiration.left')}</Text>
         // Too late to answer, or over: only the creator can still clear it away.
         if (invitationExpiree || passe) {
             return (

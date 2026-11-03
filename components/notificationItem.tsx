@@ -277,13 +277,16 @@ export default function NotificationItem({ item, index, vu }: ItemProps) {
     const invitationEnAttente = invitation && item.statut_metier === 'en_attente' && !expired ? invitation : null
     // Never answered, and now too late to.
     const invitationExpiree = !!invitation && item.statut_metier === 'en_attente' && expired
+    // Accepted, then left (the API reads it from the participation): nothing to do anymore.
+    // Philip — rectification.
+    const evenementQuitte = item.statut_metier === 'annulee'
     // The API sends "expired" instead of a date once the invitation has expired
     // (sync_api validateExpiration.js); convertUTCToLocal throws on it and crashed the list.
     const expiration = item.expiration && !expired ? convertUTCToLocal(item.expiration) : undefined
 
     // Header label, seen without unfolding the card: the event is over, the invitation /
     // request expired, or when it will (only while unanswered). Philip — rectification.
-    const enAttenteDeReponse = item.statut_metier !== 'acceptee' && item.statut_metier !== 'refusee'
+    const enAttenteDeReponse = item.statut_metier !== 'acceptee' && item.statut_metier !== 'refusee' && !evenementQuitte
     let expirationLabel: string | undefined
     if (evenementPasse)
         expirationLabel = t('expiration.eventPastShort')
@@ -414,11 +417,13 @@ export default function NotificationItem({ item, index, vu }: ItemProps) {
 
     // User story 9: once answered, show the answer instead of the buttons.
     // Pending is shown too for an event notification (Philip — user story 23).
-    const statut = (item.statut_metier === "acceptee" || item.statut_metier === "refusee"
+    // 'annulee': the member left the event (Philip — rectification).
+    const statut = (item.statut_metier === "acceptee" || item.statut_metier === "refusee" || evenementQuitte
         || (idEvenement && item.statut_metier === "en_attente")) ? (
         <Text style={[s.reponse, {
             color: item.statut_metier === "acceptee" ? colors.success
-                : item.statut_metier === "refusee" ? colors.error : colors.warning,
+                : item.statut_metier === "refusee" ? colors.error
+                : evenementQuitte ? colors.muted : colors.warning,
         }]}>
             {t(`${voteReport ? 'vote' : 'answer'}.${item.statut_metier}`)}
         </Text>
@@ -536,6 +541,7 @@ export default function NotificationItem({ item, index, vu }: ItemProps) {
                             passe={evenementPasse}
                             invitation={invitationEnAttente}
                             invitationExpiree={invitationExpiree}
+                            quitte={evenementQuitte}
                             decision={decision}
                             onTermine={() => notifRefresh?.forceRefresh()}
                         />

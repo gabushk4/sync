@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 
 import { useAPI } from "@/contextes/contexteAPI";
 import { useMembre } from "@/contextes/contexteMembre";
@@ -34,7 +35,9 @@ export default function useDetailsEvenement(idEvenement: string | null, debut?: 
             .catch(() => setErreur(true))
     }, [api, idEvenement, membre.timezone, debut, fin])
 
-    useEffect(() => { recharger() }, [recharger])
+    // Also on focus: back from editing it, the card shows the new values
+    // (rectification, Philip).
+    useFocusEffect(recharger)
 
     return { event, erreur, recharger }
 }
