@@ -4,8 +4,12 @@ import { getCommonFreeSlots } from '../functions/availability.js';
 const zone = 'America/Montreal';
 // `zone` doit être défini comme dans ton fichier actuel (ex. 'America/Toronto')
 
+// The time is computed once, before Luxon's clock is replaced: computing it inside
+// `Settings.now` called Luxon, which read `Settings.now` again — endless recursion
+// ("Maximum call stack size exceeded"). Rectification (Philip).
 const figerHorloge = (iso) => {
-  Settings.now = () => DateTime.fromISO(iso, { zone }).toMillis()
+  const millis = DateTime.fromISO(iso, { zone }).toMillis()
+  Settings.now = () => millis
 }
 
 describe('getCommonFreeSlots', () => {
