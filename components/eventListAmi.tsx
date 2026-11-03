@@ -21,12 +21,13 @@ import { modalEvents } from "@/events/modalEvents";
 import { useFriendList } from "@/hooks/useFriendList";
 
 import { ListType } from "@/app/(modals)/listeAmis";
+import { useEventDraft } from "@/contextes/contexteEventDraft";
+import { useModal } from "@/contextes/contexteModals";
+import { paramsPlage } from "@/functions/evenementsMembre";
 import log from "@/functions/log";
 import { Participant } from "@/types/invites";
 import { DateTime } from "luxon";
-import { useEventDraft } from "@/contextes/contexteEventDraft";
 import FriendLine from "./friendLine";
-import { paramsPlage } from "@/functions/evenementsMembre";
 
 export type FriendAPIRes = {
     temps_amitie: string,
@@ -43,7 +44,8 @@ function EventListAmiContent() {
     const { fonts } = useFont()
     const colorScheme = useColorScheme()
     const { invites } = useInvites()
-    const {start, end, friendsSuggestions} = useEventDraft()
+    const { start, end, friendsSuggestions } = useEventDraft()
+    const {registerDismissButtonAction} = useModal()
 
     const { type, inviterUrl, hasMoreFriends: hasMoreFriendsParam, excludedFriendIds: excludedFriendIdsParam } = useLocalSearchParams() as { type: ListType; inviterUrl: string; hasMoreFriends: string; excludedFriendIds?: string }
     const select = type === 'select' || type === 'event'
@@ -109,6 +111,19 @@ function EventListAmiContent() {
 
     const onPressSelect = useFriendList('select')
     const onPressConsult = useFriendList('consult')
+
+    const inviteAndDismiss = useCallback(() => {
+        const amisSelec = amis.filter(ami => idsSelec.has(ami.id))
+        // A route param can arrive as the text "undefined": no URL then (event
+        // being created, invitations sent with it). Philip — user story 8.
+        const url = Array.isArray(inviterUrl) ? inviterUrl[0] : inviterUrl
+        onPressSelect(amisSelec, url && url !== 'undefined' ? url : undefined)
+    }, [amis, idsSelec, inviterUrl, onPressSelect])
+
+    useEffect(() => {
+        if (!select) return
+        return registerDismissButtonAction(inviteAndDismiss)
+    }, [select, registerDismissButtonAction, inviteAndDismiss])
 
     useEffect(() => {
         if (!select) return
@@ -184,6 +199,8 @@ function EventListAmiContent() {
         }
     }, []))
 
+
+
     return (
         <ModalBase>
             <View style={{ height: '100%', width: '100%' }}>
@@ -191,19 +208,6 @@ function EventListAmiContent() {
                     <View style={{ width: '100%', alignItems: 'center' }}>
                         <Text style={{ color: colors.text, fontFamily: fonts.body, fontSize: 20 }}>{t('list.title')}</Text>
                     </View>
-                    {select &&
-                        <TouchableOpacity style={{ position: 'absolute', right: 16 }}
-                            onPress={() => {
-                                const amisSelec = amis.filter(ami => idsSelec.has(ami.id))
-                                // A route param can arrive as the text "undefined": no URL then (event
-                                // being created, invitations sent with it). Philip — user story 8.
-                                const url = Array.isArray(inviterUrl) ? inviterUrl[0] : inviterUrl
-                                onPressSelect(amisSelec, url && url !== 'undefined' ? url : undefined)
-                                modalEvents.emitClosing()
-                            }}>
-                            <Text style={{ color: colors.text, fontFamily: fonts.body, fontSize: 16 }}>{t('list.invite')}</Text>
-                        </TouchableOpacity>
-                    }
                 </View>
                 <LinearGradient
                     style={{ position: 'absolute', opacity: 0.3, zIndex: 2, top: 22, left: 0, width: '100%', height: 24 }}

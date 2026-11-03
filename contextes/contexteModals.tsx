@@ -1,5 +1,5 @@
 import { IoniconsIconName } from '@react-native-vector-icons/ionicons'
-import { createContext, Dispatch, ReactNode, SetStateAction, useCallback, useContext, useState } from 'react'
+import { createContext, Dispatch, ReactNode, SetStateAction, useCallback, useContext, useRef, useState } from 'react'
 import { ColorValue, TouchableOpacityProps } from 'react-native'
 import { SharedValue, useSharedValue } from 'react-native-reanimated'
 import { usePalette } from './contextePalette'
@@ -10,6 +10,8 @@ type ModalContextType = {
   dataRendererContent: RenderContent[];
   dismissButton: DismissButton;
   setDismissButton: Dispatch<SetStateAction<DismissButton>>
+  registerDismissButtonAction: (action: () => void) => () => void
+  runDismissButtonAction: () => void
   resetDismissButton: () => void
   setDataRendererContent: (key: RenderContent['key'], content: RenderContent['child']) => void;
   removeDataRenderContent: (key: RenderContent['key']) => void
@@ -20,7 +22,7 @@ const ModalContext = createContext<ModalContextType | undefined>(undefined)
 export type DismissButton = {
   icon: IoniconsIconName;
   bgColor: ColorValue;
-  style?: TouchableOpacityProps['style']
+  style?: TouchableOpacityProps['style'],
 }
 
 export type RenderContent = {
@@ -47,6 +49,16 @@ export function ModalProvider({ children }: { children: ReactNode }) {
   const removeDataRenderContent = useCallback((key: RenderContent['key']) => {
     setDataRendererContentState(current => current.filter(item => item.key !== key))
   }, [])
+  const dismissButtonActionRef = useRef<(() => void) | undefined>(undefined)
+  const registerDismissButtonAction = useCallback((action: () => void) => {
+    dismissButtonActionRef.current = action
+    return () => {
+      if (dismissButtonActionRef.current === action) dismissButtonActionRef.current = undefined
+    }
+  }, [])
+  const runDismissButtonAction = useCallback(() => {
+    dismissButtonActionRef.current?.()
+  }, [])
   const [dismissButton, setDismissButton] = useState<DismissButton>(DEF_DISMISS_BTN)
 
   const resetDismissButton = () => {
@@ -54,7 +66,7 @@ export function ModalProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <ModalContext.Provider value={{ actualLevel, LEVELS, dataRendererContent, setDataRendererContent, dismissButton, setDismissButton, resetDismissButton, removeDataRenderContent }}>
+    <ModalContext.Provider value={{ actualLevel, LEVELS, dataRendererContent, setDataRendererContent, dismissButton, setDismissButton, registerDismissButtonAction, runDismissButtonAction, resetDismissButton, removeDataRenderContent }}>
       {children}
     </ModalContext.Provider>
   )
