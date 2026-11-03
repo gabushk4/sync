@@ -62,6 +62,8 @@ export default function Details(){
 
     const [event, setEvent] = useState<Event>(defaultEvent)  
 
+    const isExternal = useMemo(() => event.nom_calendrier !== undefined && (event.source == 'google' || event.source === 'outlook' || event.source === 'device') ,[event])
+
     // Story #21 : the shared event's group conversation (only sent when the member is in it)
     const { rafraichirConversations } = useConversations()
     const ouvrirConversation = () => {
@@ -190,13 +192,13 @@ export default function Details(){
         () => ({ event: JSON.stringify(event) }),
         [event]
     )
-
+    log("visible", !invitation || event.nom_calendrier == undefined)
     useNavFab("details", {
             icon: <Icon name="pencil" size={24} color={colors.text} />,
             href: '/(tabs)/home/edit/[event]' as const,
             params: FABParams,
             // No editing while deciding on an invitation.
-            visible: !invitation,
+            visible: !invitation && !isExternal,
         })
 
     useFocusEffect(useCallback(() => {
@@ -269,17 +271,19 @@ export default function Details(){
                             <Icon name='chatbubbles-outline' color={colors.secondary} size={28}/>
                         </TouchableOpacity>
                     ) : null}
-                    {/* quit (non-creators) / delete (creator) button */}
-                    <TouchableOpacity style={s.floatingBtn} onPress={() => {
-                        if (event.privilege_membre === 'editeur')
-                            verifAvantDelete()
-                        else
-                            quitterEvenement()
-                    }}>
-                        <Icon name='trash-sharp' color={colors.error} size={28}/>
-                    </TouchableOpacity>
+                        {/* quit (non-creators) / delete (creator) button */}
+                        {isExternal ? null : (
+                            <TouchableOpacity style={s.floatingBtn} onPress={() => {
+                                if (event.privilege_membre === 'editeur')
+                                    verifAvantDelete()
+                                else
+                                    quitterEvenement()
+                            }}>
+                                <Icon name='trash-sharp' color={colors.error} size={28} />
+                            </TouchableOpacity>
+                        )}
                 </>
-            )}
+            )}    
         </View>
     )
 }
