@@ -24,7 +24,7 @@ export default function ProfilPic({ size, pfp, style}: Props) {
     const [source, setSource] = useState<ImageSourcePropType>()
 
     useEffect(() => {
-        log(pfp)
+        
     if (!pfp || pfp === 'null' || pfp === 'undefined') {
         setSource(icones.pfpDefault)
     }
