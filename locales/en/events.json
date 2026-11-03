@@ -1,11 +1,12 @@
 {
   "navigation": {
-    "create": "Create an event",
-    "details": "Details",
-    "edit": "Edit",
+    "create": "New event",
+    "details": "Event details",
+    "edit": "Edit event",
     "calendar": "Calendar",
     "invitationReview": "Invitation schedules",
-    "unavailability": "Unavailability"
+    "unavailability": "New unavailability",
+    "unavailabilityDetails": "Unavailability details"
   },
   "creationPages": {
     "event": "Event",

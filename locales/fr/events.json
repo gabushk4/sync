@@ -1,11 +1,12 @@
 {
   "navigation": {
-    "create": "créer un évènement",
-    "details": "détails",
-    "edit": "éditer",
+    "create": "Nouvel évènement",
+    "details": "Détails de l'évènement",
+    "edit": "Modifier l'évènement",
     "calendar": "Calendrier",
     "invitationReview": "Horaires de l'invitation",
-    "unavailability": "Indisponibilité"
+    "unavailability": "Nouvelle indisponibilité",
+    "unavailabilityDetails": "Détails de l'indisponibilité"
   },
   "creationPages": {
     "event": "Évènement",

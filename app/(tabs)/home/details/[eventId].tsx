@@ -127,6 +127,13 @@ export default function Details(){
         log("event dans details", event)
     }, [event])
 
+    // Header: "Détails de l'évènement", or "Détails de l'indisponibilité" for an unavailability
+    useEffect(() => {
+        navigation.setOptions({
+            headerTitle: t(event.nature === 'indisponibilite' ? 'navigation.unavailabilityDetails' : 'navigation.details'),
+        })
+    }, [event.nature, navigation, t])
+
     const s = StyleSheet.create({
         // Story #21: bottom panel holding the conversation block (same look as PanneauReport's)
         panneau: {
