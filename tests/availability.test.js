@@ -3,9 +3,12 @@ import { getCommonFreeSlots } from '../functions/availability.js';
 
 const zone = 'America/Montreal';
 // `zone` doit être défini comme dans ton fichier actuel (ex. 'America/Toronto')
+const realNow = Settings.now;
 
 const figerHorloge = (iso) => {
-  Settings.now = () => DateTime.fromISO(iso, { zone }).toMillis()
+  Settings.now = realNow;
+  const timestamp = DateTime.fromISO(iso, { zone }).toMillis();
+  Settings.now = () => timestamp;
 }
 
 describe('getCommonFreeSlots', () => {
@@ -16,7 +19,7 @@ describe('getCommonFreeSlots', () => {
   })
 
   afterEach(() => {
-    Settings.now = () => Date.now() // remet l'horloge réelle
+    Settings.now = realNow // remet l'horloge réelle
   })
 
   test('jour de changement heure (25 h) : 2 creneaux autour evenement', () => {
