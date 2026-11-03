@@ -38,6 +38,15 @@ export default function HomeLayout() {
             <Stack.Screen
                 name="edit/[event]" options={{headerBackVisible:true, headerBackButtonDisplayMode:'minimal', headerTitle:t('navigation.edit')}}
             />
+            {/* A friend's profile, opened from their row (the page shows their pseudo). */}
+            <Stack.Screen
+                name="profil/[membreId]" options={{headerBackVisible:true, headerBackButtonDisplayMode:'minimal', headerTitle:''}}
+            />
+            {/* Story #21: an event's group conversation, opened from its details page
+                (the title is the event's, set by the screen). */}
+            <Stack.Screen
+                name="conversation/[conversationId]" options={{headerBackVisible:true, headerBackButtonDisplayMode:'minimal'}}
+            />
         </Stack>
     )
 }

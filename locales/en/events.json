@@ -19,7 +19,8 @@
     "deletedTitle": "Deleted",
     "deletedMessage": "It has been filed away where nobody looks; what was filed? No idea.",
     "clickSource": "clic here to show in {source}",
-    "openConversation": "Open the event's conversation"
+    "openConversation": "Open the event's conversation",
+    "conversation": "Event conversation"
   },
   "edit": {
     "defaultError": "Unable to edit the event",

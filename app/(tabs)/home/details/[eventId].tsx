@@ -3,11 +3,12 @@ import { useFocusEffect, useIsFocused } from "expo-router/react-navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DateTime } from "luxon";
 import { useTranslation } from "react-i18next";
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 
 import { useAPI } from "@/contextes/contexteAPI";
 import { useConversations } from "@/contextes/contexteConversations";
+import { useFont } from "@/contextes/contexteFont";
 import { useMembre } from "@/contextes/contexteMembre";
 import { usePalette } from "@/contextes/contextePalette";
 
@@ -30,6 +31,7 @@ import Icon from "@react-native-vector-icons/ionicons";
 export default function Details(){
     const { t } = useTranslation('events')
     const { colors } = usePalette()
+    const { fonts } = useFont()
     const { api } = useAPI()
     const isFocused = useIsFocused()
     const { membre } = useMembre()
@@ -67,7 +69,8 @@ export default function Details(){
         if (!event.conversation_id) return
         rafraichirConversations()
         router.push({
-            pathname: '/(tabs)/inbox/[conversationId]',
+            // in the home stack, over this page: its back arrow returns here
+            pathname: '/(tabs)/home/conversation/[conversationId]',
             params: { conversationId: event.conversation_id, titre: event.titre ?? '' },
         })
     }
@@ -125,18 +128,19 @@ export default function Details(){
     }, [event])
 
     const s = StyleSheet.create({
-        conversationBtn: {
-            height: 64,
-            width: 64,
-            position: 'absolute',
-            bottom: 16,
-            left: 16,
-            borderRadius: 100,
-            borderWidth: 1,
-            borderColor: colors.secondary,
-            alignItems: 'center',
-            justifyContent: 'center'
+        // Story #21: bottom panel holding the conversation block (same look as PanneauReport's)
+        panneau: {
+            backgroundColor: colors.card,
+            borderTopWidth: StyleSheet.hairlineWidth,
+            borderColor: colors.border,
+            paddingHorizontal: 16,
+            paddingTop: 10,
+            paddingBottom: 90, // room for the tab bar's FAB area
+            gap: 10,
         },
+        entete: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+        titreConversation: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+        titre: { color: colors.text, fontFamily: fonts.title, fontSize: 16 },
         floatingBtn: {
             height: 64, 
             width: 64,
@@ -192,19 +196,29 @@ export default function Details(){
                 <>
                     {/* Postponement votes: propose / vote (invitee), apply one (creator).
                         Philip — user story 23. */}
-                    {!!event.id && !indisponibilite && (
-                        <PanneauReport idEvenement={event.id} onPlageChangee={() => getDetails(event.id as string)} />
-                    )}
+                    {/* Story #21: the group conversation is a block of the bottom panel, above
+                        the postponement ones (review: no floating button of its own). */}
                     {event.conversation_id ? (
-                        <TouchableOpacity
-                            style={s.conversationBtn}
-                            onPress={ouvrirConversation}
-                            accessibilityRole="button"
-                            accessibilityLabel={t('details.openConversation')}
-                        >
-                            <Icon name='chatbubbles-outline' color={colors.secondary} size={28}/>
-                        </TouchableOpacity>
-                    ) : null}
+                        <View style={s.panneau}>
+                            <TouchableOpacity
+                                style={s.entete}
+                                onPress={ouvrirConversation}
+                                accessibilityRole="button"
+                                accessibilityLabel={t('details.openConversation')}
+                            >
+                                <View style={s.titreConversation}>
+                                    <Icon name='chatbubbles-outline' color={colors.secondary} size={20} />
+                                    <Text style={s.titre}>{t('details.conversation')}</Text>
+                                </View>
+                                <Icon name='chevron-forward' color={colors.text} size={20} />
+                            </TouchableOpacity>
+                            {!indisponibilite && (
+                                <PanneauReport integre idEvenement={event.id as string} onPlageChangee={() => getDetails(event.id as string)} />
+                            )}
+                        </View>
+                    ) : (!!event.id && !indisponibilite && (
+                        <PanneauReport idEvenement={event.id} onPlageChangee={() => getDetails(event.id as string)} />
+                    ))}
                     {/* quit (non-creators) / delete (creator) button */}
                     {isExternal ? null : (
                         <TouchableOpacity style={s.floatingBtn} onPress={gestion.supprimerOuQuitter}>

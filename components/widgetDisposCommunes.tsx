@@ -160,6 +160,7 @@ export default function WidgetDisposCommunes({ ami }: Props) {
                     fin: creneau.fin,
                     ami,
                     depuisProfil: true,
+                    navigation,
                 })}
                 accessibilityRole="button"
                 accessibilityLabel={t('commonSlots.create', { pseudo: ami.pseudo, creneau: `${jour} ${heures}` })}

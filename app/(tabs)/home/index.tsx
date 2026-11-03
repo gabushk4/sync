@@ -1234,7 +1234,7 @@ export default function Home() {
                             style={s.colonneAmi}
                             accessibilityRole="button"
                             accessibilityLabel={t('viewFriendProfile', { name: friend.pseudo })}
-                            onPress={() => router.push({ pathname: '/(tabs)/profile/[membreId]', params: { membreId: friend.id } })}
+                            onPress={() => router.push({ pathname: '/(tabs)/home/profil/[membreId]', params: { membreId: friend.id } })}
                           >
                           <View style={s.photoAmi}>
                             <ProfilPic
