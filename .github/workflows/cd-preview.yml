@@ -2,7 +2,7 @@ name: CD - Preview
 
 on:
   push:
-    branches: [main]
+    branches: [preview]
 
 permissions:
   contents: read
