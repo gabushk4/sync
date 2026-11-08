@@ -44,6 +44,7 @@
 		"unknownMember": "Unknown member",
 		"statusLabel": "Status: {{statut}}",
 		"requestedAt": "Requested {{date}}",
+		
 		"statuses": {
 			"en_attente": "To do",
 			"en_cours": "In progress",
@@ -76,6 +77,10 @@
 			"confirmTitle": "Anonymize this member?",
 			"confirmMessage": "{{pseudo}}'s data will be deleted or anonymized. This can't be undone.",
 			"confirmAction": "Anonymize"
+		},
+		"metricsTab": "Metrics",
+		"metrics":{
+
 		}
 	},
 	"friendMood": "Mood",

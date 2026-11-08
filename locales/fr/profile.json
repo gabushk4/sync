@@ -76,6 +76,10 @@
 			"confirmTitle": "Anonymiser ce membre ?",
 			"confirmMessage": "Les données de {{pseudo}} seront supprimées ou anonymisées. Cette action est définitive.",
 			"confirmAction": "Anonymiser"
+		},
+		"metricsTab":"Metriques",
+		"metrics":{
+			
 		}
 	},
 	"friendMood": "État d'âme",
