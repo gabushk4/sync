@@ -61,8 +61,8 @@ const CreationEvenement = forwardRef<CreationHandle>(function CreationEvenement(
     
     const formRef = useRef<EventFormHandle>(null)
 
-    const { start, end, friend, depuis } = useLocalSearchParams<{ start?: string, end?: string, friend?: string, depuis?: string }>()
-
+    const { start, end, friend, depuis, depuis_dispo_commune } = useLocalSearchParams<{ start?: string, end?: string, friend?: string, depuis?: string, depuis_dispo_commune?:string }>()
+    console.log({depuis_dispo_commune})
     /**
      * Leaves after creating (or dropping, from the conflict screen): pops the home
      * stack back to the home screen (replace stacked a second one over the calendar
@@ -196,13 +196,14 @@ const CreationEvenement = forwardRef<CreationHandle>(function CreationEvenement(
                 const creerConversation = invites.length > 0 ? await demanderConversation() : false
 
                 demarrerChargement()
-
+                
                 nouveau = {
                     ...event,
                     ...corpsCreation(values),
                     // kept in `nouveau`, so the conflict screen re-sends it too
                     creer_conversation: creerConversation,
-                    participants: invites.map((i) => ({ id: i.id, privilege: i.privilege }))
+                    participants: invites.map((i) => ({ id: i.id, privilege: i.privilege })),
+                    depuis_dispo_commune: depuis_dispo_commune ? true : false,
                 }
 
                 const response = await api.post('/evenements/', nouveau)

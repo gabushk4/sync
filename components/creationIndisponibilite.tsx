@@ -76,6 +76,7 @@ const CreationIndisponibilite = forwardRef<CreationHandle>(function CreationIndi
                 // An empty title (no reason) is shown as "Unavailable" (titreEvenement).
                 ...corpsCreation(values),
                 participants: [],
+                depuis_dispo_commune: false
             }
             const response = await api.post('/evenements/', nouvelle)
             if (response.status === 201) {

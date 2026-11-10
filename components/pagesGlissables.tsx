@@ -7,8 +7,8 @@
  * @author Gabriel P Levesque
  */
 
-import React, { useRef, useState } from 'react'
-import { Dimensions, Keyboard, LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent, StyleSheet, TouchableOpacity, View } from 'react-native'
+import React, { useCallback, useRef, useState } from 'react'
+import { Dimensions, Keyboard, LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent, ScrollViewProps, StyleSheet, TouchableOpacity, View } from 'react-native'
 import { ScrollView } from 'react-native-gesture-handler'
 import Animated, { useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, useDerivedValue, interpolate, Extrapolation } from 'react-native-reanimated'
 
@@ -32,8 +32,8 @@ type Props = {
     integre?: boolean
 }
 
-const HAUTEUR_BARRE_ONGLETS = 44
-const HAUTEUR_INDICATEUR = 30
+const HAUTEUR_BARRE_ONGLETS = 56
+const HAUTEUR_INDICATEUR = 44
 const AnimatedGestureScrollView = Animated.createAnimatedComponent(ScrollView)
 const {width: SCREEN_W} = Dimensions.get("window")
 
@@ -49,10 +49,16 @@ export default function PagesGlissables({ pages, pageInitiale = 0, onChangerPage
     const pageRef = useRef(pageInitiale)
 
     const contentOffset = useSharedValue(pageInitiale * SCREEN_W)
+    const ongletContentOffsetX = useSharedValue<number>(0)
 
     // Largeur totale des onglets et largeur visible de la ScrollView (mesurées après layout)
     const largeurContenuOnglets = useSharedValue(0)
     const largeurViewportOnglets = useSharedValue(0)
+
+    //largeur de chacune des pages
+    const [largeurPages, setLargeurPages] = useState(SCREEN_W)
+    //Largeur de la scrollView des onglets; pour séparé équitablement l'espace aux onglets
+    const [largeurBarre, setLargeurBarre] = useState<number>(0)
 
     const [mesuresInitiales] = useState(() => pages.map(() => ({ x: 0, w: 0 })))
     const mesuresOngletsRef = useRef(mesuresInitiales)
@@ -63,13 +69,13 @@ export default function PagesGlissables({ pages, pageInitiale = 0, onChangerPage
     /**
      * Met à jour les plages d'interpolation à chaque changement de layout.
      */
-    const publierPlagesOnglets = (mesures: { x: number; w: number }[], largeur: number) => {
+    const publierPlagesOnglets = useCallback((mesures: { x: number; w: number }[], largeur: number) => {
         const nombreMesures = Math.min(pages.length, mesures.length)
         const mesuresUtiles = mesures.slice(0, nombreMesures)
-        inputRange.value = mesuresUtiles.map((_, index) => index * largeur)
-        outputRangeX.value = mesuresUtiles.map(({ x }) => x)
-        outputRangeW.value = mesuresUtiles.map(({ w }) => w)
-    }
+        inputRange.set(mesuresUtiles.map((_, index) => index * largeur))
+        outputRangeX.set(mesuresUtiles.map(({ x }) => x))
+        outputRangeW.set(mesuresUtiles.map(({ w }) => w))
+    }, [pages.length, inputRange, outputRangeW, outputRangeX])
 
     // Indicateur animé : position + largeur réelles de l'onglet actif
     const animatedTab = useAnimatedStyle(() => {
@@ -106,6 +112,7 @@ export default function PagesGlissables({ pages, pageInitiale = 0, onChangerPage
 
     // Rétro-compat : on ne scroll les onglets que si leur contenu dépasse le viewport
     const doitScroller = useDerivedValue(() => largeurContenuOnglets.value > largeurViewportOnglets.value)
+
     // Le handler tourne sur le thread UI, ce qui garde l'animation fluide pendant le swipe.
     const onScroll = useAnimatedScrollHandler({
         onScroll: (event) => {
@@ -113,30 +120,124 @@ export default function PagesGlissables({ pages, pageInitiale = 0, onChangerPage
         },
     })
 
+    /**
+     * Scroll la scrollView des onglets pour toujours afficher en entier l'onglet courant
+     */
+    const moveOnglets = useCallback((index: number) => {
+        const mesureCurrOnglet = mesuresOngletsRef.current[index]
+        if (!mesureCurrOnglet || mesureCurrOnglet.w === 0) return
+
+        const viewport = largeurViewportOnglets.get()
+        const scrollX = ongletContentOffsetX.get()
+        const maxScroll = Math.max(0, largeurContenuOnglets.get() - viewport)
+
+        let cible: number | null = null
+        if (mesureCurrOnglet.x < scrollX) {
+            // onglet coupé à gauche : on l'aligne sur le bord gauche
+            cible = mesureCurrOnglet.x
+        } else if (mesureCurrOnglet.x + mesureCurrOnglet.w > scrollX + viewport) {
+            // onglet coupé à droite : on l'aligne sur le bord droit
+            cible = mesureCurrOnglet.x + mesureCurrOnglet.w - viewport
+        }
+
+        if (cible !== null) {
+            ongletsScrollViewRef.current?.scrollTo({
+                x: Math.min(Math.max(cible, 0), maxScroll),
+                animated: true,
+            })
+        }
+    }, [largeurViewportOnglets, largeurContenuOnglets, ongletContentOffsetX])
+
+    
+    /**
+     * Synchronise l'index actif et avertit le parent si la page a changé.
+     */
+    const changerPage = useCallback((index: number) => {
+        if (index === pageRef.current) return
+        pageRef.current = index
+        Keyboard.dismiss()
+        moveOnglets(index)
+        onChangerPage?.(index)
+    }, [onChangerPage, moveOnglets])
+
+    /**
+     * Passe à la page choisie depuis un onglet.
+     */
+    const allerA = useCallback((index: number) => {
+        Haptics.clickLeger()
+        scrollViewRef.current?.scrollTo({ x: largeurPages * index })
+        changerPage(index)
+    }, [largeurPages, changerPage])
+
+    /**
+     * Enregistre la largeur visible de la barre d'onglets.
+     */
+    const onLayoutOngletsViewport = (e: LayoutChangeEvent) => {
+        const w = e.nativeEvent.layout.width
+        if (w > 0){
+            largeurViewportOnglets.set(w)
+            setLargeurBarre(w)
+        }
+    }
+
+    /**
+     * Enregistre la position et la largeur d'un onglet après son layout.
+     */
+    const onLayoutOnglet = useCallback((index: number) => (e: LayoutChangeEvent) => {
+        const { x, width } = e.nativeEvent.layout
+        // Chaque layout complète la dernière liste de mesures avant de republier les plages.
+        const mesures = mesuresOngletsRef.current.slice(0, pages.length)
+        while (mesures.length < pages.length) mesures.push({ x: 0, w: 0 })
+        mesures[index] = { x, w: width }
+        mesuresOngletsRef.current = mesures
+        publierPlagesOnglets(mesures, largeurPages)
+    }, [largeurPages, pages.length, publierPlagesOnglets])
+
+    /**
+     * Calibre la largeur des pages et replace le scroll sur la page active.
+     */
+    const onLayoutPages = (e: LayoutChangeEvent) => {
+        const largeur = e.nativeEvent.layout.width
+        if (largeur <= 0) return
+            setLargeurPages(largeur)
+            publierPlagesOnglets(mesuresOngletsRef.current, largeur)
+            scrollViewRef.current?.scrollTo({ x: largeur * pageRef.current, animated: false })
+    }
+
+    
+    /**
+     * Met à jour l'index actif quand le swipe s'arrête.
+     */
+    const onFinDefilement = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+        const currentOffset = e.nativeEvent.contentOffset.x
+        console.log("currentOffset", currentOffset)
+        const index = Math.round(currentOffset / largeurPages)
+        changerPage(index)
+    },[largeurPages, changerPage])
 
     const s = StyleSheet.create({
-        conteneur: { flex: 1, width:SCREEN_W},
+        conteneur: { flex: 1 },
         onglets: {
-            maxWidth: SCREEN_W,
             marginHorizontal: integre ? 0 : 20,
             marginTop: integre ? 0 : 12,
             marginBottom: 8,
             maxHeight: HAUTEUR_BARRE_ONGLETS,
-            overflow: 'hidden',
             borderBottomWidth:1,
             borderBottomColor: colors.border
         },
         ongletsContent: {
-            width:SCREEN_W,            
+            minWidth:largeurBarre,            
             height: HAUTEUR_BARRE_ONGLETS,
             alignItems: 'center',
             flexDirection: 'row',
-            overflow: 'hidden',
         },
         onglet: {
             paddingHorizontal: 14,
             paddingVertical: 4,
             maxHeight: HAUTEUR_INDICATEUR,
+            alignItems:'center', 
+            justifyContent:'center',
+            minWidth: largeurBarre / Math.max(pages.length, 1)
         },
         title: {
             color: colors.text,
@@ -156,91 +257,19 @@ export default function PagesGlissables({ pages, pageInitiale = 0, onChangerPage
         },
     })
 
-    /**
-     * Décale la barre pour amener l'onglet actif dans la zone visible.
-     */
-    const scrollOnglets = ()=> {
-        const x = interpolate(
-                    contentOffset.value,
-                    inputRange.value,
-                    outputRangeX.value,
-                    Extrapolation.CLAMP,
-                )
-        
-        ongletsScrollViewRef.current?.scrollTo({x:x, animated:true})
-    }
-    
-    /**
-     * Synchronise l'index actif et avertit le parent si la page a changé.
-     */
-    const changerPage = (index: number) => {
-        if (index === pageRef.current) return
-        pageRef.current = index
-        Keyboard.dismiss()
-        
-        const currentOnglet = mesuresInitiales[index]
-        if(currentOnglet.x + currentOnglet.w > largeurViewportOnglets.value)
-            scrollOnglets()
-        onChangerPage?.(index)
-    }
-
-    /**
-     * Passe à la page choisie depuis un onglet.
-     */
-    const allerA = (index: number) => {
-        Haptics.clickLeger()
-        scrollViewRef.current?.scrollTo({ x: SCREEN_W * index })
-        changerPage(index)
-    }
-
-    /**
-     * Enregistre la largeur visible de la barre d'onglets.
-     */
-    const onLayoutOngletsViewport = (e: LayoutChangeEvent) => {
-        const w = e.nativeEvent.layout.width
-        if (w > 0) largeurViewportOnglets.value = w
-    }
-
-    /**
-     * Enregistre la position et la largeur d'un onglet après son layout.
-     */
-    const onLayoutOnglet = (index: number) => (e: LayoutChangeEvent) => {
-        const { x, width } = e.nativeEvent.layout
-        // Chaque layout complète la dernière liste de mesures avant de republier les plages.
-        const mesures = mesuresOngletsRef.current.slice(0, pages.length)
-        while (mesures.length < pages.length) mesures.push({ x: 0, w: 0 })
-        mesures[index] = { x, w: width }
-        mesuresOngletsRef.current = mesures
-        publierPlagesOnglets(mesures, SCREEN_W)
-    }
-
-    /**
-     * Calibre la largeur des pages et replace le scroll sur la page active.
-     */
-    const onLayoutPages = (e: LayoutChangeEvent) => {
-        const largeur = e.nativeEvent.layout.width
-        if (largeur <= 0) return
-        publierPlagesOnglets(mesuresOngletsRef.current, largeur)
-        scrollViewRef.current?.scrollTo({ x: largeur * pageRef.current, animated: false })
-    }
-
-    /**
-     * Met à jour l'index actif quand le swipe s'arrête.
-     */
-    const onFinDefilement = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-        changerPage(Math.round(e.nativeEvent.contentOffset.x / SCREEN_W))
-    }
-
     return (
         <View style={s.conteneur}>
             <ScrollView
                 ref={ongletsScrollViewRef}
                 horizontal={true}
                 showsHorizontalScrollIndicator={false}
-                scrollEnabled={doitScroller.value}
                 style={s.onglets}
                 contentContainerStyle={s.ongletsContent}
                 onLayout={onLayoutOngletsViewport}
+                scrollEventThrottle={16}
+                onScroll={(e: NativeSyntheticEvent<NativeScrollEvent>)=>{
+                    ongletContentOffsetX.set(e.nativeEvent.contentOffset.x)
+                }}
                 onContentSizeChange={(contentWidth) => {
                     if (contentWidth > 0) largeurContenuOnglets.value = contentWidth
                 }}
@@ -263,7 +292,7 @@ export default function PagesGlissables({ pages, pageInitiale = 0, onChangerPage
                 horizontal={true}
                 style={{ flex: 1 }}
                 onLayout={onLayoutPages}
-                snapToInterval={SCREEN_W}
+                snapToInterval={largeurPages}
                 decelerationRate={'fast'}
                 showsHorizontalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
@@ -272,7 +301,7 @@ export default function PagesGlissables({ pages, pageInitiale = 0, onChangerPage
                 onMomentumScrollEnd={onFinDefilement}
             >
                 {pages.map((p) =>
-                    <View key={p.id} style={{ width: SCREEN_W, flex: 1 }}>
+                    <View key={p.id} style={{ width: largeurPages, flex: 1 }}>
                         {p.contenu}
                     </View>
                 )}

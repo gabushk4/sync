@@ -36,7 +36,7 @@ export default function RequestStatus() {
             pointerEvents="none"
             style={{
                 position: 'absolute',
-                top: insets.top + 8,
+                bottom: insets.bottom + 136,
                 alignSelf: 'center',
                 zIndex: 1000,
                 flexDirection: 'row',

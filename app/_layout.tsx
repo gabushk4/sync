@@ -241,9 +241,9 @@ function RootLayoutNav() {
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         </Stack.Protected>
       </Stack>
-      <RequestStatus />
-      <Toast config={toastConfig}/>
+      <RequestStatus />      
       </View>
+      <Toast config={toastConfig}/>
     </ThemeProvider>
   );
 }

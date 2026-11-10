@@ -31,6 +31,7 @@ export type NouvelEvenement = {
     fin: string | null
     regle_recurrence?: string | null
     participants: { id: string, privilege: string }[]
+    depuis_dispo_commune: true | false
     [cle: string]: unknown
 }
 

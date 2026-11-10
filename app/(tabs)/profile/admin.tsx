@@ -12,6 +12,7 @@ import { toastTypes } from '@/constants/toastConfig'
 import catcher from '@/functions/catcher'
 import DemandesLoi25 from '@/components/demandesLoi25'
 import PagesGlissables from '@/components/pagesGlissables'
+import PanneauMetriques from '@/components/panneauMetriques'
 import type { PageGlissable } from '@/components/pagesGlissables'
 
 type BugRapporte = {
@@ -135,20 +136,12 @@ function PageBugs({ etat, bugs, bugOuvert, setBugOuvert, charger }: { etat: Etat
   )
 }
 
-function PageLoi25({ type, etat, onAccesRefuse, charger }: { type: 'export' | 'suppression'; etat: Etat; onAccesRefuse: () => void; charger: () => void }) {
-  return (
-    <EtatPage etat={etat} onRecharger={charger}>
-      {etat === 'pret' && <DemandesLoi25 type={type} onAccesRefuse={onAccesRefuse} />}
-    </EtatPage>
-  )
+function PageLoi25({ type, onAccesRefuse }: { type: 'export' | 'suppression'; onAccesRefuse: () => void }) {
+  return <DemandesLoi25 type={type} onAccesRefuse={onAccesRefuse} />
 }
 
-function PageMetriques({ etat, bugs, bugOuvert, setBugOuvert, charger }: { etat: Etat; bugs: BugRapporte[]; bugOuvert: string | null; setBugOuvert: Dispatch<SetStateAction<string | null>>; charger: () => void }) {
-  return (
-    <EtatPage etat={etat} onRecharger={charger}>
-      <ZoneBugs bugs={bugs} bugOuvert={bugOuvert} setBugOuvert={setBugOuvert} />
-    </EtatPage>
-  )
+function PageMetriques({ onAccesRefuse }: { onAccesRefuse: () => void }) {
+  return <PanneauMetriques onAccesRefuse={onAccesRefuse} />
 }
 
 /** Admin-only dashboard. The API also enforces admin access on the bug endpoint. */
@@ -195,9 +188,9 @@ export default function DashboardAdmin() {
 
   const pages: PageGlissable[] = [
     { id: 'bugs', titre: t('admin.bugsTab'), contenu: <PageBugs etat={etat} bugs={bugs} bugOuvert={bugOuvert} setBugOuvert={setBugOuvert} charger={charger} /> },
-    { id: 'exports', titre: t('admin.exportsTab'), contenu: <PageLoi25 type="export" etat={etat} onAccesRefuse={sortirAccesRefuse} charger={charger} /> },
-    { id: 'suppressions', titre: t('admin.deletionsTab'), contenu: <PageLoi25 type="suppression" etat={etat} onAccesRefuse={sortirAccesRefuse} charger={charger} /> },
-    { id: 'metriques', titre: t('admin.metricsTab'), contenu: <PageMetriques etat={etat} bugs={bugs} bugOuvert={bugOuvert} setBugOuvert={setBugOuvert} charger={charger} /> },
+    { id: 'exports', titre: t('admin.exportsTab'), contenu: <PageLoi25 type="export" onAccesRefuse={sortirAccesRefuse} /> },
+    { id: 'suppressions', titre: t('admin.deletionsTab'), contenu: <PageLoi25 type="suppression" onAccesRefuse={sortirAccesRefuse} /> },
+    { id: 'metriques', titre: t('admin.metricsTab'), contenu: <PageMetriques onAccesRefuse={sortirAccesRefuse} /> },
   ]
 
   return <PagesGlissables pages={pages} />

@@ -77,7 +77,7 @@ export default function ModalBase({ children, canDismiss = true, onDismiss = () 
             left: 0,
             right: 0,
             width: '100%',
-            height: 64,
+            height: 32,
         },
 
         dragHandleContainer: {
