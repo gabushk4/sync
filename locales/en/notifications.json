@@ -39,5 +39,16 @@
 	"errors": {
 		"actionFailed": "Error performing the action",
 		"deleteFailed": "Unable to delete notification"
+	},
+	"push": {
+		"title": {
+			"invitation": "New event invitation",
+			"vote": "A new time is proposed",
+			"event": "One of your events changed",
+			"friendship": "You have a new friend",
+			"friendRequest": "New friend request",
+			"other": "New notification"
+		},
+		"tapToOpen": "Tap to view"
 	}
 }

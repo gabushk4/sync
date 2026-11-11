@@ -2,9 +2,11 @@
 import { authEvents } from '@/events/authEvents';
 import catcher from '@/functions/catcher';
 import log from '@/functions/log';
+import { retirerPushToken } from '@/functions/notificationsPush';
 import { emptyTokens, setToken } from '@/functions/tokenStore';
 import * as SecureStore from 'expo-secure-store';
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { useAPI } from './contexteAPI';
 import { useMembre } from './contexteMembre';
 
 type AuthState = 'loading' | 'authenticated' | 'unauthenticated';
@@ -12,7 +14,7 @@ type AuthState = 'loading' | 'authenticated' | 'unauthenticated';
 type AuthContextType = {
   state: AuthState;
   signIn: (accessToken: string, refreshToken: string) => Promise<void>;
-  signOut: () => Promise<void>;
+  signOut: (options?: { retirerPush?: boolean }) => Promise<void>;
   recheckAuth: () => Promise<void>;
 };
 
@@ -25,43 +27,40 @@ const AuthContexte = createContext<AuthContextType | undefined>(undefined);
  */
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { getMembre, resetMembre } = useMembre();
+    const { api } = useAPI();
 
     const [state, setState] = useState<AuthState>('loading');
 
-    // Vérifie si le membre est connecté ou non
-    const checkAuth = async () => {
+    /**
+     * Vérifie si le membre est connecté (refresh token présent et profil récupérable).
+     * Retourne l'état au lieu de le poser : l'effet de lancement le pose dans son callback
+     * (react-hooks/set-state-in-effect), recheckAuth le pose directement.
+     *
+     * @returns {Promise<AuthState>}
+     */
+    const verifierSession = async (): Promise<AuthState> => {
         try {
             const refreshToken = await SecureStore.getItemAsync('refresh_token');
 
             if (!refreshToken) {
                 log('AuthContext: aucun refresh token, non authentifié');
-                setState('unauthenticated');
-                return;
+                return 'unauthenticated';
             }
-            
+
             await getMembre(); // fetch les infos du membre connecté
-            setState('authenticated');
+            return 'authenticated';
         } catch (error: any) {
             log('AuthContext: échec de la vérification, déconnexion', error?.message);
-            await emptyTokens(); // invalide tous les tokens            
+            await emptyTokens(); // invalide tous les tokens
             resetMembre(); // invalide les infos du membre
-            setState('unauthenticated');
+            return 'unauthenticated';
         }
     }
-    
 
-    useEffect(() => {  
-        // abonnement à l'évènement Unauthorized
-        const unsubscribe = authEvents.onUnauthorized(() => {
-            signOut(); 
-        });
-        return unsubscribe;        
-    }, []);
-
-    // au lancement de l'app
-    useEffect(() => {
-        checkAuth();
-    }, [])
+    // Vérifie si le membre est connecté ou non
+    const checkAuth = async () => {
+        setState(await verifierSession());
+    }
 
     /**
      * permet de lancer la requête pour connecter le membre
@@ -87,15 +86,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
      * (notifications, events) before the tokens disappear. In the old order,
      * a poll firing in between went out without a token, got a 401, and
      * showed a "conflit détecté / Un token est nécessaire" toast.
+     * US-52: a sign-out the member chose also removes this device's push token from their
+     * account (while still signed in), so its notifications stop coming here.
      *
+     * @param {{ retirerPush?: boolean }} [options] - retirerPush: false when the API already
+     *   refused the session (no request that would get the same 401).
      * @returns {Promise<void>}
      */
-    const signOut = async () => {
+    const signOut = async ({ retirerPush = true }: { retirerPush?: boolean } = {}) => {
         setState('unauthenticated');
         resetMembre();
+        if (retirerPush) await retirerPushToken(api);
         await emptyTokens();
-
     };
+
+    useEffect(() => {  
+        // abonnement à l'évènement Unauthorized
+        // session refused by the API: no request to remove the push token (it would get
+        // the same 401 and sign out again)
+        const unsubscribe = authEvents.onUnauthorized(() => {
+            signOut({ retirerPush: false }); 
+        });
+        return unsubscribe;        
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // au lancement de l'app : l'état est posé dans le callback de la vérification
+    useEffect(() => {
+        let actif = true;
+        verifierSession().then((etat) => {
+            if (actif) setState(etat);
+        });
+        return () => { actif = false };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     return (
         <AuthContexte.Provider value={{ state, signIn, signOut, recheckAuth: checkAuth }}>
