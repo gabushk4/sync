@@ -39,5 +39,16 @@
 	"errors": {
 		"actionFailed": "erreur à l'action",
 		"deleteFailed": "impossible de supprimer une notification"
+	},
+	"push": {
+		"title": {
+			"invitation": "Nouvelle invitation à un évènement",
+			"vote": "Un changement d'horaire est proposé",
+			"event": "Un de tes évènements a changé",
+			"friendship": "Tu as un nouvel ami",
+			"friendRequest": "Nouvelle demande d'ami",
+			"other": "Nouvelle notification"
+		},
+		"tapToOpen": "Touche pour voir"
 	}
 }
