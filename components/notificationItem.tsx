@@ -276,7 +276,7 @@ export default function NotificationItem({ item, index, vu }: ItemProps) {
     // answer, else the actions of the member's role. Philip — rectification (user story 23).
     const invitationEnAttente = invitation && item.statut_metier === 'en_attente' && !expired ? invitation : null
     // Never answered, and now too late to.
-    const invitationExpiree = !!invitation && item.statut_metier === 'en_attente' && expired
+    const invitationExpiree = !!invitation && (item.statut_metier === 'expiree' || (item.statut_metier === 'en_attente' && expired))
     // Accepted, then left (the API reads it from the participation): nothing to do anymore.
     // Philip — rectification.
     const evenementQuitte = item.statut_metier === 'annulee'
@@ -286,7 +286,7 @@ export default function NotificationItem({ item, index, vu }: ItemProps) {
 
     // Header label, seen without unfolding the card: the event is over, the invitation /
     // request expired, or when it will (only while unanswered). Philip — rectification.
-    const enAttenteDeReponse = item.statut_metier !== 'acceptee' && item.statut_metier !== 'refusee' && !evenementQuitte
+    const enAttenteDeReponse = item.statut_metier !== 'acceptee' && item.statut_metier !== 'refusee' && item.statut_metier !== 'expiree' && !evenementQuitte
     let expirationLabel: string | undefined
     if (evenementPasse)
         expirationLabel = t('expiration.eventPastShort')
@@ -298,7 +298,7 @@ export default function NotificationItem({ item, index, vu }: ItemProps) {
             quand: expirationNowDiff < 1 ? convertirTimestampHeure(expiration) : convertirTimestampDateCourte(expiration),
         })
     }
-    const expirationAtteinte = evenementPasse || expired
+    const expirationAtteinte = evenementPasse || expired || item.statut_metier === 'expiree'
 
     const s = StyleSheet.create({
         container: {
@@ -418,12 +418,12 @@ export default function NotificationItem({ item, index, vu }: ItemProps) {
     // User story 9: once answered, show the answer instead of the buttons.
     // Pending is shown too for an event notification (Philip — user story 23).
     // 'annulee': the member left the event (Philip — rectification).
-    const statut = (item.statut_metier === "acceptee" || item.statut_metier === "refusee" || evenementQuitte
+    const statut = (item.statut_metier === "acceptee" || item.statut_metier === "refusee" || item.statut_metier === "expiree" || evenementQuitte
         || (idEvenement && item.statut_metier === "en_attente")) ? (
         <Text style={[s.reponse, {
             color: item.statut_metier === "acceptee" ? colors.success
                 : item.statut_metier === "refusee" ? colors.error
-                : evenementQuitte ? colors.muted : colors.warning,
+                : evenementQuitte || item.statut_metier === "expiree" ? colors.muted : colors.warning,
         }]}>
             {t(`${voteReport ? 'vote' : 'answer'}.${item.statut_metier}`)}
         </Text>

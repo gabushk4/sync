@@ -22,7 +22,7 @@ export type InvitationInfo = {
 }
 
 /** Answer to an invitation, as stored by the API. */
-export type StatutInvitation = 'en_attente' | 'acceptee' | 'refusee'
+export type StatutInvitation = 'en_attente' | 'acceptee' | 'refusee' | 'expiree'
 
 /**
  * Reads an invitation from a notification's `details` (resolved by the API).
