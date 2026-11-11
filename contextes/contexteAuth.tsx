@@ -2,9 +2,11 @@
 import { authEvents } from '@/events/authEvents';
 import catcher from '@/functions/catcher';
 import log from '@/functions/log';
+import { retirerPushToken } from '@/functions/notificationsPush';
 import { emptyTokens, setToken } from '@/functions/tokenStore';
 import * as SecureStore from 'expo-secure-store';
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { useAPI } from './contexteAPI';
 import { useMembre } from './contexteMembre';
 
 type AuthState = 'loading' | 'authenticated' | 'unauthenticated';
@@ -12,7 +14,7 @@ type AuthState = 'loading' | 'authenticated' | 'unauthenticated';
 type AuthContextType = {
   state: AuthState;
   signIn: (accessToken: string, refreshToken: string) => Promise<void>;
-  signOut: () => Promise<void>;
+  signOut: (options?: { retirerPush?: boolean }) => Promise<void>;
   recheckAuth: () => Promise<void>;
 };
 
@@ -25,6 +27,7 @@ const AuthContexte = createContext<AuthContextType | undefined>(undefined);
  */
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { getMembre, resetMembre } = useMembre();
+    const { api } = useAPI();
 
     const [state, setState] = useState<AuthState>('loading');
 
@@ -52,8 +55,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     useEffect(() => {  
         // abonnement à l'évènement Unauthorized
+        // session refused by the API: no request to remove the push token (it would get
+        // the same 401 and sign out again)
         const unsubscribe = authEvents.onUnauthorized(() => {
-            signOut(); 
+            signOut({ retirerPush: false }); 
         });
         return unsubscribe;        
     }, []);
@@ -87,12 +92,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
      * (notifications, events) before the tokens disappear. In the old order,
      * a poll firing in between went out without a token, got a 401, and
      * showed a "conflit détecté / Un token est nécessaire" toast.
+     * US-52: a sign-out the member chose also removes this device's push token from their
+     * account (while still signed in), so its notifications stop coming here.
      *
+     * @param {{ retirerPush?: boolean }} [options] - retirerPush: false when the API already
+     *   refused the session (no request that would get the same 401).
      * @returns {Promise<void>}
      */
-    const signOut = async () => {
+    const signOut = async ({ retirerPush = true }: { retirerPush?: boolean } = {}) => {
         setState('unauthenticated');
         resetMembre();
+        if (retirerPush) await retirerPushToken(api);
         await emptyTokens();
 
     };

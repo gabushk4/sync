@@ -56,7 +56,31 @@ export async function enregistrerPushToken(api: AxiosInstance): Promise<boolean>
     const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId
     const { data: pushToken } = await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined)
     await api.post('/notifications/push_token', { push_token: pushToken })
+    pushTokenEnregistre = pushToken
     return true
+}
+
+/** This device's token, once sent to the API (US-52: removed again on sign-out). */
+let pushTokenEnregistre: string | null = null
+
+/**
+ * US-52: removes this device's push token from the signed-in member
+ * (DELETE /notifications/push_token), so its notifications stop coming here after
+ * sign-out. Only removed if it is still this member's token (a sign-out on an old phone
+ * keeps the one used since). Never throws and never waits more than 3 s: signing out
+ * must not depend on the network.
+ *
+ * @param {AxiosInstance} api - Still signed in (called before the tokens are emptied).
+ * @returns {Promise<void>}
+ */
+export async function retirerPushToken(api: AxiosInstance): Promise<void> {
+    if (!pushTokenEnregistre) return
+    const pushToken = pushTokenEnregistre
+    pushTokenEnregistre = null
+    await Promise.race([
+        api.delete('/notifications/push_token', { data: { push_token: pushToken } }).catch(() => undefined),
+        new Promise((resolve) => setTimeout(resolve, 3000)),
+    ])
 }
 
 /** The `data` of a push (sync_api envoyerNotification: its `data` + `type` + `id_metier`). */
