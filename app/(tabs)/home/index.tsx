@@ -24,7 +24,7 @@ import { heuresVersDate, positionHeures } from '@/functions/positionTimeline';
 
 
 import EventsList, { RETRAIT_RANGEE } from '@/components/eventsList';
-import ProfilPic from '@/components/pfp';
+import PfpWithAvailability from '@/components/pfpWithAvailability';
 import Spinner from '@/components/spinner';
 import Timeline from '@/components/timeline';
 import TrousHoraire, { PlageChoisie } from '@/components/trousHoraire';
@@ -1329,10 +1329,7 @@ export default function Home() {
                             onPress={() => router.push({ pathname: '/(tabs)/home/profil/[membreId]', params: { membreId: friend.id } })}
                           >
                           <View style={s.photoAmi}>
-                            <ProfilPic
-                              pfp={friend.fp_url}
-                              size={64}
-                            />
+                            <PfpWithAvailability pfp={friend.fp_url} size={64} statut={friend.statut_disponibilite} />
                             {!!friend.proche && (
                               <View
                                 accessibilityLabel={t('closeFriendBadge')}
@@ -1367,10 +1364,7 @@ export default function Home() {
             style={[loadingAnimated, s.memberZone, { backgroundColor: colors.card }]}
           >
               <View style={[s.column, { backgroundColor: colors.card }]}>
-                <ProfilPic
-                  size={64}
-                  pfp={membre.fp}
-                />
+                <PfpWithAvailability size={64} pfp={membre.fp} statut={membre.statutDisponibilite} />
               </View>    
               <View style={s.zoneTimelineMembre}>
                 <EventsList

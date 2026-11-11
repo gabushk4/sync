@@ -57,8 +57,9 @@ export const InvitesProvider: React.FC<React.PropsWithChildren<{}>> = ({ childre
                 log('ajouterInvite res:', response.data)
 
                 const indisponibles: { id: string, pseudo: string }[] = response.data?.indisponibles ?? []
-                idsIndisponibles = new Set(indisponibles.map((i) => i.id))
-                if (indisponibles.length > 0) avertirIndisponibles(indisponibles)
+                const bloques: { id: string, pseudo: string }[] = response.data?.bloques ?? []
+                idsIndisponibles = new Set([...indisponibles, ...bloques].map((i) => i.id))
+                if (indisponibles.length > 0 || bloques.length > 0) avertirIndisponibles(indisponibles, bloques)
                 else ToastAbs.show({
                     type: 'persoSucces',
                     text1: 'invitations envoyées',

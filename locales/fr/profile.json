@@ -23,6 +23,15 @@
 		"warning": "attention les yeux !"
 	},
 	"memberSince": "membre depuis le {{date}}",
+	"availability": {
+		"change": "Changer ma disponibilité",
+		"close": "Fermer le choix de disponibilité",
+		"disponible": "Recevoir normalement",
+		"silencieux": "Silencieux",
+		"indisponible": "Bloquer les invitations",
+		"errorTitle": "Statut non modifié",
+		"errorMessage": "Impossible d’enregistrer votre statut de disponibilité."
+	},
 	"memberIdLabel": "identifiant du membre",
 	"admin": {
 		"title": "Dashboard admin",

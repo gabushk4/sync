@@ -52,6 +52,7 @@ export const defaultEvent = <Event>{
 export type Friend = {
   id: string;
   fp_url?: string;
+  statut_disponibilite?: 'disponible' | 'silencieux' | 'indisponible' | null;
   /** Whether this member has marked the friend as close (per-member preference). */
   proche?: boolean;
   evenements: Event[];

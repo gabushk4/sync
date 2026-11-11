@@ -23,6 +23,15 @@
 		"warning": "watch your eyes!"
 	},
 	"memberSince": "member since {{date}}",
+	"availability": {
+		"change": "Change my availability",
+		"close": "Close availability choices",
+		"disponible": "Green · receive normally",
+		"silencieux": "Yellow · silent",
+		"indisponible": "Red · block invitations",
+		"errorTitle": "Status not changed",
+		"errorMessage": "Could not save your availability status."
+	},
 	"memberIdLabel": "member ID",
 	"admin": {
 		"title": "Admin dashboard",

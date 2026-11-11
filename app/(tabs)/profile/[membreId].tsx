@@ -1,4 +1,4 @@
-import ProfilPic from '@/components/pfp'
+import PfpWithAvailability from '@/components/pfpWithAvailability'
 import WidgetDisposCommunes from '@/components/widgetDisposCommunes'
 import { useAPI } from '@/contextes/contexteAPI'
 import { useFont } from '@/contextes/contexteFont'
@@ -17,6 +17,7 @@ type FriendProfile = {
   bio: string | null
   fp_url: string | null
   etat_ame: string | null
+  statut_disponibilite: 'disponible' | 'silencieux' | 'indisponible' | null
 }
 
 /** Displays a friend's public profile and their mood when the friendship allows it. */
@@ -142,7 +143,7 @@ export default function MemberProfil() {
 
   return (
     <ScrollView contentContainerStyle={{ flexGrow: 1, alignItems: 'center', padding: 24, backgroundColor: colors.background }}>
-      <ProfilPic size={120} pfp={profile.fp_url ?? undefined} />
+      <PfpWithAvailability size={120} pfp={profile.fp_url ?? undefined} statut={profile.statut_disponibilite} />
       <View style={{ marginTop: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
         <Text style={{ color: colors.text, fontFamily: fonts.title, fontSize: 24 }}>@{profile.pseudo}</Text>
         {estAmi && (
