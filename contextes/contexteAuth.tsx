@@ -31,42 +31,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const [state, setState] = useState<AuthState>('loading');
 
-    // Vérifie si le membre est connecté ou non
-    const checkAuth = async () => {
+    /**
+     * Vérifie si le membre est connecté (refresh token présent et profil récupérable).
+     * Retourne l'état au lieu de le poser : l'effet de lancement le pose dans son callback
+     * (react-hooks/set-state-in-effect), recheckAuth le pose directement.
+     *
+     * @returns {Promise<AuthState>}
+     */
+    const verifierSession = async (): Promise<AuthState> => {
         try {
             const refreshToken = await SecureStore.getItemAsync('refresh_token');
 
             if (!refreshToken) {
                 log('AuthContext: aucun refresh token, non authentifié');
-                setState('unauthenticated');
-                return;
+                return 'unauthenticated';
             }
-            
+
             await getMembre(); // fetch les infos du membre connecté
-            setState('authenticated');
+            return 'authenticated';
         } catch (error: any) {
             log('AuthContext: échec de la vérification, déconnexion', error?.message);
-            await emptyTokens(); // invalide tous les tokens            
+            await emptyTokens(); // invalide tous les tokens
             resetMembre(); // invalide les infos du membre
-            setState('unauthenticated');
+            return 'unauthenticated';
         }
     }
-    
 
-    useEffect(() => {  
-        // abonnement à l'évènement Unauthorized
-        // session refused by the API: no request to remove the push token (it would get
-        // the same 401 and sign out again)
-        const unsubscribe = authEvents.onUnauthorized(() => {
-            signOut({ retirerPush: false }); 
-        });
-        return unsubscribe;        
-    }, []);
-
-    // au lancement de l'app
-    useEffect(() => {
-        checkAuth();
-    }, [])
+    // Vérifie si le membre est connecté ou non
+    const checkAuth = async () => {
+        setState(await verifierSession());
+    }
 
     /**
      * permet de lancer la requête pour connecter le membre
@@ -104,8 +98,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         resetMembre();
         if (retirerPush) await retirerPushToken(api);
         await emptyTokens();
-
     };
+
+    useEffect(() => {  
+        // abonnement à l'évènement Unauthorized
+        // session refused by the API: no request to remove the push token (it would get
+        // the same 401 and sign out again)
+        const unsubscribe = authEvents.onUnauthorized(() => {
+            signOut({ retirerPush: false }); 
+        });
+        return unsubscribe;        
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // au lancement de l'app : l'état est posé dans le callback de la vérification
+    useEffect(() => {
+        let actif = true;
+        verifierSession().then((etat) => {
+            if (actif) setState(etat);
+        });
+        return () => { actif = false };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     return (
         <AuthContexte.Provider value={{ state, signIn, signOut, recheckAuth: checkAuth }}>
