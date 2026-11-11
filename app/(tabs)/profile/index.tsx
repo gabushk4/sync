@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { useFocusEffect, useIsFocused } from "expo-router/react-navigation";
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Dimensions, ImageSourcePropType, Pressable, StyleSheet, Text, TouchableOpacity, useColorScheme, View, ViewStyle } from 'react-native';
+import { Alert, Dimensions, ImageSourcePropType, Modal, Pressable, StyleSheet, Text, TouchableOpacity, useColorScheme, View, ViewStyle } from 'react-native';
 import Animated, { createAnimatedComponent, interpolate, useAnimatedProps, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
 import { interpolatePath, parse } from 'react-native-redash';
 import Svg, { Path } from 'react-native-svg';
@@ -28,7 +28,7 @@ import Haptics from '@/abstractions/haptics';
 import MemberCode from '@/components/memberCode';
 import { withSpringConfig, withTimingConfig } from '@/constants/ReanimatedConfs';
 import { convertirTimestampDateCourte } from "@/functions/convertirTimestamp";
-import ProfilPic from "@/components/pfp";
+import PfpWithAvailability from "@/components/pfpWithAvailability";
 
 const MENU_OPTIONS_GAP = 8
 const FLOATING_BTN_HEIGHT = 64
@@ -42,7 +42,7 @@ export default function ProfilEcran(){
     const isFocused = useIsFocused()
     const { APIBaseURL } = useAPI()
     const { ajouterEcran } = useRouteAbs()
-    const { membre, getMembre } = useMembre()
+    const { membre, getMembre, patchStatutDisponibilite } = useMembre()
 
     const {height: WIN_H} = Dimensions.get('window') 
     const icones = {        
@@ -54,6 +54,7 @@ export default function ProfilEcran(){
     const oldBrightness = useRef<number>(0)
     
     const [avertissementVisible, setAvertissementVisible] = useState(false)
+    const [menuStatutVisible, setMenuStatutVisible] = useState(false)
     const [, setFpSource] = useState<ImageSourcePropType>(icones.profilDef)
     const [hamburgerMenuOpen, setHamburgerMenuOpen] = useState<boolean>(false)
 
@@ -294,9 +295,9 @@ export default function ProfilEcran(){
         },
         bio:{
             fontSize:16,
-            height:'auto',
             width:'100%',
-            flexWrap:'wrap'        
+            flexShrink:1,
+            lineHeight:22,
         },
         widgetEnEdit:{
             height:'95%', 
@@ -363,13 +364,10 @@ export default function ProfilEcran(){
                 </Animated.View>        
                 {/* Profil infos */}
                 <View style={{flex:3, width: '100%', zIndex: 10, }}>                    
-                    <View style={[{height:'48%', flexDirection:'column', gap:16, paddingBottom:4, borderTopLeftRadius: 16, borderTopRightRadius:16, backgroundColor:colors.card, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.7, shadowRadius: 8, elevation:5, borderBottomColor:colors.border, borderBottomWidth:1}]}>                
+                    <View style={[{minHeight:'48%', flexDirection:'column', gap:12, paddingBottom:12, borderTopLeftRadius: 16, borderTopRightRadius:16, backgroundColor:colors.card, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.7, shadowRadius: 8, elevation:5, borderBottomColor:colors.border, borderBottomWidth:1}]}>                
                         {/* Pfp */}
-                        <Animated.View style={[{ height: 120, width: 120, zIndex: 2, marginLeft: 16, marginTop: -56, justifyContent: 'center', overflow: 'hidden', }]}>                     
-                            <ProfilPic
-                                size={120}
-                                pfp={membre.fp}
-                            />
+                        <Animated.View style={{ height: 120, width: 120, zIndex: 2, marginLeft: 16, marginTop: -56, justifyContent: 'center', alignItems: 'center' }}>
+                            <PfpWithAvailability size={120} pfp={membre.fp} statut={membre.statutDisponibilite} />
                         </Animated.View>
                         {/* Pseudo and Code */}
                         <Animated.View style={[{ justifyContent: 'center', paddingHorizontal: 16}, infosMembreAnime]}>
@@ -377,17 +375,47 @@ export default function ProfilEcran(){
                                 <Text style={[s.pseudo, { }]}>@{membre.pseudo}</Text>
                                 <MemberCode code={membre.idPublique??''}/>
                             </View>                            
-                            <Text style={[{color:colors.muted, fontSize:14, paddingLeft:4, fontFamily:fonts.body}]}>{t('memberSince', { date: convertirTimestampDateCourte(membre.tempsCreation) })}</Text>                
+                            <Text style={[{color:colors.muted, fontSize:14, paddingLeft:4, fontFamily:fonts.body}]}>{t('memberSince', { date: convertirTimestampDateCourte(membre.tempsCreation) })}</Text>
+                            <TouchableOpacity
+                                accessibilityRole="button"
+                                accessibilityLabel={t('availability.change')}
+                                accessibilityState={{ expanded: menuStatutVisible }}
+                                onPress={() => setMenuStatutVisible(true)}
+                                style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: membre.statutDisponibilite === 'disponible' ? '#35B86B' : membre.statutDisponibilite === 'silencieux' ? '#E6B422' : '#E05252', backgroundColor: colors.card }}
+                            >
+                                <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: membre.statutDisponibilite === 'disponible' ? '#35B86B' : membre.statutDisponibilite === 'silencieux' ? '#E6B422' : '#E05252' }} />
+                                <Text style={{ color: colors.text, fontFamily: fonts.body, fontSize: 13 }}>{t(`availability.${membre.statutDisponibilite}`)}</Text>
+                                <Icon name="chevron-down" size={16} color={colors.muted} />
+                            </TouchableOpacity>
                         </Animated.View>
                         {/* TODO: avoir un bouton avec le compte des amis qui affiche la liste des amis */}
                         {/* Bio */}
-                        <Animated.View style={{ width:'100%', height:'auto', borderRadius:8, paddingLeft:16}}>                            
-                            <View style={{width:'90%', paddingVertical:8, flexWrap:'wrap'}}>
-                                <Text style={[s.bio,{color:colors.text, fontFamily:fonts.body, fontSize:16}]} numberOfLines={3} /* afficher plus */>{membre.bio}</Text>
-                            </View>                        
+                        <Animated.View style={{ width:'100%', paddingHorizontal:16, paddingVertical:4, flexShrink:1 }}>
+                            <Text style={[s.bio,{color:colors.text, fontFamily:fonts.body, fontSize:16, width:'100%', maxHeight:66}]} numberOfLines={3} ellipsizeMode="tail">{membre.bio}</Text>
                         </Animated.View>                        
                     </View> 
                 </View>  
+            <Modal transparent visible={menuStatutVisible} animationType="fade" onRequestClose={() => setMenuStatutVisible(false)}>
+                <View style={{ flex: 1, justifyContent: 'center', padding: 24, backgroundColor: 'rgba(0,0,0,0.42)' }}>
+                    <Pressable onPress={() => setMenuStatutVisible(false)} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} accessibilityRole="button" accessibilityLabel={t('availability.close')} />
+                    <View style={{ width: '100%', maxWidth: 360, alignSelf: 'center', padding: 18, borderRadius: 18, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, elevation: 12 }}>
+                        <Text style={{ color: colors.text, fontFamily: fonts.title, fontSize: 18, marginBottom: 12 }}>{t('availability.change')}</Text>
+                        {(['disponible', 'silencieux', 'indisponible'] as const).map((statut) => {
+                            const couleur = statut === 'disponible' ? '#35B86B' : statut === 'silencieux' ? '#E6B422' : '#E05252'
+                            const actif = membre.statutDisponibilite === statut
+                            return <TouchableOpacity key={statut} accessibilityRole="button" accessibilityState={{ selected: actif }} onPress={async () => {
+                                setMenuStatutVisible(false)
+                                try { await patchStatutDisponibilite(statut) }
+                                catch { Alert.alert(t('availability.errorTitle'), t('availability.errorMessage')) }
+                            }} style={{ minHeight: 50, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 10, borderRadius: 10, backgroundColor: actif ? `${couleur}22` : 'transparent' }}>
+                                <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: couleur }} />
+                                <Text style={{ flex: 1, color: colors.text, fontFamily: fonts.body, fontSize: 15 }}>{t(`availability.${statut}`)}</Text>
+                                {actif && <Icon name="checkmark" size={20} color={couleur} />}
+                            </TouchableOpacity>
+                        })}
+                    </View>
+                </View>
+            </Modal>
                 {/* Futur widgets */}
                 {/* Hamburger Menu */}
                 <View style={{ position: 'absolute', bottom: 16, right: 16, zIndex:12 }}>                        

@@ -21,11 +21,13 @@ type Membre = {
     emailConfirme: boolean | false;
     timezone: string;
     email: string | undefined;
+    statutDisponibilite: 'disponible' | 'silencieux' | 'indisponible';
 };
 
 type MembreContextType = {
     membre: Membre;
     patchProfil: (pseudo?: string | undefined, bio?: string | undefined, fp?: FPType, etatAme?: string) => Promise<void>;
+    patchStatutDisponibilite: (statut: Membre['statutDisponibilite']) => Promise<void>;
     getMembre: () => Promise<void>;
     resetMembre: () => void;
     setMockMembre: () => void;
@@ -47,7 +49,8 @@ export const MembreProvider = ({ children }: { children: React.ReactNode }) => {
         admin: false,
         emailConfirme: false,
         timezone: 'local',
-        email: undefined
+        email: undefined,
+        statutDisponibilite: 'disponible'
     }
 
     const [membre, setMembre] = useState<Membre>(membreInitial)
@@ -67,7 +70,8 @@ export const MembreProvider = ({ children }: { children: React.ReactNode }) => {
                     admin: data.role === 'admin',
                     emailConfirme: data.email_confirme ?? false,
                     email: data.courriel,
-                    tempsCreation: convertUTCToLocal(data.temps_creation)
+                    tempsCreation: convertUTCToLocal(data.temps_creation),
+                    statutDisponibilite: data.statut_disponibilite ?? 'disponible'
                 }))
             
             } catch (error: any) {
@@ -86,8 +90,20 @@ export const MembreProvider = ({ children }: { children: React.ReactNode }) => {
             admin: true,
             emailConfirme: true,
             timezone: 'local',
-            email:'pereiralevesque.gabriel@gmail.com'
+            email:'pereiralevesque.gabriel@gmail.com',
+            statutDisponibilite: 'disponible'
         })
+    }
+
+    const patchStatutDisponibilite = async (statut: Membre['statutDisponibilite']) => {
+        const precedent = membre.statutDisponibilite
+        setMembre((prev) => ({ ...prev, statutDisponibilite: statut }))
+        try {
+            await api.patch('/membres/disponibilite', { statut_disponibilite: statut })
+        } catch (error) {
+            setMembre((prev) => ({ ...prev, statutDisponibilite: precedent }))
+            throw error
+        }
     }
 
     const patchProfil = async (pseudo : string | undefined, bio : string | undefined, fp: FPType = undefined, etatAme?: string ) => {
@@ -159,7 +175,7 @@ export const MembreProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     return (
-        <MembreContexte.Provider value={{ membre, patchProfil, getMembre, resetMembre, setMockMembre }}>
+        <MembreContexte.Provider value={{ membre, patchProfil, patchStatutDisponibilite, getMembre, resetMembre, setMockMembre }}>
             {children}
         </MembreContexte.Provider>
     );

@@ -23,6 +23,15 @@
 		"warning": "watch your eyes!"
 	},
 	"memberSince": "member since {{date}}",
+	"availability": {
+		"change": "Change my availability",
+		"close": "Close availability choices",
+		"disponible": "Green · receive normally",
+		"silencieux": "Yellow · silent",
+		"indisponible": "Red · block invitations",
+		"errorTitle": "Status not changed",
+		"errorMessage": "Could not save your availability status."
+	},
 	"memberIdLabel": "member ID",
 	"admin": {
 		"title": "Admin dashboard",
@@ -79,6 +88,10 @@
 		}
 	},
 	"friendMood": "Mood",
+	"closeFriend": {
+		"add": "Add to close friends",
+		"remove": "Remove from close friends"
+	},
 	"moodEmpty": "No mood shared right now.",
 	"bioEmpty": "No bio yet.",
 	"commonSlots": {
@@ -95,6 +108,7 @@
 	},
 	"errors": {
 		"widgetsLoadFailed": "error loading widgets",
+		"closeFriendUpdateFailed": "unable to update close friend status",
 		"updateFailed": "unable to update profile",
 		"loadFriendProfileFailed": "unable to load this friend's profile",
 		"friendProfileUnavailable": "this profile is unavailable"

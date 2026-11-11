@@ -160,6 +160,11 @@
     "leftOut_one": "{{pseudos}} est indisponible à ce moment : pas d’invitation envoyée",
     "leftOut_other": "{{pseudos}} sont indisponibles à ce moment : pas d’invitation envoyée"
   },
+  "availabilityStatus": {
+    "blockedTitle": "Invitation bloquée",
+    "blocked_one": "{{pseudos}} a choisi de ne pas recevoir d’invitations.",
+    "blocked_other": "{{pseudos}} ont choisi de ne pas recevoir d’invitations."
+  },
   "postpone": {
     "suggestionsCount": "Plages proposées ({{count}})",
     "proposedBy": "par {{pseudo}}",

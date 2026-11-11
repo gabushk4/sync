@@ -24,7 +24,7 @@ import { heuresVersDate, positionHeures } from '@/functions/positionTimeline';
 
 
 import EventsList, { RETRAIT_RANGEE } from '@/components/eventsList';
-import ProfilPic from '@/components/pfp';
+import PfpWithAvailability from '@/components/pfpWithAvailability';
 import Spinner from '@/components/spinner';
 import Timeline from '@/components/timeline';
 import TrousHoraire, { PlageChoisie } from '@/components/trousHoraire';
@@ -378,7 +378,8 @@ export default function Home() {
         : Number.POSITIVE_INFINITY
       return { ami, commonFreeSlots, minutesCommunes, prochaineDisponibilite }
     }).sort((a, b) =>
-      b.minutesCommunes - a.minutesCommunes
+      Number(!!b.ami.proche) - Number(!!a.ami.proche)
+      || b.minutesCommunes - a.minutesCommunes
       || a.prochaineDisponibilite - b.prochaineDisponibilite
       || String(a.ami.pseudo ?? '').localeCompare(String(b.ami.pseudo ?? ''))
     )
@@ -1328,10 +1329,15 @@ export default function Home() {
                             onPress={() => router.push({ pathname: '/(tabs)/home/profil/[membreId]', params: { membreId: friend.id } })}
                           >
                           <View style={s.photoAmi}>
-                            <ProfilPic
-                              pfp={friend.fp_url}
-                              size={64}
-                            />
+                            <PfpWithAvailability pfp={friend.fp_url} size={64} statut={friend.statut_disponibilite} />
+                            {!!friend.proche && (
+                              <View
+                                accessibilityLabel={t('closeFriendBadge')}
+                                style={{ position: 'absolute', top: 5, right: 5, width: 24, height: 24, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.warning, backgroundColor: colors.card }}
+                              >
+                                <Ionicons name="star" size={14} color={colors.warning} />
+                              </View>
+                            )}
                           </View>
                           </TouchableOpacity>
                           {/* Événements horizontaux */}
@@ -1358,10 +1364,7 @@ export default function Home() {
             style={[loadingAnimated, s.memberZone, { backgroundColor: colors.card }]}
           >
               <View style={[s.column, { backgroundColor: colors.card }]}>
-                <ProfilPic
-                  size={64}
-                  pfp={membre.fp}
-                />
+                <PfpWithAvailability size={64} pfp={membre.fp} statut={membre.statutDisponibilite} />
               </View>    
               <View style={s.zoneTimelineMembre}>
                 <EventsList
