@@ -79,6 +79,10 @@
 		}
 	},
 	"friendMood": "État d'âme",
+	"closeFriend": {
+		"add": "Ajouter aux amis proches",
+		"remove": "Retirer des amis proches"
+	},
 	"moodEmpty": "Aucun état d'âme partagé pour le moment.",
 	"bioEmpty": "Aucune bio pour le moment.",
 	"commonSlots": {
@@ -95,6 +99,7 @@
 	},
 	"errors": {
 		"widgetsLoadFailed": "erreur lors du chargement des widgets",
+		"closeFriendUpdateFailed": "impossible de modifier le statut d'ami proche",
 		"updateFailed": "impossible de modifier le profil",
 		"loadFriendProfileFailed": "impossible de charger le profil de cet ami",
 		"friendProfileUnavailable": "ce profil est indisponible"

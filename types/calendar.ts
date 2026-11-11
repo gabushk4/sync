@@ -52,6 +52,8 @@ export const defaultEvent = <Event>{
 export type Friend = {
   id: string;
   fp_url?: string;
+  /** Whether this member has marked the friend as close (per-member preference). */
+  proche?: boolean;
   evenements: Event[];
 };
 
