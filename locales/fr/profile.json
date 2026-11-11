@@ -23,6 +23,15 @@
 		"warning": "attention les yeux !"
 	},
 	"memberSince": "membre depuis le {{date}}",
+	"availability": {
+		"change": "Changer ma disponibilité",
+		"close": "Fermer le choix de disponibilité",
+		"disponible": "Recevoir normalement",
+		"silencieux": "Silencieux",
+		"indisponible": "Bloquer les invitations",
+		"errorTitle": "Statut non modifié",
+		"errorMessage": "Impossible d’enregistrer votre statut de disponibilité."
+	},
 	"memberIdLabel": "identifiant du membre",
 	"admin": {
 		"title": "Dashboard admin",
@@ -79,6 +88,10 @@
 		}
 	},
 	"friendMood": "État d'âme",
+	"closeFriend": {
+		"add": "Ajouter aux amis proches",
+		"remove": "Retirer des amis proches"
+	},
 	"moodEmpty": "Aucun état d'âme partagé pour le moment.",
 	"bioEmpty": "Aucune bio pour le moment.",
 	"commonSlots": {
@@ -95,6 +108,7 @@
 	},
 	"errors": {
 		"widgetsLoadFailed": "erreur lors du chargement des widgets",
+		"closeFriendUpdateFailed": "impossible de modifier le statut d'ami proche",
 		"updateFailed": "impossible de modifier le profil",
 		"loadFriendProfileFailed": "impossible de charger le profil de cet ami",
 		"friendProfileUnavailable": "ce profil est indisponible"

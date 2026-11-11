@@ -214,7 +214,7 @@ const CreationEvenement = forwardRef<CreationHandle>(function CreationEvenement(
                         text2: t('create.createdMessage'),
                         autoHide: true,
                     })
-                    avertirIndisponibles(response.data?.indisponibles)
+                    avertirIndisponibles(response.data?.indisponibles, response.data?.bloques)
                     quitterApresCreation()
                 }
             } else {

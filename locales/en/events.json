@@ -160,6 +160,11 @@
     "leftOut_one": "{{pseudos}} is unavailable then: no invitation sent",
     "leftOut_other": "{{pseudos}} are unavailable then: no invitation sent"
   },
+  "availabilityStatus": {
+    "blockedTitle": "Invitation blocked",
+    "blocked_one": "{{pseudos}} has chosen not to receive invitations.",
+    "blocked_other": "{{pseudos}} have chosen not to receive invitations."
+  },
   "postpone": {
     "suggestionsCount": "Proposed times ({{count}})",
     "proposedBy": "by {{pseudo}}",
