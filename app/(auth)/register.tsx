@@ -20,6 +20,8 @@ import ServerStatus from '@/components/serverStatus';
 import { toastTypes } from "@/constants/toastConfig";
 import catcher from '@/functions/catcher';
 import { router } from 'expo-router';
+import Radius from "@/constants/Radius";
+import CheckboxAbs from "@/abstractions/checkboxAbs";
 
 export default function InscriptionEcran({
     
@@ -62,6 +64,9 @@ export default function InscriptionEcran({
     const [courrielValide, setCourrielValide] = useState(true)
 
     const [isInactive, setEstDesactive] = useState(true)
+
+    const [checkedPolitics, setCheckedPolitics] = useState(false)
+    const [checkedConditions, setCheckedConditions] = useState(false)
 
     let inputPositions = useRef({
         pseudo: 0,
@@ -121,6 +126,12 @@ export default function InscriptionEcran({
           }
     }    
 
+    const lookForInvalidInput = () => {
+        if(!courrielValide){
+            
+        }
+    }
+
     useFocusEffect(useCallback(()=>{
         ajouterEcran('inscription')
 
@@ -139,10 +150,12 @@ export default function InscriptionEcran({
         if(courrRegex.test(courriel)){
             setCourrielValide(true)
         }
-       
-        setEstDesactive(!mdpValide || !pass2Valid || !courrielValide)   
 
-    }, [mdpLongValide, mdpCarSpeciauxValide, mdpMinMajValide, pass2Valid, courriel])
+        const checksValid = checkedConditions && checkedPolitics
+       
+        setEstDesactive(!mdpValide || !pass2Valid || !courrielValide || !checksValid)   
+
+    }, [mdpLongValide, mdpCarSpeciauxValide, mdpMinMajValide, pass2Valid, courriel, checkedConditions, checkedPolitics])
 
     useEffect(() => {
         if (pass != pass2)
@@ -244,6 +257,34 @@ export default function InscriptionEcran({
             flexGrow: 1,
             paddingBottom: 96,
             height:'200%'
+        },
+        politicsContainer:{
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+            borderRadius: Radius.md,
+            borderColor: colors.border,
+            gap: 16,
+            alignItems: 'center',
+            justifyContent: 'center',
+            maxWidth: '92%',            
+        },
+        politicsRow: {
+            flexDirection: 'row',
+            justifyContent: 'flex-start',
+            alignItems: 'center',
+            alignSelf: "flex-start",
+            gap: 24,
+            width: '100%'
+        },
+        politicsTextContainer:{
+            flexDirection: 'row',
+            maxWidth:'100%',
+            gap:8,            
+        },
+        politicsText:{
+            color: colors.text,
+            flexWrap: 'wrap',
+            fontFamily: fonts.body
         }
     })
 
@@ -262,21 +303,24 @@ export default function InscriptionEcran({
                 keyboardVerticalOffset={0}
             >
                 <ServerStatus/>
+                {/* Beta disclaimer text */}
                 <View style={s.disclaimerContainer}>
                     <BetaTag/>
                     <Text style={s.disclaimerText}>
                         {t('register.passwordDisclaimer')}
                     </Text>
                 </View>        
-                    <ScrollView
-                        ref={refScrollView}
-                        contentContainerStyle={s.formContainer}
-                        keyboardShouldPersistTaps='handled'
-                        onLayout={(e) => {
-                            inputPositions.current['scrollView'] = e.nativeEvent.layout.y 
-                        }}
-                    >                
+                {/* Form container */}
+                <ScrollView
+                    ref={refScrollView}
+                    contentContainerStyle={s.formContainer}
+                    keyboardShouldPersistTaps='handled'
+                    onLayout={(e) => {
+                        inputPositions.current['scrollView'] = e.nativeEvent.layout.y 
+                    }}
+                >                
                     <Text style={[s.titre, {color:colors.text, fontFamily:fonts.title}]}>sync</Text>
+                    {/* Pseudo input  */}
                     <TextInputAbs
                         ref={refPseudo}
                         onLayout={(e) => {
@@ -294,7 +338,8 @@ export default function InscriptionEcran({
                         onFocus={() => {
                             scrollToInput('pseudo')
                         }}
-                    />        
+                    />     
+                    {/* Email input */}   
                     <TextInputAbs
                         ref={refCourriel}
                         style={{borderColor:courrielValide?colors.border:colors.error, width: largeur}}
@@ -316,6 +361,7 @@ export default function InscriptionEcran({
                             scrollToInput('email')
                         }}
                     />
+                    {/* Pass 1 input  */}
                     <View style={{ justifyContent: 'center' }}
                         onLayout={(e) => {
                             inputPositions.current.pass = e.nativeEvent.layout.y
@@ -396,6 +442,7 @@ export default function InscriptionEcran({
                             <Text id='majMinText' style={[s.invalid, mdpMinMajValide && s.valid]}>{t('register.upperAndLowercase')}</Text>        
                         </View>
                     }
+                    {/* Pass 2 input */}
                     <TextInputAbs
                         ref={refMdp2}
                         style={ {borderColor:pass2Valid?colors.border:colors.error, width:largeur}}
@@ -430,20 +477,43 @@ export default function InscriptionEcran({
                             <Text id='mdp2valide' style={[{textAlign:'center', width:'100%'}, s.invalid, pass2Valid && s.valid]}>{t(pass2Valid ? 'register.passwordsMatch' : 'register.passwordsDoNotMatch')}</Text>      
                         </View>
                     }
+                    {/* Accept politics and conditions container */}
+                    <View style={s.politicsContainer}>
+                        <Text style={[s.politicsText, {fontFamily: fonts.title}]}>en cochant ci-dessous, vous acceptez: </Text>                        
+                            <CheckboxAbs checked={checkedPolitics} onPress={() => setCheckedPolitics((prev) => !prev)} style={s.politicsRow}>
+                                <Text style={s.politicsText}>la politique de confidentialité</Text>    
+                            </CheckboxAbs>
+                            <CheckboxAbs checked={checkedConditions} onPress={() => setCheckedConditions((prev) => !prev)} style={s.politicsRow} >
+                                <Text style={s.politicsText}>le contrat d'utilisation</Text>
+                            </CheckboxAbs>
+                        <LinkAbs externalLink={true} href='https://www.syncalkemy.ca/confidentialite.html' >
+                            <Text>voir la politique de confidentialité</Text>
+                        </LinkAbs>
+                        <LinkAbs externalLink={true} href='https://www.syncalkemy.ca/contrat_dutilisation.html' >
+                            <Text>voir les conditions d'utilisations</Text>
+                        </LinkAbs>
+                    </View>
+                    {/* Buttons container */}
                     <View style={s.boutonConteneur}>
                         <TouchableOpacity style={[s.button, { borderColor:colors.border }]} 
                             onPress={()=>{
                                 setPass('')
                                 setPseudo('')
                                 setPass2('')
+                                setCheckedConditions(false)
+                                setCheckedPolitics(false)
                             }}
                         >
                             <Text style={{color:colors.text, fontSize:18, fontFamily:fonts.body}}>{t('register.cancel')}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={[s.button, {backgroundColor:isInactive?'transparent':colors.secondary, }]} 
-                            disabled={isInactive}
+                            
                             onPress={()=> {
-                                inscrire()
+                                if(isInactive){
+
+                                }else
+                                    inscrire()
+                                
                             }}>
                             <Text style={{color:isInactive?colors.muted:colors.text, fontSize:18, fontFamily:fonts.body}}>
                                 {t('register.submit')}
@@ -455,7 +525,7 @@ export default function InscriptionEcran({
                             {t('register.alreadyRegistered')}
                         </LinkAbs>
                     </View>
-            </ScrollView>        
+                </ScrollView>        
             </KeyboardAvoidingView>
         </KeyboardDismisser>
     );
