@@ -128,7 +128,7 @@ export default function InscriptionEcran({
 
     const lookForInvalidInput = () => {
         if(!courrielValide){
-            
+
         }
     }
 
@@ -510,7 +510,7 @@ export default function InscriptionEcran({
                             
                             onPress={()=> {
                                 if(isInactive){
-
+                                    //TODO: find for invalid inputs and show red borders
                                 }else
                                     inscrire()
                                 
