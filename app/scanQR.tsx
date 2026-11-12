@@ -18,6 +18,7 @@ import { toastTypes } from '@/constants/toastConfig';
 import catcher from '@/functions/catcher';
 import log from '@/functions/log';
 import { router } from 'expo-router';
+import { useAPI } from '@/contextes/contexteAPI';
 
 interface QRCodeData {
   method: 'get' | 'post' | 'put' | 'delete' | 'patch';
@@ -38,6 +39,7 @@ export default function ScannerQRCode(): React.ReactElement {
     const [hasPermission, setHasPermission] = useState<boolean | null>(false);
     const { getToken } = useAccessToken();
     const { ajouterEcran } = useRouteAbs();
+    const {api} = useAPI()
 
     const colorsScheme = useColorScheme();
 
@@ -175,7 +177,6 @@ export default function ScannerQRCode(): React.ReactElement {
 
   const handleBarCodeScanned = async (barcodeScanResult: BarcodeScanResult): Promise<void> => {
     try {
-      const accessToken = await getToken();
       cScan.current = true;
       clearTimeout(timeoutScan.current ?? 0);
       setScanne(true);
@@ -184,13 +185,10 @@ export default function ScannerQRCode(): React.ReactElement {
 
       const { method, url, body } = JSON.parse(barcodeScanResult.data) as QRCodeData;
 
-      const response = await axios({
+      const response = await api({
         method,
         url,
         data: body,
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
         timeout: 5000,
       });
 
