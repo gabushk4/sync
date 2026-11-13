@@ -1,6 +1,5 @@
-import axios from 'axios';
 import { Camera, CameraView, } from 'expo-camera';
-import { useFocusEffect, useNavigation } from "expo-router";
+import { router, useFocusEffect, useNavigation } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, Image, Linking, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
@@ -11,14 +10,11 @@ import ToastAbs from '@/abstractions/toastAbs';
 
 import { useFont } from '@/contextes/contexteFont';
 import { usePalette } from '@/contextes/contextePalette';
-import { useRouteAbs } from '@/contextes/contexteRoute';
-import { useAccessToken } from '@/contextes/contexteToken';
 
 import { toastTypes } from '@/constants/toastConfig';
+import { useAPI } from '@/contextes/contexteAPI';
 import catcher from '@/functions/catcher';
 import log from '@/functions/log';
-import { router } from 'expo-router';
-import { useAPI } from '@/contextes/contexteAPI';
 
 interface QRCodeData {
   method: 'get' | 'post' | 'put' | 'delete' | 'patch';
@@ -37,8 +33,6 @@ export default function ScannerQRCode(): React.ReactElement {
     const { fonts } = useFont();
     const navigation = useNavigation();
     const [hasPermission, setHasPermission] = useState<boolean | null>(false);
-    const { getToken } = useAccessToken();
-    const { ajouterEcran } = useRouteAbs();
     const {api} = useAPI()
 
     const colorsScheme = useColorScheme();
@@ -76,7 +70,7 @@ export default function ScannerQRCode(): React.ReactElement {
         };
     });
 
-    const getCameraPermission = async (): Promise<void> => {
+    const getCameraPermission = useCallback(async (): Promise<void> => {
         const { status } = await Camera.getCameraPermissionsAsync();
 
         if (status !== 'granted') {
@@ -111,7 +105,7 @@ export default function ScannerQRCode(): React.ReactElement {
             );
         }
         setHasPermission(status === 'granted');
-    };
+    }, [t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -128,32 +122,32 @@ export default function ScannerQRCode(): React.ReactElement {
             clearTimeout(timeoutScan.current ?? 0);
             setSecondes(0);
         }
-    }, [ajouterEcran])
+    }, [getCameraPermission, hasPermission])
   );
     
     useEffect(() => {
         if (scanne) {
-            dimensionCadre.value = withTiming(64, {
+            dimensionCadre.set(withTiming(64, {
                 duration: 700,
                 easing: Easing.inOut(Easing.exp),
-            });
-            opaciteCadre.value = withTiming(0, {
+            }));
+            opaciteCadre.set(withTiming(0, {
                 duration: 700,
                 easing: Easing.in(Easing.poly(7)),
-            });
-            opaciteConfirmation.value = withTiming(0.7, {
+            }));
+            opaciteConfirmation.set(withTiming(0.7, {
                 duration: 1000,
                 easing: Easing.in(Easing.cubic),
-            });
+            }));
         } else {
-            timeoutScan.current = setTimeout(() => {
-                setScanHint(true);
-            }, 20000);
-            dimensionCadre.value = withRepeat(withTiming(256, { duration: 500 }), -1, true);
-            opaciteConfirmation.value = withTiming(0, { duration: 500 });
-            opaciteCadre.value = withTiming(1, { duration: 500 });
+          timeoutScan.current = setTimeout(() => {
+              setScanHint(true);
+          }, 20000);
+          dimensionCadre.set(withRepeat(withTiming(256, { duration: 500 }), -1, true));
+          opaciteConfirmation.set(withTiming(0, { duration: 500 }));
+          opaciteCadre.set(withTiming(1, { duration: 500 }));
         }
-    }, [scanne])
+    }, [scanne, dimensionCadre, opaciteCadre, opaciteConfirmation])
 
     useEffect(() => {        
         if (scanHint) {
@@ -173,7 +167,7 @@ export default function ScannerQRCode(): React.ReactElement {
                 },
             });
         }
-    }, [scanHint])
+    }, [scanHint, t])
 
   const handleBarCodeScanned = async (barcodeScanResult: BarcodeScanResult): Promise<void> => {
     try {

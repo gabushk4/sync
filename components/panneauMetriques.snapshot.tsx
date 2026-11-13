@@ -23,7 +23,7 @@ import { useFont } from '@/contextes/contexteFont'
 import { usePalette } from '@/contextes/contextePalette'
 import catcher from '@/functions/catcher'
 import { convertUTCToLocal } from '@/functions/convertirUTCenLocal'
-import { convertirTimestampDateCourte, convertToWhen } from '@/functions/convertirTimestamp'
+import { convertToWhen } from '@/functions/convertirTimestamp'
 
 type TauxGlobaux = {
     taux_acceptation_invitations: number

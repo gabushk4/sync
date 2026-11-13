@@ -8,9 +8,9 @@
  */
 
 import React, { useCallback, useRef, useState } from 'react'
-import { Dimensions, Keyboard, LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent, ScrollViewProps, StyleSheet, TouchableOpacity, View } from 'react-native'
+import { Dimensions, Keyboard, LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent, StyleSheet, TouchableOpacity, View } from 'react-native'
 import { ScrollView } from 'react-native-gesture-handler'
-import Animated, { useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, useDerivedValue, interpolate, Extrapolation } from 'react-native-reanimated'
+import Animated, { Extrapolation, interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated'
 
 import Haptics from '@/abstractions/haptics'
 import { useFont } from '@/contextes/contexteFont'
@@ -109,9 +109,6 @@ export default function PagesGlissables({ pages, pageInitiale = 0, onChangerPage
             ),
         }
     })
-
-    // Rétro-compat : on ne scroll les onglets que si leur contenu dépasse le viewport
-    const doitScroller = useDerivedValue(() => largeurContenuOnglets.value > largeurViewportOnglets.value)
 
     // Le handler tourne sur le thread UI, ce qui garde l'animation fluide pendant le swipe.
     const onScroll = useAnimatedScrollHandler({
@@ -271,7 +268,7 @@ export default function PagesGlissables({ pages, pageInitiale = 0, onChangerPage
                     ongletContentOffsetX.set(e.nativeEvent.contentOffset.x)
                 }}
                 onContentSizeChange={(contentWidth) => {
-                    if (contentWidth > 0) largeurContenuOnglets.value = contentWidth
+                    if (contentWidth > 0) largeurContenuOnglets.set(contentWidth)
                 }}
             >
                 <Animated.View style={[s.tab, animatedTab]} />
