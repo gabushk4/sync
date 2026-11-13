@@ -96,13 +96,17 @@ export default function InscriptionEcran({
                 pseudo: "",
                 mot_de_passe: "",
                 courriel: "",
-                fuseau_horaire: ""
+                fuseau_horaire: "",
+                checked_politics: false,
+                checked_conditions: false,
             }
             
             data.pseudo = pseudo.trim()
             data.mot_de_passe = pass.trim()
             data.courriel = courriel.trim()
             data.fuseau_horaire = Intl.DateTimeFormat().resolvedOptions().timeZone
+            data.checked_politics = checkedPolitics
+            data.checked_conditions = checkedConditions
             const response = await api.request({
                 method:method,
                 url:url,
