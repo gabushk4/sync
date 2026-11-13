@@ -6,6 +6,7 @@ import { convertUTCToLocal } from '@/functions/convertirUTCenLocal';
 import type { CalendrierImport } from '@/functions/imports';
 import RenderCalendarColor from '@/functions/renderCalendarColor';
 import Icon from '@react-native-vector-icons/ionicons';
+import CheckboxAbs from '@/abstractions/checkboxAbs';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 
@@ -83,24 +84,19 @@ export default function ExternalCalendarRow<TCalendrier extends CalendrierImport
                 indisponible && styles.disabled,
                 { backgroundColor: RenderCalendarColor(calendrier.couleur ?? 275, scheme) },
             ]}>
-                <TouchableOpacity
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: selectionne, disabled: indisponible || occupe }}
+                <CheckboxAbs
+                    checked={selectionne}
                     disabled={indisponible || occupe}
                     onPress={() => onBasculer(calendrier.id_externe)}
-                    style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}
+                    size={22}
+                    style={{ flex: 1, gap: 12 }}
                 >
-                    <Icon
-                        name={selectionne ? 'checkbox' : 'square-outline'}
-                        size={22}
-                        color={selectionne ? colors.secondary : colors.muted}
-                    />
                     <View style={styles.rowText}>
                         <Text numberOfLines={1} style={styles.rowText}>{calendrier.nom}</Text>
                         {calendrier.suggere ? <Text style={styles.subText}>{t(`${fournisseur}.suggested`)}</Text> : null}
                         {indisponible ? <Text style={styles.subText}>{t(`${fournisseur}.linkedElsewhere`)}</Text> : null}
                     </View>
-                </TouchableOpacity>
+                </CheckboxAbs>
                 {calendrier.derniere_synchro ? (
                     <View style={styles.syncBadge}>
                         <Icon name="time" color={colors.secondary} size={16} />
