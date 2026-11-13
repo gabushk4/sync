@@ -45,4 +45,7 @@ coverage/
 
 #agentic coding
 .agents/skills/*/rules
+.agents/skills/*/references
+.agents/skills/*/lib
+.agents/skills/*/scripts
  
