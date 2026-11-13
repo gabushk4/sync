@@ -1,6 +1,6 @@
+import useEnvoiCreation, { avertirIndisponibles, corpsCreation } from "@/hooks/useEnvoiCreation";
 import { useLocalSearchParams, useNavigation } from "expo-router";
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
-import useEnvoiCreation, { avertirIndisponibles, corpsCreation } from "@/hooks/useEnvoiCreation";
 import { useTranslation } from "react-i18next";
 import { Alert } from "react-native";
 
@@ -8,19 +8,18 @@ import { useAPI } from "@/contextes/contexteAPI";
 import { useInvites } from "@/contextes/contexteInvites";
 import { useMembre } from "@/contextes/contexteMembre";
 
-import EventForm from "@/components/eventForm";
+import EventForm, { type EventFormHandle } from "@/components/eventForm";
 import VoileEnvoi from "@/components/voileEnvoi";
 import catcher from "@/functions/catcher";
 import log from "@/functions/log";
 import { defaultEvent, Event } from "@/types/calendar";
 
 import ToastAbs from "@/abstractions/toastAbs";
-import { EventFormHandle } from "@/components/eventForm";
-import { toastTypes } from "@/constants/toastConfig";
-import { Participant } from "@/types/invites";
-import { conflitsDeLaReponse, EvenementEnConflit, NouvelEvenement } from "@/types/conflit";
 import ConflitEvenement, { SortieConflit } from "@/components/conflitEvenement";
+import { toastTypes } from "@/constants/toastConfig";
 import { debutDejaPasse, plagePreremplie } from "@/functions/jourCreation";
+import { conflitsDeLaReponse, EvenementEnConflit, NouvelEvenement } from "@/types/conflit";
+import { Participant } from "@/types/invites";
 import { DateTime } from "luxon";
 
 /**
@@ -61,8 +60,8 @@ const CreationEvenement = forwardRef<CreationHandle>(function CreationEvenement(
     
     const formRef = useRef<EventFormHandle>(null)
 
-    const { start, end, friend, depuis } = useLocalSearchParams<{ start?: string, end?: string, friend?: string, depuis?: string }>()
-
+    const { start, end, friend, depuis, depuis_dispo_commune } = useLocalSearchParams<{ start?: string, end?: string, friend?: string, depuis?: string, depuis_dispo_commune?:string }>()
+    console.log({depuis_dispo_commune})
     /**
      * Leaves after creating (or dropping, from the conflict screen): pops the home
      * stack back to the home screen (replace stacked a second one over the calendar
@@ -196,18 +195,19 @@ const CreationEvenement = forwardRef<CreationHandle>(function CreationEvenement(
                 const creerConversation = invites.length > 0 ? await demanderConversation() : false
 
                 demarrerChargement()
-
+                
                 nouveau = {
                     ...event,
                     ...corpsCreation(values),
                     // kept in `nouveau`, so the conflict screen re-sends it too
                     creer_conversation: creerConversation,
-                    participants: invites.map((i) => ({ id: i.id, privilege: i.privilege }))
+                    participants: invites.map((i) => ({ id: i.id, privilege: i.privilege })),
+                    depuis_dispo_commune: depuis_dispo_commune ? true : false,
                 }
 
                 const response = await api.post('/evenements/', nouveau)
 
-                if (response.status == 201) {
+                if (response.status === 201) {
                     ToastAbs.show({
                         type: toastTypes.success,
                         text1: t('create.createdTitle'),
@@ -223,7 +223,7 @@ const CreationEvenement = forwardRef<CreationHandle>(function CreationEvenement(
         } catch (error: any) {
             // User story 8: the server's verifierDisponibilite found an overlap
             // (including later occurrences of recurring events), show the conflict screen.
-            if (error.response?.status == 409 && nouveau) {
+            if (error.response?.status === 409 && nouveau) {
                 afficherConflit(conflitsDeLaReponse(error.response.data), nouveau)
             } else {
                 catcher(error, t('errors.createFailed'))
@@ -245,7 +245,7 @@ const CreationEvenement = forwardRef<CreationHandle>(function CreationEvenement(
         log("email confirme", membre.emailConfirme)
         if(!membre.emailConfirme)
             getMembre()
-    }, [])
+    }, [getMembre, membre.emailConfirme])
 
     useEffect(()=>{
         log('email confirme', membre.emailConfirme)
@@ -254,7 +254,7 @@ const CreationEvenement = forwardRef<CreationHandle>(function CreationEvenement(
     useEffect(() => {
         //log("useEffect event", event)
         log("create opens with", {start: start, end: end, debutSuggere: debutSuggere})
-    }, [event])
+    }, [event, start, end, debutSuggere])
 
     return (
         <>
@@ -265,7 +265,7 @@ const CreationEvenement = forwardRef<CreationHandle>(function CreationEvenement(
                 prefills={{
                     start: debutSuggere,
                     end: finDemandee,
-                    participants: friend ? [JSON.parse(friend as string)] as Array<Participant> : undefined
+                    participants: friend ? [JSON.parse(friend as string)] as Participant[] : undefined
                 }}
                 constraints={{
                     maximumStart: finDemandee,

@@ -51,7 +51,7 @@ export function generateTheme(h: number, scheme: 'light' | 'dark') : ThemeColors
         background: hsl(h, 10, 90),
         card:       hsl(h, 15, 85),
         text:       hsl(h, 20, 5),
-        muted:      hsl(h, 20, 60),
+        muted:      hsl(h, 24, 55),
         border:     hsl(h, 20, 25),
         error:      hsl(0, 60, 40),
         success:    hsl(90, 60, 40),

@@ -32,7 +32,8 @@ export default function ProfilPic({ size, pfp, style}: Props) {
             borderRadius: 100,
             borderWidth: 1, 
             borderColor: colors.border,
-            overflow:'hidden'
+            overflow:'hidden',
+            backgroundColor: colors.background
         },
         image: {
             height: '100%',

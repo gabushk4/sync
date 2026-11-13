@@ -1,7 +1,6 @@
 import { useLocalSearchParams, useNavigation } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Alert } from 'react-native';
 import Icon from "@react-native-vector-icons/ionicons";
 
 import { useActionFab } from "@/hooks/useActionFAB";
@@ -30,7 +29,7 @@ export default function Create() {
     const { colors } = usePalette()
     const navigation = useNavigation()
 
-    const { page } = useLocalSearchParams<{ page?: string }>()
+    const { page } = useLocalSearchParams<{ page?: string, depuis_dispo_commune?: string }>()
     const pageInitiale = Math.max(PAGES.indexOf(page as typeof PAGES[number]), 0)
     const [pageCourante, setPageCourante] = useState(pageInitiale)
 

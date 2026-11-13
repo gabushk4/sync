@@ -14,6 +14,7 @@
   lu en entier.
 
 ## Suivi (écris au fur et à mesure, pas à la fin)
+- Sur chaque fichiers modifier prends l'habitude de run eslint et de corriger les erreurs Lint
 - Maintiens HANDOFF.md : ce qui est fait, ce qui reste, ce que tu
   n'as pas pu faire et pourquoi.
 - Si tu dois t'arrêter avant d'avoir fini, termine HANDOFF.md avec

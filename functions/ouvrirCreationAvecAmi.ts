@@ -37,6 +37,7 @@ export default function ouvrirCreationAvecAmi({ debut, fin, ami, depuisProfil = 
         end: fin.toISO(),
         friend: JSON.stringify({ id: ami.id, pseudo: ami.pseudo, fp_url: ami.fp_url ?? null, privilege: 'lecteur' }),
         ...(depuisProfil ? { depuis: 'profil' } : {}),
+        depuis_dispo_commune: true
     }
     // both stacks have a 'create' screen (home/create, profile/create)
     if (depuisProfil && navigation?.getState?.()?.routeNames?.includes('create')) {
