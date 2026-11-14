@@ -1,8 +1,10 @@
 import Icon from '@react-native-vector-icons/ionicons'
 import { router } from 'expo-router'
+import { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
+import ListeParticipantsStatut from '@/components/listeParticipantsStatut'
 import PanneauDecisionInvitation from '@/components/panneauDecisionInvitation'
 import PanneauReport from '@/components/panneauReport'
 import Spinner from '@/components/spinner'
@@ -36,6 +38,8 @@ type Props = {
     decision: ReturnType<typeof useDecisionInvitation>
     /** The event was deleted / left: the feed refreshes. */
     onTermine: () => void
+    /** The answer ("accepted"…), on the date's line (no row of its own above). */
+    statut?: ReactNode
 }
 
 /**
@@ -44,17 +48,22 @@ type Props = {
  * the member's real role on the event (`privilege_membre`, from the API):
  * - invitation awaiting an answer: who invited, the participants, "adjust my
  *   schedule", accept / refuse and proposing another time (PanneauDecisionInvitation);
- * - creator (editor): the postponement proposals to apply, edit and delete;
- * - participant: proposing another time / voting, and leaving.
+ * - creator (editor): the participants and their answer, moving it to a date and time,
+ *   the postponement proposals to apply, edit and delete;
+ * - participant (accepted): the participants and their answer, voting on the
+ *   postponement proposals (no proposing once in the event), and leaving.
  * An expired invitation or a left event offers nothing, and a past event only its
  * deletion (creator).
  *
  * @author Philip — rectification (event managed from its notification)
  * @author Philip — rectification: a left event reads "cancelled", without actions
+ * @author Philip — "propose another time" back here: a date and time picker, sent in
+ *   place (PanneauReport `plageActuelle`) — not once accepted (the API's `peut_proposer`)
+ * @author Philip — the participants' list (ListeParticipantsStatut) once accepted too
  * @param {Props} props
  * @returns {JSX.Element}
  */
-export default function PanneauGestionEvenement({ idEvenement, event, erreur, recharger, passe, invitation, invitationExpiree, quitte = false, decision, onTermine }: Props) {
+export default function PanneauGestionEvenement({ idEvenement, event, erreur, recharger, passe, invitation, invitationExpiree, quitte = false, decision, onTermine, statut }: Props) {
     const { t } = useTranslation('events')
     const { t: tNotifs } = useTranslation('notifications')
     const { colors } = usePalette()
@@ -69,8 +78,11 @@ export default function PanneauGestionEvenement({ idEvenement, event, erreur, re
     }
 
     const s = StyleSheet.create({
-        panneau: { gap: 12, paddingHorizontal: 12, paddingTop: 12, paddingBottom: 8 },
-        quand: { color: colors.text, fontFamily: fonts.number, fontSize: 15 },
+        // Tighter than before: the card's message is right above (no status row between).
+        panneau: { gap: 8, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 8 },
+        // The date, and the answer at its right.
+        ligneQuand: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+        quand: { flexShrink: 1, color: colors.text, fontFamily: fonts.number, fontSize: 15 },
         description: { color: colors.muted, fontFamily: fonts.body, fontSize: 14 },
         boutons: { flexDirection: 'row', gap: 8 },
         bouton: {
@@ -96,6 +108,8 @@ export default function PanneauGestionEvenement({ idEvenement, event, erreur, re
 
     const debut = event.debut
     const fin = event.fin
+    // "Propose another time" starts from it and keeps its duration.
+    const plageActuelle = debut && fin ? { debut, fin } : undefined
     const quand = debut && fin
         ? debut.hasSame(fin, 'day')
             ? `${convertirTimestampDateCourte(debut)}, ${convertirTimestampHeure(debut)} – ${convertirTimestampHeure(fin)}`
@@ -133,14 +147,19 @@ export default function PanneauGestionEvenement({ idEvenement, event, erreur, re
                     refuser={decision.refuser}
                     enCours={decision.enCours}
                 >
-                    <PanneauReport idEvenement={idEvenement} integre />
+                    {/* Proposing another time (date + time) and voting (user story 23). */}
+                    <PanneauReport idEvenement={idEvenement} integre plageActuelle={plageActuelle} />
                 </PanneauDecisionInvitation>
             )
         }
         return (
             <>
-                {/* Invitee: propose / vote; creator: apply a proposal (user story 23). */}
-                <PanneauReport idEvenement={idEvenement} integre onPlageChangee={recharger} />
+                {/* Who's coming, with their answer — also once the member accepted. */}
+                <ListeParticipantsStatut idEvenement={idEvenement} />
+                {/* Participant (accepted): votes on the proposals, doesn't propose (the API's
+                    `peut_proposer`); creator: move it to a date and time or apply a
+                    proposal (user story 23). */}
+                <PanneauReport idEvenement={idEvenement} integre onPlageChangee={recharger} plageActuelle={plageActuelle} />
                 <View style={s.boutons}>
                     {gestion.estEditeur && (
                         <TouchableOpacity style={[s.bouton, { borderColor: colors.secondary }]} onPress={modifier} accessibilityRole="button">
@@ -161,7 +180,12 @@ export default function PanneauGestionEvenement({ idEvenement, event, erreur, re
 
     return (
         <View style={s.panneau}>
-            {quand && <Text style={s.quand}>{quand}</Text>}
+            {(quand || statut) && (
+                <View style={s.ligneQuand}>
+                    {quand ? <Text style={s.quand}>{quand}</Text> : <View />}
+                    {statut}
+                </View>
+            )}
             {!!event.description && <Text style={s.description} numberOfLines={4}>{event.description}</Text>}
             {actions()}
         </View>

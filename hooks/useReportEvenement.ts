@@ -1,4 +1,5 @@
 import { useFocusEffect } from "expo-router";
+import { DateTime } from "luxon";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -12,6 +13,21 @@ import { convertirTimestampJourCourt } from "@/functions/convertirTimestamp";
 
 /** A slot where every participant is free (a common free slot). Dates: UTC ISO. */
 export type Creneau = { debut: string, fin: string, deja_propose: boolean }
+
+/**
+ * A range picked in the app (local DateTimes) as a slot to send (envoyerCreneau), in GET
+ * /postpone's format: UTC ISO without offset, to the second.
+ *
+ * @author Philip — shared by the date / time picker (SelecteurReport) and the range
+ *   picked inside a common availability (invitation review)
+ * @param {DateTime} debut
+ * @param {DateTime} fin
+ * @returns {Creneau}
+ */
+export function creneauDepuisPlage(debut: DateTime, fin: DateTime): Creneau {
+    const versServeur = (d: DateTime) => d.toUTC().set({ millisecond: 0 }).toISO({ includeOffset: false }) as string
+    return { debut: versServeur(debut), fin: versServeur(fin), deja_propose: false }
+}
 
 /** An open suggestion with its votes. Dates: UTC ISO. */
 export type Suggestion = {
@@ -97,8 +113,9 @@ export default function useReportEvenement(idEvenement: string | null | undefine
     }
 
     /**
-     * A 409 of moving / applying, as a toast: someone isn't free then anymore (the API
-     * closed what was in the way), or something in the creator's own schedule.
+     * A 409 of moving / applying, as a toast: someone isn't free then anymore (moving
+     * straight there only — applying a proposal goes ahead whoever is busy), or something
+     * in the creator's own schedule (both).
      *
      * @param {any} error
      * @returns {Promise<boolean>} Whether it was such a refusal (else the caller reports it).

@@ -19,6 +19,15 @@ export type ThemeColors = {
     /** Block of a slot where every participant is free — a "good line-up" to propose or
      * move an event to (gold, fixed whatever the hue). Philip — user story 23. */
     or: string;
+    /** Common availability where some participants (at least 2, not all) are free —
+     * invitation review (orange, fixed whatever the hue). Philip. */
+    dispoPartielle: string;
+    /** Common availability where every participant is free — invitation review
+     * (green, fixed whatever the hue). Philip. */
+    dispoTous: string;
+    /** Pending answer to an invitation (orange, brighter than a partial availability;
+     * fixed whatever the hue). Philip. */
+    enAttente: string;
 };
 
 
@@ -41,6 +50,9 @@ export function generateTheme(h: number, scheme: 'light' | 'dark') : ThemeColors
             indisponible: hsl(0, 50, 32),
             groupe:     hsl(170, 45, 30),
             or:         hsl(43, 75, 38),
+            dispoPartielle: hsl(28, 85, 58),
+            dispoTous:  hsl(145, 50, 50),
+            enAttente:  hsl(33, 90, 55),
             notification: hsl(0, 80, 50), // required by React Navigation
         };
     }
@@ -60,6 +72,9 @@ export function generateTheme(h: number, scheme: 'light' | 'dark') : ThemeColors
         indisponible: hsl(0, 75, 80),
         groupe:     hsl(170, 50, 75),
         or:         hsl(45, 90, 62),
+        dispoPartielle: hsl(28, 90, 50),
+        dispoTous:  hsl(145, 55, 38),
+        enAttente:  hsl(33, 100, 55),
         notification: hsl(0, 80, 50), // required by React Navigation
     };
 }

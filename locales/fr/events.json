@@ -134,13 +134,19 @@
     "participantsLoadFailed": "erreur au chargement des participants"
   },
   "invitationReview": {
-    "hint": "Touche l'évènement de {{pseudo}} ou le tien pour répondre.",
     "leader": "Organisateur",
     "me": "Moi",
     "loadFailed": "Impossible de charger les horaires de l'invitation",
     "retry": "Impossible de charger les horaires. Touche pour réessayer.",
     "private": "Privé",
-    "commonSlot": "Dispo"
+    "availabilityPartial": "Dispo partielle",
+    "availabilityAll": "Tout le monde dispo",
+    "availablePeople": "{{compte}} dispo : {{noms}}",
+    "alreadyProposed": "Cette plage est déjà proposée.",
+    "proposeRange": "Proposer {{plage}}",
+    "allTooShort": "Tout le monde est libre par moments, mais moins longtemps que l’évènement.",
+    "availabilityTitle": "Disponibilité commune",
+    "rangeAlreadyProposed": "déjà proposée"
   },
   "invitationDecision": {
     "accept": "Accepter",
@@ -191,6 +197,15 @@
     "notFreeTitle": "Plus tout le monde est libre",
     "notFreeMessage": "{{pseudos}} : plus libre à ce moment",
     "confirmPropose": "Proposer {{plage}}?",
-    "confirm": "Confirmer"
+    "confirm": "Confirmer",
+    "proposeTitle": "Proposer un report",
+    "moveTitle": "Déplacer l’évènement",
+    "move": "Déplacer",
+    "confirmMove": "Déplacer l’évènement {{plage}}?",
+    "date": "Date",
+    "time": "Heure",
+    "keepsDuration": "La durée de l’évènement est conservée.",
+    "futureOnly": "Choisis un moment à venir.",
+    "sameTime": "C’est déjà la plage actuelle."
   }
 }

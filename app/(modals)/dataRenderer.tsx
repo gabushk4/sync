@@ -11,7 +11,8 @@ export default function DataRenderModal() {
     const { dataRendererContent } = useModal();
     const { colors } = usePalette()
     const {fonts} = useFont()
-    const { key, title } = useLocalSearchParams<{ key?: string, title?: string }>();
+    // `sansBoutonFermer`: '1' hides the round close button (swipe down / tap outside only).
+    const { key, title, sansBoutonFermer } = useLocalSearchParams<{ key?: string, title?: string, sansBoutonFermer?: string }>();
     const contentKey = key as RenderContent['key'] | undefined;
     const content = dataRendererContent.find(d => d.key === contentKey)?.child;
 
@@ -20,7 +21,7 @@ export default function DataRenderModal() {
     }, [content]);
 
     return (
-        <ModalBase>
+        <ModalBase afficherBoutonFermer={sansBoutonFermer !== '1'}>
             <Text style={{ width: '100%', textAlign: 'center', fontSize: 24, letterSpacing: 0.8, fontFamily: fonts.title, color: colors.text }}>{title}</Text>
             <View style={{ flex:1, width:'100%', height:'100%', paddingHorizontal:20}}>
                 {content}

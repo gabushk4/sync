@@ -22,7 +22,16 @@ import Ionicons from "@react-native-vector-icons/ionicons"
 
 const noop = () => {}
 
-export default function ModalBase({ children, canDismiss = true, onDismiss = noop }){
+/**
+ * @param {Object} props
+ * @param {React.ReactNode} [props.children] - The sheet's content.
+ * @param {boolean} [props.canDismiss=true] - Closing dismisses the modal route.
+ * @param {() => void} [props.onDismiss] - Called once closed.
+ * @param {boolean} [props.afficherBoutonFermer=true] - The round close button at the bottom
+ *   (false: closed by swiping down or tapping outside only — e.g. the invitation review's
+ *   availability details). Philip.
+ */
+export default function ModalBase({ children, canDismiss = true, onDismiss = noop, afficherBoutonFermer = true }){
     const { colors } = usePalette()
     const {dismissButton, runDismissButtonAction} = useModal()
 
@@ -324,6 +333,7 @@ export default function ModalBase({ children, canDismiss = true, onDismiss = noo
             </Animated.View>
             </KeyboardAvoidingView>
             {/* Fullscreen options */}
+            {afficherBoutonFermer && (
             <Animated.View style={[optionsAgrandirAnime, s.optionsRow]}>
                 <TouchableOpacity 
                         onPress={() => {
@@ -335,6 +345,7 @@ export default function ModalBase({ children, canDismiss = true, onDismiss = noo
                         <Ionicons name={dismissButton.icon} size={40} color={colors.text} />
                 </TouchableOpacity>
             </Animated.View>
+            )}
             </View>
         </GestureHandlerRootView>
     )         

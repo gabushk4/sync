@@ -5,10 +5,11 @@ const minutesSinceStartOfDay = (dt, dayStart) =>
 
 /**
  * Fills with 0 at busy minutes; betwwen star and end of an event
- * @param {Array} bitmap filled with 1s
+ * Exported for the invitation review's common availabilities (disponibilitesCommunes).
+ * @param {Uint8Array} bitmap filled with 1s
  * @param {Array} events [{Event}]
  */
-const applyBusyTimes = (bitmap, events, date) => {
+export const applyBusyTimes = (bitmap, events, date) => {
   if (!date) return
   const dayStart = date?.startOf('day')
   const dayEnd = date?.endOf('day')

@@ -134,13 +134,19 @@
     "participantsLoadFailed": "Error loading participants"
   },
   "invitationReview": {
-    "hint": "Tap {{pseudo}}'s event or yours to answer.",
     "leader": "Organizer",
     "me": "Me",
     "loadFailed": "Unable to load the invitation's schedules",
     "retry": "Couldn't load the schedules. Tap to try again.",
     "private": "Private",
-    "commonSlot": "Free"
+    "availabilityPartial": "Some available",
+    "availabilityAll": "Everyone available",
+    "availablePeople": "{{compte}} free: {{noms}}",
+    "alreadyProposed": "This time has already been proposed.",
+    "proposeRange": "Propose {{plage}}",
+    "allTooShort": "Everyone is free at times, but for less than the event lasts.",
+    "availabilityTitle": "Common availability",
+    "rangeAlreadyProposed": "already proposed"
   },
   "invitationDecision": {
     "accept": "Accept",
@@ -191,6 +197,15 @@
     "notFreeTitle": "Not everyone is free anymore",
     "notFreeMessage": "{{pseudos}}: not free then anymore",
     "confirmPropose": "Propose {{plage}}?",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "proposeTitle": "Propose another time",
+    "moveTitle": "Move the event",
+    "move": "Move",
+    "confirmMove": "Move the event to {{plage}}?",
+    "date": "Date",
+    "time": "Time",
+    "keepsDuration": "The event keeps its duration.",
+    "futureOnly": "Pick a time in the future.",
+    "sameTime": "That's already the current time."
   }
 }

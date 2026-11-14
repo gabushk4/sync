@@ -35,6 +35,9 @@ export type Notification = {
     source_url: { method: string, url: string };
     /** Public id of the related event (event notifications), or null. Philip — user story 23. */
     id_evenement?: string | null;
+    /** An invitation notification of the event's old time (moved since by a vote): no
+     * actions, a newer notification is the one to answer. Philip. */
+    remplacee?: boolean;
     icon?: string;
     payload?: Record<string, any> | null;
 };
@@ -198,6 +201,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         return () => {
             notifRefresh?.stop()
         }
+        // Only on the login state: this effect replaces `notifRefresh` itself (a loop as a
+        // dependency), and `api` is the same instance for the session.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [state])
 
     const value: NotificationsContextType = { notifRefresh, nonLues, notifications }
