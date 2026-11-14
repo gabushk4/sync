@@ -13,6 +13,7 @@ import catcher from '@/functions/catcher'
 import DemandesLoi25 from '@/components/demandesLoi25'
 import PagesGlissables from '@/components/pagesGlissables'
 import PanneauMetriques from '@/components/panneauMetriques'
+import PanneauOsMetriques from '@/components/panneauOsMetriques'
 import type { PageGlissable } from '@/components/pagesGlissables'
 
 type BugRapporte = {
@@ -191,6 +192,7 @@ export default function DashboardAdmin() {
     { id: 'exports', titre: t('admin.exportsTab'), contenu: <PageLoi25 type="export" onAccesRefuse={sortirAccesRefuse} /> },
     { id: 'suppressions', titre: t('admin.deletionsTab'), contenu: <PageLoi25 type="suppression" onAccesRefuse={sortirAccesRefuse} /> },
     { id: 'metriques', titre: t('admin.metricsTab'), contenu: <PageMetriques onAccesRefuse={sortirAccesRefuse} /> },
+    { id: 'os_metrics', titre: t('admin.osMetricsTab'), contenu: <PanneauOsMetriques onAccesRefuse={sortirAccesRefuse} /> },
   ]
 
   return <PagesGlissables pages={pages} />

@@ -910,3 +910,134 @@ Les deux clients acceptent `com.alkemist.sync:/oauth2redirect` (vérifié via
 - Suites restantes inchangées : ajouter l'endpoint de préférences Outlook si cette
   fonction doit être offerte, compléter `docs/03-fonctions.md` et `docs/07-config.md`
   pour Outlook, et tester les flux OAuth sur appareil avec la configuration Microsoft.
+
+---
+
+# HANDOFF — Composant panneauOsMetriques (13/11/2026)
+
+## Fait
+- Lu l'existant : `components/panneauMetriques.tsx` (398 l, entier), `app/(tabs)/profile/admin.tsx` (entier), `components/PanneauCollapsable.tsx` (entier), `components/datetimeSelecteurs.tsx` (entier), `contextes/contexteAPI.tsx`, `locales/{fr,en}/profile.json`, `package.json`, `.agents/AGENTS.md` (entier).
+- `components/PanneauCollapsable.tsx` : ajout de la prop optionnelle `onOuvert?: () => void`, appelée quand le panneau passe à l'état ouvert (chargement paresseux). Impact nul sur les appelants existants.
+- Créé `components/panneauOsMetriques.tsx` :
+  - Appelle `GET /os_metrics` (pas de préfixe `/admin`, confirmé par l'user) via `useAPI()`.
+  - Sélecteur de période : `historique` (aucune query), `24h`, `7j`, `30j`, `90j`, `personnalise`.
+  - En mode `personnalise` : date pickers natifs (`@react-native-community/datetimepicker`) pour `start` et `end`, envoyés en query à l'API.
+  - Chargement paresseux : chaque `PanneauCollapsable` (Système, Disque, Échantillons) déclenche le fetch à son ouverture (`onOuvert`), résultat mis en cache par période pour éviter les refetchs à l'ouverture/fermeture.
+  - États : idle / chargement / pret / erreur, avec gestion 401/403 via `onAccesRefuse`.
+  - Traductions attendues sous `admin.os_metrics.*` (à ajouter dans locales).
+
+## Reste à faire
+1. Intégrer l'onglet dans `app/(tabs)/profile/admin.tsx` : ajouter une page `os_metrics` (ou renommée) dans `PagesGlissables`, avec `titre: t('admin.os_metrics.tab')` et contenu `<PanneauOsMetriques onAccesRefuse={sortirAccesRefuse} />`.
+2. Ajouter les clés traductions `fr` et `en` dans `locales/{fr,en}/profile.json` sous `admin.os_metrics` (title, periode, historique, periode24h/7j/30j/90j, personnalise, debut, fin, systeme, disque, echantillons, cpu, memoireRss, heapUtilise, octetsExternes, disqueTotal, disqueUtilise, disqueDisponible, utilisationDisque, nbEchantillons, periodeSousTitre, loadFailed, empty).
+3. (Optionnel, demandé par l'user) renommer l'onglet `metriques` existant et/ou son libellé pour mieux refléter "membres métriques".
+4. Faire passer `eslint` + `tsc --noEmit` sur les fichiers touchés (règle AGENTS.md) et corriger les erreurs lint.
+5. Mettre à jour ce HANDOFF à la fin.
+
+## Non fait / blocants
+- Rien de bloquant. L'user se déconnecte d'internet ; le code est écrit localement, pas de besoin réseau.
+
+## Règles respectées
+- AGENTS.md : pas de devinette sur l'endpoint (confirmé `/os_metrics`), append au HANDOFF (pas de réécriture), eslint/tsc à venir sur fichiers modifiés.
+
+---
+
+# HANDOFF — Composant panneauOsMetriques (13/11/2026) — TERMINÉ
+
+## Fait
+- `components/panneauOsMetriques.tsx` créé :
+  - Appelle `GET /os_metrics` (pas de préfixe `/admin`, confirmé par l'user) via `useAPI()`.
+  - Sélecteur de période : `historique` (aucune query), `24h`, `7j`, `30j`, `90j`, `personnalise`.
+  - En mode `personnalise` : date pickers natifs (`@react-native-community/datetimepicker`) pour `start` et `end`, envoyés en query à l'API.
+  - Chargement paresseux : chaque `PanneauCollapsable` (Système, Disque, Échantillons) déclenche le fetch à son ouverture (`onOuvert`), résultat mis en cache par clé de période (période + bornes) pour éviter les refetchs.
+  - États : idle / chargement / pret / erreur, avec gestion 401/403 via `onAccesRefuse`.
+  - Traductions : clés sous `admin.os_metrics.*` ajoutées dans `locales/{fr,en}/profile.json`.
+- `components/PanneauCollapsable.tsx` : ajout de la prop optionnelle `onOuvert?: () => void`, appelée quand le panneau passe à l'état ouvert. Aucun impact sur les appelants existants.
+- `app/(tabs)/profile/admin.tsx` : nouvel onglet `os_metrics` (titre `admin.osMetricsTab` = "OS") ajouté dans `PagesGlissables`, avec `<PanneauOsMetriques onAccesRefuse={sortirAccesRefuse} />`.
+- `locales/fr/profile.json` et `locales/en/profile.json` : clé `osMetricsTab` + bloc `os_metrics` ajoutés.
+- Vérifications : `tsc --noEmit` → 0 erreur sur les fichiers touchés ; `eslint` sur les 3 fichiers → 0 erreur, 0 warning.
+
+## Optionnel (non fait, à la discrétion de l'user)
+- Renommer l'onglet `metriques` existant (libellé `admin.metricsTab`) pour mieux refléter "membres métriques". L'user a dit "si tu veux" — non bloquant, laissé en l'état.
+
+## Règles respectées (AGENTS.md)
+- Pas de devinette sur l'endpoint (confirmé `/os_metrics`).
+- Append au HANDOFF (jamais de réécriture).
+- eslint + tsc passés sur chaque fichier modifié avant de considérer terminé.
+
+## État final
+Tâche terminée. Le composant est intégré comme nouvel onglet "OS" du dashboard admin, cohérent avec l'organisation de `panneauMetriques` (entête, panneaux repliables, styles palette/font) mais avec sa propre logique et ses propres endpoints.
+
+---
+
+# HANDOFF — Correctif : rechargement auto sur changement de période (13/11/2026)
+
+## Problème
+Quand l'utilisateur changeait de période dans `panneauOsMetriques.tsx`, la clé de cache changeait et l'état passait à `'idle'`, mais **aucun fetch n'était déclenché automatiquement**. Le chargement ne se lançait que si l'utilisateur ouvrait un panneau repliable (`onOuvert`) ou cliquait sur « Actualiser ».
+
+## Correctif
+Ajout d'un `useEffect` dans `panneauOsMetriques.tsx` qui appelle `charger(false)` dès que `cleCache` (période + bornes de dates) change. Le rechargement est donc automatique à chaque changement de période ou de date personnalisée.
+
+Pour respecter la règle ESLint `react-hooks/set-state-in-effect`, l'appel à `charger` passe par une `useRef` (`chargerRef`) plutôt qu'un `setState` direct dans le corps de l'effet.
+
+## Vérifications
+- `tsc --noEmit` → 0 erreur sur `panneauOsMetriques.tsx`
+- `eslint` sur `panneauOsMetriques.tsx` → 0 erreur, 0 warning
+
+---
+
+# HANDOFF — Voile de chargement (13/11/2026)
+
+## Fait
+- `components/panneauOsMetriques.tsx` : import de `VoileEnvoi` depuis `@/components/voileEnvoi` et affichage en overlay `{enChargement && <VoileEnvoi />}` pendant le chargement de la période courante.
+- Retrait des `ActivityIndicator` individuels dans chaque panneau collapsable (ils étaient redondants avec le voile global).
+- `ActivityIndicator` retiré des imports (plus utilisé).
+
+## Vérifications
+- `tsc --noEmit` → 0 erreur sur `panneauOsMetriques.tsx`
+- `eslint` sur `panneauOsMetriques.tsx` → 0 erreur, 0 warning
+
+L'utilisation du voile est cohérente avec `creationEvenement.tsx` et `creationIndisponibilite.tsx`.
+
+---
+
+# HANDOFF — Graphique de tendance OS (13/11/2026)
+
+## Fait
+- `components/panneauOsMetriques.tsx` :
+  - Ajout d'un graphique `LineChart` (via `react-native-chart-kit`, customisable, basé sur `react-native-svg` déjà présent) affichant la tendance CPU sur la période sélectionnée.
+  - Nouvel appel API `GET /admin/os_metrics/points` (fetch automatique au changement de période, cache dédié).
+  - Le panneau "historique" n'a pas de série temporelle (graphique vide).
+  - Nouveau panneau collapsable pour le graphique n'est pas ajouté : le graphique est toujours visible au-dessus des panneaux Système/Disque/Échantillons.
+  - Traduction `admin.os_metrics.tendanceCpu` ajoutée (fr/en).
+- `types/react-native-chart-kit.d.ts` (nouveau) : déclaration de types pour `react-native-chart-kit`.
+- `package.json` : ajout de `react-native-chart-kit`.
+- Vérifications : `tsc --noEmit` → 0 erreur ; `eslint` → 0 erreur, 0 warning.
+
+## À faire côté serveur (par l'user)
+- Ajouter `getPointsAverageBetween` au `metricsModel` (SQL fourni dans la discussion).
+- Ajouter la route `GET /os_metrics/points` (préfixée `/admin` par Express Router) qui appelle ce modèle.
+
+## Règles respectées (AGENTS.md)
+- Pas de devinette : l'URL `/admin/os_metrics` est confirmée (déjà corrigée par l'user).
+- Append au HANDOFF (jamais de réécriture).
+- eslint + tsc passés sur les fichiers modifiés.
+
+---
+
+# HANDOFF — Remplacement react-native-chart-kit par react-native-svg (13/11/2026)
+
+## Problème
+`react-native-chart-kit` provoque une erreur au runtime : `Cannot read property 'reduce' of undefined` dans `LineChart.js` dès qu'on change de période. La librairie est buggée et sans types TypeScript.
+
+## Correctif
+- Retiré `react-native-chart-kit` (plus d'import `LineChart`).
+- Le graphique de tendance CPU est maintenant dessiné manuellement avec `react-native-svg` (déjà installé en v15.16.0 dans le projet) : composant `GraphiqueCpu` qui trace la ligne, les points, les axes X/Y et les labels.
+- Supprimé `types/react-native-chart-kit.d.ts` (plus nécessaire).
+- `package.json` : `react-native-chart-kit` toujours présent (installé précédemment) mais plus importé.
+
+## Vérifications
+- `tsc --noEmit` → 0 erreur
+- `eslint` sur `panneauOsMetriques.tsx` → 0 erreur, 0 warning
+
+## À faire côté serveur (par l'user)
+L'endpoint `GET /admin/os_metrics/points` n'existe pas encore : "je get aucuns points". Il faut ajouter `getPointsAverageBetween` dans `metricsModel` et la route correspondante (SQL fourni dans les messages précédents).

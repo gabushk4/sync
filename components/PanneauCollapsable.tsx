@@ -20,9 +20,11 @@ type Props = {
     ouvertParDefaut?: boolean
     /** Sous-titre optionnel affiché à droite du titre dans l'en-tête. */
     sousTitre?: string
+    /** Appelé quand le panneau passe à l'état ouvert (utile pour du chargement paresseux). */
+    onOuvert?: () => void
 }
 
-export default function PanneauCollapsable({ titre, children, ouvertParDefaut = false, sousTitre }: Props) {
+export default function PanneauCollapsable({ titre, children, ouvertParDefaut = false, sousTitre, onOuvert }: Props) {
     const { colors } = usePalette()
     const { fonts } = useFont()
     const [ouvert, setOuvert] = useState<boolean>(ouvertParDefaut)
@@ -46,7 +48,13 @@ export default function PanneauCollapsable({ titre, children, ouvertParDefaut = 
     return (
         <View style={s.racine}>
             <TouchableOpacity
-                onPress={() => setOuvert((o) => !o)}
+                onPress={() => {
+                    setOuvert((o) => {
+                        const prochaine = !o
+                        if (prochaine) void onOuvert?.()
+                        return prochaine
+                    })
+                }}
                 accessibilityRole="button"
                 accessibilityLabel={titre}
                 style={s.entete}
