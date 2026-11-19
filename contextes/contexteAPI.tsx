@@ -2,8 +2,8 @@ import { authEvents } from "@/events/authEvents";
 import catcher from "@/functions/catcher";
 import { emptyTokens, getToken, setToken } from "@/functions/tokenStore";
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from "axios";
-import Constants from 'expo-constants';
-import * as SecureStore from 'expo-secure-store';
+import { hoteDev } from '@/functions/hoteDev';
+import * as SecureStore from '@/functions/stockageSecurise';
 import { createContext, useContext, useMemo } from "react";
 
 import { requestListener } from "@/events/requestEvents";
@@ -34,9 +34,9 @@ export const APIContexte = createContext<APIContextType | undefined>(undefined);
  * La variable NODE_ENV est manipulé strictement par React.
  *  */
 function getApiBaseUrl() {
-  // hostUri ressemble à "192.168.1.42:8081"
-  const hostUri = Constants.expoConfig?.hostUri
-  
+  // hostUri ressemble à "192.168.1.42:8081" (voir functions/hoteDev*.ts selon la plateforme)
+  const hostUri = hoteDev()
+
   if (hostUri) {
     const ip = hostUri.split(':')[0]; //prendre lip seulement [ip, port]
     return process.env.EXPO_PUBLIC_USING_REMOTE === 'true'

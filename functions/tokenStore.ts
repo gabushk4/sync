@@ -1,5 +1,5 @@
 
-import * as SecureStore from "expo-secure-store"
+import * as SecureStore from '@/functions/stockageSecurise'
 
 
 let accessToken: string | null = null;

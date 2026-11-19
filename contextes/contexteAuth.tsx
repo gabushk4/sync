@@ -4,7 +4,7 @@ import catcher from '@/functions/catcher';
 import log from '@/functions/log';
 import { retirerPushToken } from '@/functions/notificationsPush';
 import { emptyTokens, setToken } from '@/functions/tokenStore';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '@/functions/stockageSecurise';
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import { useAPI } from './contexteAPI';
 import { useMembre } from './contexteMembre';
@@ -51,7 +51,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             return 'authenticated';
         } catch (error: any) {
             log('AuthContext: échec de la vérification, déconnexion', error?.message);
-            await emptyTokens(); // invalide tous les tokens
+            try { await emptyTokens(); } catch { /* rien de plus à faire */ } // invalide tous les tokens
             resetMembre(); // invalide les infos du membre
             return 'unauthenticated';
         }
@@ -115,8 +115,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         let actif = true;
         verifierSession().then((etat) => {
-            if (actif) setState(etat);
-        });
+                if (actif) setState(etat);
+            })
+            .catch(() => {
+                // dernier filet : ne jamais laisser l'app sur 'loading'
+                if (actif) setState('unauthenticated');
+            });
         return () => { actif = false };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])

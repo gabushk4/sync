@@ -1,4 +1,4 @@
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '@/functions/stockageSecurise';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from "react";
 
 type AccessTokenContextType = {
