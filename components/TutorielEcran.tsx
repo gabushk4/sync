@@ -8,29 +8,32 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { usePathname } from "expo-router";
+import Animated, {
+  FadeIn,
+  FadeOut,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { useTutoriel } from "@/contextes/contexteTutoriel";
 import { usePalette } from "@/contextes/contextePalette";
 import { useFont } from "@/contextes/contexteFont";
 import {
-  getEtape,
-  getExplication,
   nbExplications,
 } from "@/constants/etapesTutoriel";
 import Radius from "@/constants/Radius";
 import { SpotlightOverlay } from "./spotlightOverlay";
+import {SecondaryBtn, MainBtn} from "@/abstractions/touchableOpacityAbs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
-type Props = {
-  /** Ref de l'élément cible à mesurer pour le spotlight (optionnel) */
-  targetRef?: React.RefObject<View>;
-  /** Coordonnées manuelles du trou si pas de targetRef */
-  x?: number;
-  y?: number;
-  width?: number;
-  height?: number;
-  radius?: number;
+type PositionCible = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 };
 
 /**
@@ -43,143 +46,220 @@ type Props = {
  *
  * Utilise usePalette() et useFont() pour les couleurs et polices de l'app.
  */
-export function TutorielEcran({
-  targetRef,
-  x: xProp,
-  y: yProp,
-  width: wProp,
-  height: hProp,
-  radius = Radius.md,
-}: Props) {
+export function TutorielEcran() {
+  const pathname = usePathname();
   const { t } = useTranslation();
   const { colors } = usePalette();
   const { fonts } = useFont();
   const {
     step,
+    etapeCourante,
+    explicationCourante,
+    cibleCourante,
     isCompleted,
     isTutorialMode,
     explicationIndex,
     nextExplication,
+    validerAction,
     skipTutorial,
   } = useTutoriel();
-  const insets = useSafeAreaInsets();
 
-  const etape = getEtape(step);
+  const insets = useSafeAreaInsets()
 
-  // Hooks
-  const [x, setX] = React.useState(xProp ?? SCREEN_WIDTH / 2 - 100);
-  const [y, setY] = React.useState(yProp ?? 200);
-  const [width, setWidth] = React.useState(wProp ?? 200);
-  const [height, setHeight] = React.useState(hProp ?? 60);
+  const etape = etapeCourante;
+  const [mesureCible, setMesureCible] = React.useState<{
+    cle: string;
+    targetRef: NonNullable<NonNullable<typeof cibleCourante>["targetRef"]>;
+    position: PositionCible;
+  } | null>(null);
+  const cleCible = `${pathname}:${step}:${explicationIndex}:${cibleCourante?.testID ?? ""}`;
 
-  const mesurerCible = React.useCallback(() => {
-    if (!targetRef?.current) return;
-    targetRef.current.measureInWindow((fx, yPos, fw, fh) => {
-      setX(fx);
-      setY(yPos);
-      setWidth(fw);
-      setHeight(fh);
-    });
-  }, [targetRef]);
+  React.useLayoutEffect(() => {
+    let actif = true;
+    const targetRef = cibleCourante?.targetRef;
 
-  React.useEffect(() => {
-    mesurerCible();
-  }, [step, etape?.id, mesurerCible]);
+    if (targetRef?.current) {
+      targetRef.current.measureInWindow((x, y, width, height) => {
+        if (actif) {
+          setMesureCible({
+            cle: cleCible,
+            targetRef,
+            position: { x, y, width, height },
+          });
+        }
+      });
+    }
+
+    return () => {
+      actif = false;
+    };
+  }, [cibleCourante?.targetRef, cleCible]);
+
+  const mesureCorrespondante =
+    mesureCible?.cle === cleCible &&
+    mesureCible.targetRef === cibleCourante?.targetRef;
+  // Position du spotlight : la mesure de la ref (measureInWindow) est en priorité,
+  // sinon la position définie dans l'objet (explicationCourante.position / cibleCourante.position).
+  const positionCible: PositionCible | undefined = mesureCorrespondante
+    ? mesureCible.position
+    : cibleCourante?.position;
+
+  const positionTexte =
+    explicationCourante?.textPosition ??
+    etape?.textPosition ??
+    (positionCible
+      ? { x: positionCible.x, y: positionCible.y + positionCible.height / 2 }
+      : { x: 20, y: 100 });
+  const positionTexteX = useSharedValue(positionTexte.x);
+  const positionTexteY = useSharedValue(positionTexte.y);
+  const dernierContextePosition = React.useRef({ pathname, step, explicationIndex });
+
+  React.useLayoutEffect(() => {
+    const contextePrecedent = dernierContextePosition.current;
+    const animerPosition =
+      contextePrecedent.pathname === pathname &&
+      contextePrecedent.step === step &&
+      contextePrecedent.explicationIndex !== explicationIndex;
+    dernierContextePosition.current = { pathname, step, explicationIndex };
+
+    if (animerPosition) {
+      positionTexteX.value = withTiming(positionTexte.x, { duration: 300 });
+      positionTexteY.value = withTiming(positionTexte.y, { duration: 300 });
+    } else {
+      positionTexteX.value = positionTexte.x;
+      positionTexteY.value = positionTexte.y;
+    }
+  }, [pathname, step, explicationIndex, positionTexte.x, positionTexte.y, positionTexteX, positionTexteY]);
+
+  const positionTexteAnimee = useAnimatedStyle(() => ({
+    top: positionTexteY.value,
+    left: positionTexteX.value,
+  }));
 
   // Guard
   if (!isTutorialMode || isCompleted || !etape) return null;
 
+  // Position du text container (bulle) :
+  // 1. textPosition définie explicitement sur l'explication courante (priorité)
+  // 2. sinon textPosition défini sur l'étape
+  // 3. sinon, si une ref est mesurée : milieu du composant ref (par défaut)
+  // 4. sinon : position par défaut selon l'écran
+  // SpotlightOverlay affiche le trou sur positionCible (mesure de la ref en priorité,
+  // sinon position hardcodée dans l'objet).
+  const afficherSpotlight = Boolean(positionCible);
+
   // Texte affiché : explication courante si disponible, sinon message de l'étape
-  const explication = getExplication(etape, explicationIndex);
+  const explication = explicationCourante;
+  const isLastExplication = explication?.isCompletion
   const afficherExplication =
     !!explication && explicationIndex < nbExplications(etape);
-  const titre = afficherExplication ? t(explication.text) : t(etape.title);
-  const message = afficherExplication ? "" : t(etape.message);
+  const afficherZoneProchaineExplication =
+    afficherExplication && explicationIndex < nbExplications(etape) - 1;
+  const titre = afficherExplication && explication.title && t(explication.title);
+  const message = afficherExplication && t(explication.text);
 
   return (
     <View style={styles.conteneur}>
       {/* Badge « Mode démo » */}
-      <View style={styles.badge}>
-        <Text style={[styles.badgeText, { fontFamily: fonts.body }]}>Tuto</Text>
+      <View style={[styles.badge, {top: insets.top, backgroundColor: colors.card, }]}>
+        <Text style={[styles.badgeText, { fontFamily: fonts.body, color: colors.warning }]}>Tuto</Text>
       </View>
 
       {/* Spotlight : trou lumineux sur la cible */}
-      <SpotlightOverlay
-        x={x}
-        y={y}
-        width={width}
-        height={height}
-        radius={radius}
-      />
+      {afficherSpotlight && positionCible && (
+        <SpotlightOverlay
+          key={`${pathname}:${step}`}
+          pathname={pathname}
+          step={step}
+          explicationIndex={explicationIndex}
+          x={positionCible.x}
+          y={positionCible.y}
+          width={positionCible.width}
+          height={positionCible.height}
+          radius={Radius.md}
+        />
+      )}
 
-      {/* Bulle explicative (positionnée au-dessus du spotlight) */}
-      <View style={[styles.bulle, { backgroundColor: colors.background }]}>
-        {titre && (
-          <Text style={[styles.titre, { color: colors.text, fontFamily: fonts.title }]}>
-            {titre}
-          </Text>
-        )}
-        {message && (
-          <Text style={[styles.message, { color: colors.text, fontFamily: fonts.body }]}>
-            {message}
-          </Text>
-        )}
-      </View>
+      {/* Conteneur bulle + bouton Passer (positionné selon l'étape/explication) */}
+      <Animated.View style={[styles.bulleContainer, positionTexteAnimee]}>
+        {/* Bulle explicative */}
+        <View style={[styles.bulle, {backgroundColor: colors.card, borderColor: colors.border}]}>
+          <Animated.View
+            key={`${step}:${explicationIndex}`}
+            entering={FadeIn.duration(180)}
+            exiting={FadeOut.duration(180)}
+          >
+            {titre && (
+              <Text style={[styles.titre, { color: colors.text, fontFamily: fonts.title }]}>
+                {titre}
+              </Text>
+            )}
+            {message && (
+              <Text style={[styles.message, { color: colors.text, fontFamily: fonts.body }]}>
+                {message}
+              </Text>
+            )}
+          </Animated.View>
+        </View>
 
-      {/* Zone tactile pour passer à l'explication suivante / étape suivante */}
-      <TouchableOpacity
-        style={styles.zoneTactile}
-        onPress={() => {
-          nextExplication();
-        }}
-      />
-
-      {/* Boutons d'action */}
-      <View style={styles.boutons}>
-        <TouchableOpacity
-          style={styles.boutonPasser}
-          onPress={() => {
-            Alert.alert(
-              t("tuto.passer.titre"),
-              t("tuto.passer.message"),
-              [
-                { text: t("tuto.passer.annuler"), style: "cancel" },
-                {
-                  text: t("tuto.passer.confirmer"),
-                  onPress: async () => {
-                    await skipTutorial();
-                  },
-                },
-              ],
-              { cancelable: false }
-            );
-          }}
-        >
-          <Text style={[styles.boutonText, { color: colors.text, fontFamily: fonts.body }]}>
-            {t("tuto.bouton_passer")}
-          </Text>
-        </TouchableOpacity>
-
-        {!afficherExplication && (
-          <TouchableOpacity
-            style={[styles.boutonSuivant, { backgroundColor: colors.primary }]}
+        {/* Boutons*/}
+        <View style={styles.btnContainer}>     
+          {/* Bouton Passer*/}  
+          <SecondaryBtn
+            style={styles.boutonPasser}
             onPress={() => {
-              // Si on a une successCondition, on attend que l'écran cible la valide.
-              // Sinon (pas de condition, juste « toucher Suivant »), on avance.
-              if (
-                !etape.successCondition ||
-                etape.successCondition.endsWith("_suivant")
-              ) {
-                nextExplication();
-              }
+              Alert.alert(
+                t("tuto.passer.titre"),
+                t("tuto.passer.message"),
+                [
+                  { text: t("tuto.passer.annuler"), style: "cancel" },
+                  {
+                    text: t("tuto.passer.confirmer"),
+                    onPress: async () => {
+                      await skipTutorial();
+                    },
+                  },
+                ],
+                { cancelable: false }
+              );
             }}
           >
             <Text style={[styles.boutonText, { color: colors.text, fontFamily: fonts.body }]}>
-              {t("tuto.bouton_suivant")}
+              {t("tuto.bouton_passer")}
             </Text>
-          </TouchableOpacity>
-        )}
-      </View>
+          </SecondaryBtn>          
+            {/* Bouton suivant (seulement si c'est une explication qui n'est pas la complétion de la tache) */}
+            {afficherExplication && !isLastExplication &&
+              <MainBtn
+                style={styles.boutonSuivant}
+                onPress={() => {
+                  // Si on a une successCondition, on attend que l'écran cible la valide.
+                  // Sinon (pas de condition, juste « toucher Suivant »), on avance.              
+                  if (etape.successCondition && isLastExplication) {
+                    validerAction(etape.successCondition);
+                  } else {
+                    nextExplication();
+                  }
+                }}
+              >
+                <Text style={[styles.boutonText, { color: colors.text, fontFamily: fonts.body }]}>
+                  {t("tuto.bouton_suivant")}
+                </Text>
+              </MainBtn>
+            }
+        </View>
+
+      </Animated.View>
+
+      {/* Zone tactile pour passer à l'explication suivante */}
+      {afficherZoneProchaineExplication && (
+        <TouchableOpacity
+          style={styles.zoneTactile}
+          onPress={() => {
+            nextExplication();
+          }}
+        />
+      )}
     </View>
   );
 }
@@ -191,23 +271,25 @@ const styles = StyleSheet.create({
   },
   badge: {
     position: "absolute",
-    top: 10,
-    left: 10,
+    width: 48,
+    right: 16,
     zIndex: 100,
+    borderRadius: Radius.md,
+    justifyContent: "center",
+    alignItems: "center"
   },
   badgeText: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: "bold",
-    color: "#ffd700",
-    backgroundColor: "rgba(0,0,0,0.6)",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: Radius.sm,
   },
   bulle: {
-    position: "absolute",
+    position: "relative",
     zIndex: 50,
-    margin: 20,
+    margin: 0,
+    width: "100%",
     maxWidth: SCREEN_WIDTH - 40,
     borderRadius: Radius.lg,
     padding: 16,
@@ -216,6 +298,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+    borderWidth:1
+  },
+  bulleContainer: {
+    position: "absolute",
+    zIndex: 50,
+    width: SCREEN_WIDTH - 40,
   },
   titre: {
     fontSize: 18,
@@ -243,14 +331,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   boutonPasser: {
-    flex: 1,
-    backgroundColor: "transparent",
+    width:"48%",
     paddingVertical: 10,
     borderRadius: Radius.md,
     alignItems: "center",
   },
   boutonSuivant: {
-    flex: 1,
+    width: "48%",
     paddingVertical: 12,
     borderRadius: Radius.md,
     alignItems: "center",
@@ -259,4 +346,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
   },
+  btnContainer:{
+    flexDirection:"row",
+    width:'100%',
+    justifyContent:'center',
+    alignItems:"center",
+    gap:12,
+    padding:8
+  }
 });

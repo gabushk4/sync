@@ -1,3 +1,5 @@
+import { homeIds, fab } from "./tutorialIds";
+
 /**
  * Définition des 11 étapes du tutoriel interactif Sync.
  *
@@ -15,41 +17,65 @@
  *                   plus, on attend la successCondition.
  */
 export type ExplicationTutoriel = {
-  position: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  };
+  /** Position du texte/bulle (text container) pour cette explication */
+  textPosition?: { x: number; y: number };
+  /** Position hardcodée du spotlight (trou lumineux) pour cette explication */
+  position?: { x: number; y: number; width: number; height: number };
   target?: string;
+  title?: string
   text: string; // clé de traduction
+  isCompletion?: boolean
 };
 
 export type EtapeTutoriel = {
   id: number;
   screen: string;
   target: string;
-  title: string; // clé de traduction
-  message: string; // clé de traduction
   successCondition: string;
+  /** Position du texte/bulle (text container) pour cette étape */
+  textPosition?: { x: number; y: number };
+  /** Position hardcodée du spotlight (trou lumineux) pour cette étape */
+  position?: { x: number; y: number; width: number; height: number };
   explications?: ExplicationTutoriel[];
 };
 
+const fabTextPosition = { x: 20, y: 550 };
+
 export const ETAPES_TUTORIEL: EtapeTutoriel[] = [
   
-  //1 Accueil et timelines
+  //1 Accueil et création d'événement
   {
     id: 1,
     screen: '(tabs)/home',
-    target: 'tuto-ecran-accueil',
-    title: 'tuto.etape1.titre',
-    message: 'tuto.etape1.message',
-    successCondition: 'tuto.etape1.suivant',
+    target: fab,
+    successCondition: 'creation_evenement_ouverte',
+    // Position du text container (bulle) pour l'étape 1.
+    textPosition: { x: 20, y: 300 },
     explications:[
       {
-        position: {x: 20, y: 200, width: 500, height: 500},
-        text:'tuto.etape1.explication1',
-        target: 'tuto-timeline',
+        title: 'tuto.etape1.homeTitle',
+        text:'tuto.etape1.home',
+        target: homeIds.index,
+        textPosition: { x: 20, y: 300 },
+      },
+      {
+        target: homeIds.schedules,
+        title: 'tuto.etape1.schedulesTitle',
+        text: 'tuto.etape1.schedules',
+        textPosition: { x: 20, y: 320 },
+      },
+      {
+        target:fab,
+        title: 'tuto.etape1.fabTitle',
+        text:'tuto.etape1.fab',
+        textPosition: fabTextPosition
+      },
+      {
+        target: fab,
+        title: 'tuto.etape1.creationTitle',
+        text: 'tuto.etape1.creation',
+        textPosition: {x: fabTextPosition.x, y: fabTextPosition.y + 40},
+        isCompletion: true,      
       }
     ]
   },
@@ -59,8 +85,6 @@ export const ETAPES_TUTORIEL: EtapeTutoriel[] = [
     id: 2,
     screen: '(tabs)/home/create',
     target: 'tuto-bouton-creer-indisponibilite',
-    title: 'tuto.etape2.titre',
-    message: 'tuto.etape2.message',
     successCondition: 'indisponibilite_creee', // indisponibilité créée (pré-remplie, récurrente)
     explications: [
       {
@@ -75,8 +99,6 @@ export const ETAPES_TUTORIEL: EtapeTutoriel[] = [
     id: 3,
     screen: '(tabs)/home/create',
     target: 'tuto-bouton-creer-evenement',
-    title: 'tuto.etape3.titre',
-    message: 'tuto.etape3.message',
     successCondition: 'evenement_cree', // événement créé avec un seul créneau commun proposé
   },
 
@@ -85,8 +107,6 @@ export const ETAPES_TUTORIEL: EtapeTutoriel[] = [
     id: 4,
     screen: '(tabs)',
     target: 'tuto-bloc-evenement-timeline',
-    title: 'tuto.etape4.titre',
-    message: 'tuto.etape4.message',
     successCondition: 'tuto.etape4.suivant', // toucher « Suivant » après l'animation
   },
 
@@ -97,8 +117,6 @@ export const ETAPES_TUTORIEL: EtapeTutoriel[] = [
     id: 5,
     screen: '(modals)/ajouterAmi',
     target: 'tuto-choix-ami-lea',
-    title: 'tuto.etape5.titre',
-    message: 'tuto.etape5.message',
     successCondition: 'invitation_envoyee', // ami choisi et invité (acceptation auto)
   },
 
@@ -109,8 +127,6 @@ export const ETAPES_TUTORIEL: EtapeTutoriel[] = [
     id: 6,
     screen: '(tabs)',
     target: 'tuto-onglet-messages',
-    title: 'tuto.etape6.titre',
-    message: 'tuto.etape6.message',
     successCondition: 'groupe_ouvert', // page des messages + groupe de l'événement ouverte
   },
 
@@ -121,8 +137,6 @@ export const ETAPES_TUTORIEL: EtapeTutoriel[] = [
     id: 7,
     screen: '(tabs)',
     target: 'tuto-onglet-profil',
-    title: 'tuto.etape7.titre',
-    message: 'tuto.etape7.message',
     successCondition: 'profil_ouvert', // page profil ouverte
   },
 
@@ -133,8 +147,6 @@ export const ETAPES_TUTORIEL: EtapeTutoriel[] = [
     id: 8,
     screen: 'scanQR',
     target: 'tuto-bouton-qr',
-    title: 'tuto.etape8.titre',
-    message: 'tuto.etape8.message',
     successCondition: 'modal_qr_ouvert', // modal du code QR ouvert
   },
 
@@ -145,8 +157,6 @@ export const ETAPES_TUTORIEL: EtapeTutoriel[] = [
     id: 9,
     screen: '(tabs)',
     target: 'tuto-onglet-reglages',
-    title: 'tuto.etape9.titre',
-    message: 'tuto.etape9.message',
     successCondition: 'ecran_import_ouvert', // réglages puis écran d'import ouverts
   },
 
@@ -157,8 +167,6 @@ export const ETAPES_TUTORIEL: EtapeTutoriel[] = [
     id: 10,
     screen: '(tabs)',
     target: 'tuto-option-theme',
-    title: 'tuto.etape10.titre',
-    message: 'tuto.etape10.message',
     successCondition: 'option_theme_ouverte', // option du thème ouverte
   },
 
@@ -169,8 +177,6 @@ export const ETAPES_TUTORIEL: EtapeTutoriel[] = [
     id: 11,
     screen: '(tabs)',
     target: 'tuto-bouton-terminer',
-    title: 'tuto.etape11.titre',
-    message: 'tuto.etape11.message',
     successCondition: 'tuto_termine', // terminer → base fictive supprimée, flag = true
   },
 ];

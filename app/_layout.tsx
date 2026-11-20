@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import '../i18n';
 
 //Providers
@@ -132,6 +132,21 @@ function RootLayoutNav() {
   const { navTheme } = usePalette();
   const { state } = useAuth()
   const pathname = usePathname()
+  const { etapeCourante, isTutorialMode, validerAction } = useTutoriel();
+
+  useEffect(() => {
+    if (
+      state !== 'authenticated' ||
+      !isTutorialMode ||
+      etapeCourante?.id !== 1 ||
+      !pathname.endsWith('/home/create')
+    ) {
+      return;
+    }
+
+    validerAction(etapeCourante.successCondition);
+  }, [state, isTutorialMode, etapeCourante, pathname, validerAction]);
+
   // User story 45: push registration, toast of a push received while the app is open,
   // and opening a tapped notification.
   useNotificationsPush()
@@ -230,13 +245,22 @@ function RootLayoutNav() {
  * Doit être rendu à l'intérieur du TutorielProvider et de l'AuthProvider.
  */
 export function TutorielBootstrapperNav() {
-  const { isCompleted, isLoading, startTutorial } = useTutoriel();
+  const { isCompleted, isLoading, isTutorialMode, startTutorial } = useTutoriel();
+  const demarrageAutomatiqueTente = useRef(false);
 
   useEffect(() => {
-    if (!isLoading && !isCompleted) {
-      void startTutorial();
+    if (
+      isLoading ||
+      isCompleted ||
+      isTutorialMode ||
+      demarrageAutomatiqueTente.current
+    ) {
+      return;
     }
-  }, [isLoading, isCompleted, startTutorial]);
+
+    demarrageAutomatiqueTente.current = true;
+    void startTutorial();
+  }, [isLoading, isCompleted, isTutorialMode, startTutorial]);
 
   return null;
 }

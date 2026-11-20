@@ -1,15 +1,23 @@
+//contexts
 import { usePalette } from "@/contextes/contextePalette";
+import { useTutoriel } from "@/contextes/contexteTutoriel";
+import { useFabActions, useFabState, FabConfig } from "@/contextes/contexteFAB";
+
+//dependancies
 import Icon from "@react-native-vector-icons/ionicons";
 import { BottomTabBar, type BottomTabBarProps } from 'expo-router/js-tabs';
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import { useFabActions, useFabState, FabConfig } from "@/contextes/contexteFAB";
-import log from "@/functions/log";
-import ToastAbs from "@/abstractions/toastAbs";
-import { toastTypes } from "@/constants/toastConfig";
 import Animated, { useAnimatedStyle, withTiming, useSharedValue } from "react-native-reanimated";
+
+//components - abstractions
+import ToastAbs from "@/abstractions/toastAbs";
+
+//constants
 import { withTimingConfig } from "@/constants/ReanimatedConfs";
+import { fab } from "@/constants/tutorialIds";
+import { toastTypes } from "@/constants/toastConfig";
 
 const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
@@ -38,12 +46,19 @@ const Fab = React.memo(function Fab() {
     const config = useFabState();
     const { actionRef } = useFabActions();
     const { colors } = usePalette();
+    const { enregistrerCible, validerAction } = useTutoriel();
     const router = useRouter();
 
     // Contenu actuellement affiché (reste en place pendant le fade-out)
     const [display, setDisplay] = useState<FabConfig>(undefined);
+    const fabRef = useRef<View>(null);
 
     const shown = !!config && config.visible !== false;    
+
+    useEffect(() => {
+      if (!display || !shown) return;
+      return enregistrerCible(fab, fabRef);
+    }, [display, shown, enregistrerCible]);
 
     const progress = useSharedValue(0);
     // Whether the FAB is currently hidden (no config), and the pending swap timer.
@@ -101,6 +116,8 @@ const Fab = React.memo(function Fab() {
         ToastAbs.show({ type: toastTypes.error, text2: display.bloque });
         return;
         }
+        // Étape 1 du tutoriel : clic sur le NavFab ouvre la création d'événement.
+        validerAction('creation_evenement_ouverte');
         if (display.href) {
         router.push(
             display.params
@@ -116,9 +133,11 @@ const Fab = React.memo(function Fab() {
     return  shown ? (
         <>
             <AnimatedTouchableOpacity
-            disabled={!shown}
-            onPress={onPress}
-            style={[s.fab, animatedStyle, { borderColor: colors.border, backgroundColor: colors.secondary }]}
+              disabled={!shown}
+              onPress={onPress}
+              ref={fabRef}
+              testID={fab}
+              style={[s.fab, animatedStyle, { borderColor: colors.border, backgroundColor: colors.secondary }]}
             >
             {display.icon ?? <Icon name="add" color={colors.text} size={24} />}
             </AnimatedTouchableOpacity>

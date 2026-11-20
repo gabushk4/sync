@@ -80,10 +80,24 @@
 		"profile": "Profile",
 		"profileTitle": "Profile"
 	},
-	"demo": {
-		"modalTitle": "Modal",
-		"openCode": "Open up the code for this screen:",
-		"changeText": "Change any of the text, save the file, and your app will automatically update.",
-		"reloadHelp": "Tap here if your app doesn't automatically update after making changes"
+	"tuto": {
+		"bouton_passer": "Skip",
+		"bouton_suivant": "Next",
+		"passer": {
+			"titre": "Skip the tutorial?",
+			"message": "You can replay the tutorial later in Settings.",
+			"annuler": "Keep going",
+			"confirmer": "Skip"
+		},
+		"etape1": {
+			"homeTitle": "Welcome to Sync !",
+			"home" : "This tutorial will guide you towards everything that awaits you here. You can skip this anytime",
+			"schedulesTitle": "The Sync view",
+			"schedules": "Your friends' schedules appear here so you can find a time when you both are free",
+			"fabTitle": "The fast action button",
+			"fab": "Its action changes by the contexte you're into.",
+			"creationTitle": "Create ( + )",
+			"creation": "Here it allows you to create an event. Cm'on clic on it!"
+		}
 	}
 }

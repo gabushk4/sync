@@ -1,66 +1,33 @@
 # Règles de travail
 
-## Incertitude
-- Ne devine jamais. Si une information manque (nom de champ, comportement,
-  version d'une librairie), arrête-toi et pose-moi la question.
-- Mets toujours a jour les fichiers que tu vas éditer, il se peut que je fasses des modifications.
+## 1. Documentation & Incertitude (Obligatoire)
+- Ne devine jamais. Si une information manque (nom de champ, schéma DB, version d'une librairie), arrête-toi et pose-moi la question.
+- Avant d'utiliser une API Expo, React Native ou Node.js, vérifie sa version exacte dans `package.json`, puis interroge l'outil MCP `context7` (`resolve-library-id` -> `query-docs`). Ne te fie jamais à ta mémoire.
+- Relis toujours un fichier avant de l'éditer, car j'ai pu le modifier entre-temps.
 
-## Bugs
-- Si tu trouves un bug hors du sujet de la tâche, ne le corrige pas.
-  Ajoute une ligne dans HANDOFF.md (fichier, ligne, description) et continue.
+## 2. Gestion du contexte & Gros fichiers
+- Si un fichier dépasse 300 lignes, lis-le par blocs (`offset` / `limit`) et traite-le bloc par bloc. N'assume jamais le contenu d'un fichier non lu en entier.
+- Privilégie la réutilisation des composants existants dans `abstractions/` et `components/` avant d'en créer de nouveaux.
 
-## Gros fichiers
-- Si un fichier dépasse 300 lignes, lis-le par blocs et traite-le
-  bloc par bloc. N'assume jamais avoir lu un fichier que tu n'as pas
-  lu en entier.
+## 3. Standards Client (Expo / React Native) & Serveur (Node.js)
+- **Client :** TypeScript strict (zéro `any`), navigation via Expo Router (`app/`), traductions via `locales/en` et `locales/fr` (aucun texte hardcodé dans l'UI).
+- **Serveur (Node.js) :** Valide toutes les entrées (body, params, env) avec Zod. Ne renvoie jamais d'erreurs brutes ou de stack traces au client. Sépare les routes, la logique métier et l'accès aux données.
 
-## Suivi (écris au fur et à mesure, pas à la fin)
-- Sur chaque fichiers modifier prends l'habitude de run eslint et de corriger les erreurs Lint
-- Maintiens HANDOFF.md : ce qui est fait, ce qui reste, ce que tu
-  n'as pas pu faire et pourquoi.
-- Si tu dois t'arrêter avant d'avoir fini, termine HANDOFF.md avec
-  les instructions pour qu'un autre agent reprenne.
-- Les agents APPENDENT au HANDOFF, ne le réécrivent jamais.
+## 4. Bugs hors périmètre
+- Si tu trouves un bug hors du sujet de la tâche en cours, ne le corrige pas. Ajoute une ligne dans `HANDOFF.md` (`fichier:ligne - description`) et continue.
 
-## Expo
-- Version du projet : voir package.json. Pour toute API Expo, utilise
-  @docs ou demande-moi. Ne te fie pas à ta mémoire.
+## 5. Suivi, Lint & Mémoire persistante (Au fur et à mesure)
+- **Lint :** Sur chaque fichier modifié, lance `npx eslint <fichier>` et corrige toutes les erreurs avant de passer au suivant.
+- **Session (`HANDOFF.md`) :** APPEND uniquement (ne réécris jamais le fichier) ce qui est fait, ce qui reste, et les blocages éventuels. Si tu t'arrêtes avant la fin, laisse des instructions claires pour l'agent suivant.
+- **Décisions (`docs/DECISIONS.md`) :** Après chaque choix technique, ajout de dépendance ou changement d'architecture, ajoute une entrée datée (`YYYY-MM-DD : Contexte / Décision / Fichiers impactés`) dans `docs/DECISIONS.md`.
 
-## Structure du projet
-- Dossier racine du projet: ~/Desktop/sync
-- Le dossier est structurer comme tel:
-    .
-    ├── abstractions -> Couche d'abstraction par dessus des composants React-Native. (Purement pour le style ou pour DRY)
-    ├── app
-    │   ├── (auth)
-    │   ├── (modals)
-    │   └── (tabs)
-    │       ├── feed
-    │       │   └── notifications
-    │       ├── home
-    │       │   ├── details
-    │       │   └── edit
-    │       ├── inbox
-    │       └── profile
-    │           └── settings
-    ├── assets
-    │   ├── fonts
-    │   ├── gifs
-    │   ├── icones
-    │   └── images
-    ├── components
-    │   └── __tests__
-    ├── constants
-    ├── contextes
-    ├── docs
-    ├── events
-    ├── functions
-    ├── hooks
-    ├── locales
-    │   ├── en
-    │   └── fr
-    ├── scripts
-    ├── svgs
-    ├── tests
-    ├── themes
-    └── types
+## 6. Structure du projet (Racine relative `./`)
+- `abstractions/` : Couche d'abstraction UI au-dessus de React Native (style / DRY)
+- `app/` : Routes Expo Router (`(auth)`, `(modals)`, `(tabs)/[feed, home, inbox, profile]`)
+- `assets/` : Polices, gifs, icônes, images
+- `components/` : Composants métier réutilisables et `__tests__/`
+- `constants/`, `contextes/`, `events/`, `functions/`, `hooks/`, `themes/`, `types/`
+- `locales/` : Fichiers i18n (`en/`, `fr/`)
+- `docs/` : Documentation projet (`DECISIONS.md`, architecture, schémas)
+- `scripts/`, `svgs/`, `tests/`
+-`../sync_api` : API (Node.js using Express)

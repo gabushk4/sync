@@ -80,10 +80,25 @@
 		"profile": "profil",
 		"profileTitle": "profile"
 	},
-	"demo": {
-		"modalTitle": "Modale",
-		"openCode": "Ouvre le code de cet écran :",
-		"changeText": "Modifie le texte, enregistre le fichier et l'application se mettra automatiquement à jour.",
-		"reloadHelp": "Appuie ici si l'application ne se met pas automatiquement à jour après une modification"
+	"tuto": {
+		"bouton_passer": "Passer",
+		"bouton_suivant": "Suivant",
+		"passer": {
+			"titre": "Passer le tutoriel?",
+			"message": "Tu pourras revoir le tutoriel plus tard dans les réglages.",
+			"annuler": "Continuer le tutoriel",
+			"confirmer": "Passer"
+		},
+		"etape1": {
+			"homeTitle": "Bienvenue sur Sync!",
+			"home":"Ce tutoriel te guidera vers les possibilités que l'app t'offre. Tu peux fermer ce tutoriel à tout moment",
+			"schedulesTitle": "La vue Sync",
+			"schedules": "Les horaires de tes amis s'affichent ici pour trouver un créneau où vous êtes tous libres.",
+			"fabTitle": "Le bouton d'action rapide",
+			"fab": "Son action change selon l'écran où tu te trouves.",
+			"creationTitle": "Créer ( + )",
+			"creation": "Ici, il permet de créer un évènement. Vas-y clic!"
+			
+		}
 	}
 }

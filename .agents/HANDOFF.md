@@ -945,3 +945,18 @@ Projet React Native + Expo (SDK 58), Expo Router, déjà avancé. Fiche techniqu
 
 ## Bugs hors sujet (non corrigés, notés)
 - Aucun trouvé dans le périmètre du tutoriel pour l'instant.
+
+## 2026-11-20 — Animations du tutoriel
+- **Fait :** La bulle anime sa position, le masque SVG du spotlight suit maintenant les valeurs Reanimated, et le texte utilise un fondu entrant/sortant au changement d'explication.
+- **Vérifications :** ESLint ciblé sur `components/TutorielEcran.tsx` et `components/spotlightOverlay.tsx` ; `npx tsc --noEmit` passe.
+- **Reste / blocages :** Aucun.
+
+## 2026-11-20 — Position du tutoriel sans transition de route
+- **Fait :** Le changement de `pathname` repositionne immédiatement la bulle et remonte le spotlight sans tween inter-page. La clé de mesure inclut maintenant la route pour éviter de réutiliser une ancienne position.
+- **Vérifications :** ESLint ciblé sur `components/TutorielEcran.tsx` ; `npx tsc --noEmit` passe.
+- **Reste / blocages :** Aucun.
+
+## 2026-11-20 — Animations réservées aux changements d'explication
+- **Fait :** Les positions de la bulle et du spotlight s'animent seulement entre explications d'une même étape. Les mesures tardives et changements d'étape/route sont appliqués directement.
+- **Vérifications :** ESLint ciblé sur les deux composants du tutoriel ; `npx tsc --noEmit` passe.
+- **Reste / blocages :** Aucun.

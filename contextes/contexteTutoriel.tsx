@@ -1,26 +1,49 @@
 import seed from "@/assets/tutorial_seed";
-import {
-  getEtape,
-  nbExplications
-} from "@/constants/etapesTutoriel";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { openDatabaseSync, SQLiteDatabase } from "expo-sqlite";
 import {
   createContext,
   ReactNode,
+  RefObject,
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from "react";
+import { View } from "react-native";
+import {
+  ETAPES_TUTORIEL,
+  EtapeTutoriel,
+  ExplicationTutoriel,
+  getEtape,
+  getExplication,
+  nbExplications,
+} from "@/constants/etapesTutoriel";
 
 const TUTORIAL_COMPLETED_KEY = "tutorial_completed";
 const TUTORIAL_STEP_KEY = "tutorial_step";
 const TUTO_DB_NAME = "tutorial.db";
 
+export type CibleTutoriel = {
+  testID: string;
+  targetRef?: RefObject<View | null>;
+  position?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+};
+
 export type TutorielContextType = {
   /** Étape courante (0 = pas commencé, 1..11 = étapes du parcours) */
   step: number;
+  /** Configuration de l'étape courante */
+  etapeCourante: EtapeTutoriel | undefined;
+  /** Explication affichée et cible associée à l'étape courante */
+  explicationCourante: ExplicationTutoriel | undefined;
+  cibleCourante: CibleTutoriel | null;
   /** Le tutoriel a-t-il déjà été complété ? */
   isCompleted: boolean;
   /** Chargement initial en cours (lecture AsyncStorage + ouverture DB) */
@@ -40,8 +63,13 @@ export type TutorielContextType = {
   nextStep: () => void;
   /** Définit une étape précise */
   setStep: (n: number) => void;
-  /** Passe à l'explication intermédiaire suivante (ou à l'étape suivante si plus d'explication) */
+  /** Passe à l'explication intermédiaire suivante, puis au message de l'étape */
   nextExplication: () => void;
+  /** Enregistre une vue par testID et retourne sa fonction de désinscription */
+  enregistrerCible: (
+    testID: string,
+    targetRef: RefObject<View | null>,
+  ) => () => void;
   /** Valide une condition de succès : si elle correspond à l'étape courante, avance */
   validerAction: (condition: string) => void;
   /** Termine le tutoriel : ferme/supprime la base fictive, écrit completed=true */
@@ -63,8 +91,45 @@ export const TutorielProvider = ({ children }: { children: ReactNode }) => {
   const [isTutorialMode, setIsTutorialMode] = useState<boolean>(false);
   const [db, setDb] = useState<SQLiteDatabase | null>(null);
   const [explicationIndex, setExplicationIndex] = useState<number>(0);
+  const [ciblesEnregistrees, setCiblesEnregistrees] = useState<
+    Record<string, RefObject<View | null>>
+  >({});
 
   const seedRef = seed;
+  const etapeCourante = getEtape(step);
+  const explicationCourante = etapeCourante
+    ? getExplication(etapeCourante, explicationIndex)
+    : undefined;
+  const cibleCourante = useMemo<CibleTutoriel | null>(() => {
+    if (!etapeCourante) return null;
+
+    const testID = explicationCourante?.target ?? etapeCourante.target;
+    return {
+      testID,
+      targetRef: ciblesEnregistrees[testID],
+      position: explicationCourante?.position,
+    };
+  }, [ciblesEnregistrees, etapeCourante, explicationCourante]);
+
+  const enregistrerCible = useCallback(
+    (testID: string, targetRef: RefObject<View | null>) => {
+      setCiblesEnregistrees((cibles) =>
+        cibles[testID] === targetRef
+          ? cibles
+          : { ...cibles, [testID]: targetRef },
+      );
+
+      return () => {
+        setCiblesEnregistrees((cibles) => {
+          if (cibles[testID] !== targetRef) return cibles;
+          const nouvellesCibles = { ...cibles };
+          delete nouvellesCibles[testID];
+          return nouvellesCibles;
+        });
+      };
+    },
+    [],
+  );
 
   // ── Chargement initial : flag terminé + étape courante ──────────────────
   useEffect(() => {
@@ -366,6 +431,7 @@ export const TutorielProvider = ({ children }: { children: ReactNode }) => {
       setDb(database);
       setIsTutorialMode(true);
       setIsCompleted(false);
+      setExplicationIndex(0);
       setStepState(1);
       await AsyncStorage.setItem(TUTORIAL_COMPLETED_KEY, "false");
       await AsyncStorage.setItem(TUTORIAL_STEP_KEY, "1");
@@ -377,10 +443,12 @@ export const TutorielProvider = ({ children }: { children: ReactNode }) => {
   }, [ouvrirBaseFictive]);
 
   const nextStep = useCallback(() => {
+    setExplicationIndex(0);
     setStepState((s) => s + 1);
   }, []);
 
   const setStep = useCallback((n: number) => {
+    setExplicationIndex(0);
     setStepState(n);
   }, []);
 
@@ -393,6 +461,7 @@ export const TutorielProvider = ({ children }: { children: ReactNode }) => {
       }
       setIsTutorialMode(false);
       setIsCompleted(true);
+      setExplicationIndex(0);
       setStepState(0);
       await AsyncStorage.setItem(TUTORIAL_COMPLETED_KEY, "true");
       await AsyncStorage.setItem(TUTORIAL_STEP_KEY, "0");
@@ -408,6 +477,7 @@ export const TutorielProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(true);
       setIsTutorialMode(false);
       setIsCompleted(true);
+      setExplicationIndex(0);
       setStepState(0);
       await AsyncStorage.setItem(TUTORIAL_COMPLETED_KEY, "true");
       await AsyncStorage.setItem(TUTORIAL_STEP_KEY, "0");
@@ -422,6 +492,7 @@ export const TutorielProvider = ({ children }: { children: ReactNode }) => {
     try {
       const stepRaw = await AsyncStorage.getItem(TUTORIAL_STEP_KEY);
       if (stepRaw) {
+        setExplicationIndex(0);
         setStepState(parseInt(stepRaw, 10));
       }
     } catch (error) {
@@ -432,38 +503,35 @@ export const TutorielProvider = ({ children }: { children: ReactNode }) => {
   // ── Explications intermédiaires ─────────────────────────────────────────
   const nextExplication = useCallback(() => {
     const etape = getEtape(step);
-    const nb = nbExplications(etape ?? ({} as any));
-    if (explicationIndex < nb - 1) {
-      setExplicationIndex((i) => i + 1);
-    } else {
-      // Plus d'explication : on passe à l'étape suivante (ou on attend successCondition)
-      setExplicationIndex(0);
-      setStepState((s) => s + 1);
+    if (!etape) return;
+
+    const nb = nbExplications(etape);
+    if (explicationIndex < nb) {
+      setExplicationIndex((i) => Math.min(i + 1, nb));
     }
   }, [step, explicationIndex]);
 
   const validerAction = useCallback(
     (condition: string) => {
       const etape = getEtape(step);
-      if (!etape) return;
+      if (!etape || condition !== etape.successCondition) return;
 
-      // S'il reste des explications à afficher, on avance dans les explications
-      // seulement si la condition correspond à l'étape courante.
-      if (condition === etape.successCondition) {
-        const nb = nbExplications(etape);
-        if (explicationIndex < nb - 1) {
-          setExplicationIndex((i) => i + 1);
-        } else {
-          setExplicationIndex(0);
-          setStepState((s) => s + 1);
-        }
+      setExplicationIndex(0);
+      if (etape.id === ETAPES_TUTORIEL.length) {
+        void completeTutorial();
+        return;
       }
+
+      setStepState((s) => s + 1);
     },
-    [step, explicationIndex],
+    [step, completeTutorial],
   );
 
   const value: TutorielContextType = {
     step,
+    etapeCourante,
+    explicationCourante,
+    cibleCourante,
     isCompleted,
     isLoading,
     isTutorialMode,
@@ -474,6 +542,7 @@ export const TutorielProvider = ({ children }: { children: ReactNode }) => {
     nextStep,
     setStep,
     nextExplication,
+    enregistrerCible,
     validerAction,
     completeTutorial,
     skipTutorial,

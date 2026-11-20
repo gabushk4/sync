@@ -31,11 +31,6 @@ import catcher from '@/functions/catcher'
 
 const MAX_LONG_TITLE = 50
 const MAX_LONG_DESC = 2000
-/**
- * NOTE POUR TOI : adapte les types (Props, Event, Recurrence, etc.) à tes
- * définitions réelles — je les ai gardés identiques à ton fichier original.
- * ============================================================================
- */
 
 export type EventFormValues = {
     titre: string

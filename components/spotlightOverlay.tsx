@@ -1,15 +1,19 @@
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import Animated, {
   useSharedValue,
+  useAnimatedProps,
   useAnimatedStyle,
   withTiming,
 } from 'react-native-reanimated';
 import Svg, { Defs, Mask, Rect } from 'react-native-svg';
-import { useEffect } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 
 const ARect = Animated.createAnimatedComponent(Rect);
 
 type Props = {
+  pathname: string;
+  step: number;
+  explicationIndex: number;
   x: number;
   y: number;
   width: number;
@@ -34,12 +38,15 @@ type Props = {
  * AU-DESSUS de ce composant (zIndex plus élevé) pour rester cliquables.
  */
 export function SpotlightOverlay({
+  pathname,
+  step,
+  explicationIndex,
   x,
   y,
   width,
   height,
   radius = 12,
-  overlayColor = 'rgba(0,0,0,0.4)',
+  overlayColor = 'rgba(0,0,0,0.8)',
 }: Props) {
   const { width: W, height: H } = useWindowDimensions();
 
@@ -47,17 +54,33 @@ export function SpotlightOverlay({
   const Y = useSharedValue(y);
   const w = useSharedValue(width);
   const h = useSharedValue(height);
+  const dernierContextePosition = useRef({ pathname, step, explicationIndex });
 
   // X, Y, w, h sont des useSharedValue (refs stables) : leur référence ne
   // change jamais, donc pas de boucle infinie. On les liste pour satisfaire
   // eslint, tout en réagissant aux primitives x/y/width/height.
-  useEffect(() => {
+  useLayoutEffect(() => {
+    const contextePrecedent = dernierContextePosition.current;
+    const animerPosition =
+      contextePrecedent.pathname === pathname &&
+      contextePrecedent.step === step &&
+      contextePrecedent.explicationIndex !== explicationIndex;
+    dernierContextePosition.current = { pathname, step, explicationIndex };
+
+    if (!animerPosition) {
+      X.value = x;
+      Y.value = y;
+      w.value = width;
+      h.value = height;
+      return;
+    }
+
     const cfg = { duration: 300 };
     X.value = withTiming(x, cfg);
     Y.value = withTiming(y, cfg);
     w.value = withTiming(width, cfg);
     h.value = withTiming(height, cfg);
-  }, [x, y, width, height, X, Y, w, h]);
+  }, [pathname, step, explicationIndex, x, y, width, height, X, Y, w, h]);
 
   // ───── Bloqueurs de touches (transparent, captent le toucher) ─────
   const topBlocker = useAnimatedStyle(() => ({
@@ -89,12 +112,12 @@ export function SpotlightOverlay({
   }));
 
   // ───── Propriétés animées du trou (pour le masque SVG) ─────
-  const holeProps = {
+  const holeProps = useAnimatedProps(() => ({
     x: X.value,
     y: Y.value,
     width: w.value,
     height: h.value,
-  };
+  }));
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
@@ -104,7 +127,7 @@ export function SpotlightOverlay({
           <Mask id="spotlight-mask">
             <Rect width={W} height={H} fill="white" />
             <ARect
-              animatedProps={holeProps as any}
+              animatedProps={holeProps}
               rx={radius}
               ry={radius}
               fill="black"
