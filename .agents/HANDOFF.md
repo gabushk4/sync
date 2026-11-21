@@ -1041,3 +1041,87 @@ L'utilisation du voile est cohérente avec `creationEvenement.tsx` et `creationI
 
 ## À faire côté serveur (par l'user)
 L'endpoint `GET /admin/os_metrics/points` n'existe pas encore : "je get aucuns points". Il faut ajouter `getPointsAverageBetween` dans `metricsModel` et la route correspondante (SQL fourni dans les messages précédents).
+
+---
+
+## Ajout (21/11/2026) — US 49 : thème choisi avec une roue de couleurs (branche `philip-us49-theme-colorwheel`, depuis main)
+- US : la couleur courante dans un cercle ; toucher le cercle → modale avec la roue ; bouger
+  la roue → aperçu ; quitter la modale → la couleur s'applique à toute l'app.
+- Le thème reste une teinte (0-359) : generateTheme en dérive toutes les couleurs (rôles à
+  saturation / luminosité fixes). La roue choisit donc une teinte (anneau), pas une couleur
+  libre. User : « vas-y avec la wheel » (pas de couleurs suggérées).
+- `functions/couleurTeinte.ts` (nouveau) : `hsl(h, 65%, 55%)`, la couleur qui représente une
+  teinte (anneau, curseur, cercle des paramètres).
+- `components/roueTeinte.tsx` (nouveau) : anneau SVG de 120 morceaux (mémorisés), curseur
+  Reanimated déplacé sur le fil UI, `Gesture.Pan().minDistance(0)` (un tap choisit aussi),
+  angle 0° en haut, sens horaire ; `onChange` (scheduleOnRN) seulement quand le degré entier
+  change ; centre = couleur choisie ; accessible (adjustable, ± 10°).
+- `components/apercuTheme.tsx` (nouveau) : faux écran (fond, carte d'évènement, statut,
+  bouton) avec generateTheme(teinte, mode clair/sombre de l'appareil).
+- `components/selecteurTheme.tsx` (nouveau) : <Modal> transparent (fond flouté), roue +
+  « rétablir la valeur par défaut » (DEFAULT_HUE) + aperçu + Annuler / Terminé. Quitter
+  (Terminé, toucher dehors, retour Android) applique ; Annuler ne change rien. Son propre
+  GestureHandlerRootView (un Modal est hors de celui de l'app : le geste ne marcherait pas
+  sur Android). Pas la modale générique (ModalBase) : son geste de glissement couvre toute
+  la feuille et entrerait en conflit avec celui de la roue.
+- `types/settings.ts` : type de réglage `color` (value = couleur CSS, onPress) ;
+  `components/settingsRow.tsx` : le cercle (36 px). `app/(tabs)/profile/settings/index.tsx` :
+  le champ numérique de la teinte (et son TODO « color picker ») remplacé par le cercle ;
+  appliquer = `setHue` + `setSetting('theme')` comme avant. Le type `input` n'est plus
+  utilisé nulle part (laissé).
+- Locales fr/en `settings.themePicker.*`.
+- Vérifs : tsc OK, eslint 0 erreur (5 warnings préexistants dans index.tsx / settingsRow /
+  types, lignes non touchées), jest 13/13 (main).
+- Non testé sur appareil : glisser / toucher la roue (iOS et Android), aperçu qui suit,
+  Terminé / toucher dehors / retour Android appliquent, Annuler, valeur par défaut, cercle
+  mis à jour, mode sombre.
+- Bug hors sujet (non corrigé) : `types/settings.ts:13` `DEFAULT_SETTINGS.theme = 260` mais
+  `constants/Colors.ts:4` `DEFAULT_HUE = 274` ; tant que l'user n'a jamais choisi de teinte,
+  `contextes/contextePalette.tsx:37` part de `settings.theme` (260), alors que « valeur par
+  défaut » remet 274.
+- Corrigé ensuite à la demande de l'user (choix : 260, ce que voyait un nouvel user) :
+  `constants/Colors.ts` `DEFAULT_HUE = 260` (était 274) et `types/settings.ts`
+  `DEFAULT_SETTINGS.theme = DEFAULT_HUE` (une seule valeur). tsc OK, jest 13/13.
+
+---
+
+## Ajout (21/11/2026) — US 50 : changer son mot de passe (app : même branche que la US 49 ; API : `philip/us50-mot-de-passe` depuis main)
+- Choix de l'user : app sur la même branche que la US 49 ; signalement d'abus = courriel aux
+  admins seulement (pas de déconnexion), lien valide 7 jours, une seule fois.
+- **API (`sync_api`, MIGRATION REQUISE)** :
+  - `migrations/20261121000000_CREATE_changements_mot_de_passe.js` : (id, id_membre FK
+    membres CASCADE, temps_changement, signale, temps_signalement).
+  - `PATCH /membres/mot_de_passe` (authentifierToken + `limiteMotDePasse` 10 / 15 min) :
+    { ancien, nouveau } → 400 champ manquant ; 403 ancien faux ; nouveau === ancien → 200
+    `modifie: false` sans rien faire (ni hash, ni courriel) ; règles (`reglesMotDePasse.js`,
+    mêmes que register.tsx : 12 car., spécial, maj + min) → 400 ; sinon hash + UPDATE +
+    INSERT changements_mot_de_passe + courriel au membre AVANT le commit (courriel en échec →
+    rollback, mot de passe inchangé, 500 explicite) → 200 `modifie: true`.
+  - `src/functions/courrielsMotDePasse.js` : courriel au membre (date dans son fuseau, lien
+    « signale-le », pseudo échappé) ; courriel aux admins (`membres.role = 'admin'`), objet
+    « Abus de Mot de Passe ».
+  - `GET /confirmation/abus_mot_de_passe?token` : page de confirmation (confirmation.ejs) —
+    un GET seul ne signale rien (scanners de courriels) ; `POST` : signale = 1 (une fois),
+    courriel à chaque admin avant le commit (échec → rollback, on peut réessayer).
+  - `genConfirmationToken.js` : options `extra` (id_changement) et `expiresIn` (7d) ; défaut
+    inchangé (1 h, anonymisation). `authenticate.js` : message d'expiration « 7 jours » pour
+    ce lien.
+  - **Faille corrigée (dans le sujet)** : `CHAMPS_MODIFIABLES` de `PATCH /membres/profil`
+    contenait `mot_de_passe` → n'importe quelle session pouvait changer le mot de passe sans
+    l'ancien, et il était enregistré EN CLAIR (pas de hash). Retiré ; l'app ne l'envoyait pas.
+  - Vérifs : `node --check` des 8 fichiers ; règles et jetons testés en node (pas de lint
+    dans l'API). Pas lancé contre une BD.
+- **App** :
+  - `app/(modals)/motDePasse.tsx` (nouveau, ModalBase) : actuel / nouveau (règles cochées en
+    direct) / confirmation, afficher-masquer ; 403 → toast « mot de passe actuel incorrect » ;
+    résultat dans la modale (changé + courriel, ou « tout est beau, rien n'a changé »).
+  - `app/(tabs)/profile/edit.tsx` : bouton « changer mon mot de passe » sous la bio ; import
+    `useAPI` inutilisé retiré (lint).
+  - `functions/reglesMotDePasse.ts` + `tests/reglesMotDePasse.test.js` (5 tests). register.tsx
+    garde ses propres règles (non touché).
+  - Locales fr/en `profile.password.*`.
+  - Vérifs : tsc OK, eslint 0, jest 18/18.
+- À faire / tester : lancer la migration ; ancien faux → erreur ; même mot de passe → « rien
+  n'a changé » et aucun courriel ; vrai changement → courriel reçu, connexion avec le nouveau ;
+  lien « signale-le » → page → bouton → courriel « Abus de Mot de Passe » aux admins ; 2e clic
+  → « déjà signalé ». `bd/schema.sql` pas mis à jour (la migration suffit).
