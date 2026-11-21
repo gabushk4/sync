@@ -22,9 +22,20 @@ import Ionicons from "@react-native-vector-icons/ionicons"
 
 const noop = () => {}
 
-// afficherBoutonPleinEcran: the round button (✕ / ✓) shown when the modal is full screen;
-// false for a modal that has its own confirm button (friend picker).
-// boutonADroite: that button in the bottom right corner instead of the bottom left.
+/**
+ * Every prop is listed: with a JSDoc, tsc only knows the props documented here.
+ *
+ * @param {Object} props
+ * @param {React.ReactNode} [props.children] - The sheet's content.
+ * @param {boolean} [props.canDismiss=true] - Closing dismisses the modal route.
+ * @param {() => void} [props.onDismiss] - Called once closed.
+ * @param {boolean} [props.afficherBoutonPleinEcran=true] - The round button (✕ / ✓) shown
+ *   when the modal is full screen; false for a modal that has its own confirm button (friend
+ *   picker) or is closed by swiping down / tapping outside only (the invitation review's
+ *   availability details, Philip).
+ * @param {boolean} [props.boutonADroite=false] - That button in the bottom right corner
+ *   instead of the bottom left.
+ */
 export default function ModalBase({ children, canDismiss = true, onDismiss = noop, afficherBoutonPleinEcran = true, boutonADroite = false }){
     const { colors } = usePalette()
     const {dismissButton, runDismissButtonAction} = useModal()

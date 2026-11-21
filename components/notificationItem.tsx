@@ -86,7 +86,7 @@ export default function NotificationItem({ item, index, vu }: ItemProps) {
     const evenementPasse = !!details.event?.fin && details.event.fin < DateTime.now()
 
     const [selectionner, setSelectionner] = useState(false)
-    const [notificationsSelec, setNotificationsSelec] = useState<Array<string>>([])
+    const [notificationsSelec, setNotificationsSelec] = useState<string[]>([])
 
     const [montrerDetails, setMontrerDetails] = useState<boolean>(false)
     // Message lines shown: more once unfolded. Derived, not a state set from the effect
@@ -174,10 +174,10 @@ export default function NotificationItem({ item, index, vu }: ItemProps) {
     /**
      * Deletes the given notifications (soft delete server-side), then refreshes the list.
      *
-     * @param {Array<string>} ids - Public ids of the notifications to delete.
+     * @param {string[]} ids - Public ids of the notifications to delete.
      * @returns {Promise<void>}
      */
-    const supprNotif = async (ids: Array<string> = []) => {
+    const supprNotif = async (ids: string[] = []) => {
         if (ids.length === 0) {
             return
         }
@@ -266,7 +266,10 @@ export default function NotificationItem({ item, index, vu }: ItemProps) {
         } else if (montrerDetails === false) {
             masquerDetailsNotif()
         }
-    }, [montrerDetails])    
+        // Only when unfolded / folded: the two animations are recreated on every render,
+        // as dependencies they would restart on each one (e.g. while the card loads).
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [montrerDetails])
 
     let expired = false
     if (item.expiration === "expired") expired = true
@@ -429,6 +432,10 @@ export default function NotificationItem({ item, index, vu }: ItemProps) {
         </Text>
     ) : null
 
+    // An event card's own buttons (a postponement vote's yes / no); an invitation's
+    // answer is in its panel instead.
+    const boutonsVisibles = !invitation && options.length > 0
+
     const corbeille = (style: object) => (
         <TouchableOpacity onPress={() => supprNotif([item.id])} style={[{ position: "relative", right: 0, backgroundColor: colors.error, borderColor: colors.border }, style]}>
             <Image source={icones.corbeille} style={{ width: "80%", height: "80%" }} resizeMode="contain" />
@@ -524,27 +531,41 @@ export default function NotificationItem({ item, index, vu }: ItemProps) {
                         exiting={FadeOut.duration(150)}
                         style={{ borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border, marginTop: 4 }}
                     >
-                        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 8, paddingTop: 8 }}>
-                            {statut ?? <View />}
-                            <View style={{ flexDirection: "row", alignItems: "center", height: 36 }}>
-                                {/* e.g. a postponement vote's yes / no; an invitation's accept /
-                                    refuse are in the panel below. */}
-                                {!invitation && options}
-                                {corbeille({ height: 32, width: 32, borderRadius: 100, alignItems: "center", justifyContent: "center" })}
+                        {/* A postponement vote's yes / no (an invitation's accept / refuse are
+                            in the panel below): their own row, with the status. Otherwise the
+                            status sits on the date's line in the panel — no empty row between
+                            the message and the date. No trash on an event's card (same card
+                            whatever the notification; its delete didn't work, see HANDOFF):
+                            a long press still selects it to delete. */}
+                        {boutonsVisibles && (
+                            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 8, paddingTop: 8 }}>
+                                {statut ?? <View />}
+                                <View style={{ flexDirection: "row", alignItems: "center", height: 36 }}>
+                                    {options}
+                                </View>
                             </View>
-                        </View>
-                        <PanneauGestionEvenement
-                            idEvenement={idEvenement}
-                            event={details.event}
-                            erreur={details.erreur}
-                            recharger={details.recharger}
-                            passe={evenementPasse}
-                            invitation={invitationEnAttente}
-                            invitationExpiree={invitationExpiree}
-                            quitte={evenementQuitte}
-                            decision={decision}
-                            onTermine={() => notifRefresh?.forceRefresh()}
-                        />
+                        )}
+                        {/* An invitation of the event's old time (moved since by a vote): it
+                            doesn't work anymore, the newer notification is the one to answer. */}
+                        {item.remplacee ? (
+                            <Text style={[s.reponse, { color: colors.muted, paddingVertical: 8 }]}>
+                                {t('expiration.replaced')}
+                            </Text>
+                        ) : (
+                            <PanneauGestionEvenement
+                                idEvenement={idEvenement}
+                                event={details.event}
+                                erreur={details.erreur}
+                                recharger={details.recharger}
+                                passe={evenementPasse}
+                                invitation={invitationEnAttente}
+                                invitationExpiree={invitationExpiree}
+                                quitte={evenementQuitte}
+                                decision={decision}
+                                onTermine={() => notifRefresh?.forceRefresh()}
+                                statut={boutonsVisibles ? undefined : statut}
+                            />
+                        )}
                     </Animated.View>
                 )}
             </Animated.View>

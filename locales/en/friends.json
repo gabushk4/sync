@@ -12,7 +12,6 @@
 		"emptyState": "add friends using the option:",
 		"unavailable": "unavailable then",
 		"pickFriends": "Pick friends",
-		"inviteCount": "Invite ({{count}})",
 		"addCount": "Add ({{count}})"
 	},
 	"add": {

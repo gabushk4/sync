@@ -11,6 +11,7 @@ import VoileEnvoi from "@/components/voileEnvoi";
 import ToastAbs from "@/abstractions/toastAbs";
 import { toastTypes } from "@/constants/toastConfig";
 import ConflitEvenement, { SortieConflit } from "@/components/conflitEvenement";
+import { creationEvents, PlageCreee } from "@/events/creationEvents";
 import catcher from "@/functions/catcher";
 import { debutDejaPasse, plagePreremplie } from "@/functions/jourCreation";
 import titreEvenement from "@/functions/titreEvenement";
@@ -52,6 +53,22 @@ const CreationIndisponibilite = forwardRef<CreationHandle>(function CreationIndi
     const maintenant = DateTime.now()
     const { debutSuggere, finDemandee } = plagePreremplie(start, end, maintenant)
 
+    // The range being sent: the home timeline moves to it once created (here or from
+    // the conflict screen), like an event's.
+    const plageEnvoyeeRef = useRef<PlageCreee | null>(null)
+
+    /**
+     * Created: announces the unavailability's range (creationEvents), so the home
+     * timeline shows it, then goes back to the home timeline.
+     *
+     * @author Philip — back on the created range after a creation
+     * @returns {void}
+     */
+    const quitterApresCreation = () => {
+        if (plageEnvoyeeRef.current) creationEvents.creee(plageEnvoyeeRef.current)
+        navigation.dispatch({ type: 'POP_TO_TOP' })
+    }
+
     /**
      * Validates the form (start not past) and sends the unavailability, then goes
      * back to the home timeline. A 409 (overlap) shows what is in the way.
@@ -78,6 +95,7 @@ const CreationIndisponibilite = forwardRef<CreationHandle>(function CreationIndi
                 participants: [],
                 depuis_dispo_commune: false
             }
+            plageEnvoyeeRef.current = { debut: values.start, fin: values.end }
             const response = await api.post('/evenements/', nouvelle)
             if (response.status === 201) {
                 ToastAbs.show({
@@ -86,7 +104,7 @@ const CreationIndisponibilite = forwardRef<CreationHandle>(function CreationIndi
                     text2: t('unavailability.createdMessage'),
                     autoHide: true,
                 })
-                navigation.dispatch({ type: 'POP_TO_TOP' })
+                quitterApresCreation()
             }
         } catch (error: any) {
             if (error.response?.status === 409 && nouvelle) {
@@ -110,7 +128,7 @@ const CreationIndisponibilite = forwardRef<CreationHandle>(function CreationIndi
     const quitterConflit = (sortie: SortieConflit) => {
         setConflit(null)
         if (sortie === 'retour') navigation.goBack()
-        else if (sortie === 'accueil') navigation.dispatch({ type: 'POP_TO_TOP' })
+        else if (sortie === 'accueil') quitterApresCreation()
     }
 
     useImperativeHandle(ref, () => ({ envoyer }))

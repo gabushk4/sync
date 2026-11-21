@@ -1,134 +1,60 @@
-import ToastAbs from "@/abstractions/toastAbs";
-import { useAPI } from "@/contextes/contexteAPI";
-import catcher from "@/functions/catcher";
-import { avertirIndisponibles } from "@/hooks/useEnvoiCreation";
+import { ajouterAuBrouillon, BROUILLON_VIDE, BrouillonInvites, marquerRetrait, retirerDuBrouillon } from "@/functions/brouillonInvites";
 import log from "@/functions/log";
-import { InviterUrl, Participant } from "@/types/invites";
-import React, { createContext, useContext, useState } from 'react';
+import { Participant } from "@/types/invites";
+import React, { createContext, useCallback, useContext, useState } from 'react';
 
 type InvitesContextValue = {
+    /** Friends added in the form, not invited yet (sent with ✓). */
     invites: Participant[]
-    ajouterInvite: (invite: Participant | Participant[], inviterUrl?: string) => Promise<void>
-    supprimerInvite: (inviteSupp: Participant, supprimerUrl?: string | undefined) => Promise<boolean>
+    /** Participants already in the event, to remove with ✓ (event being edited). */
+    retraits: Participant[]
+    ajouterInvite: (invite: Participant | Participant[]) => void
+    supprimerInvite: (inviteSupp: Participant) => void
+    retirerParticipant: (participant: Participant) => void
     resetInvites: () => void
 }
 
 export const InvitesContexte = createContext<InvitesContextValue | undefined>(undefined)
 
-export const InvitesProvider: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
-    const { api } = useAPI()
-    const [invites, setInvites] = useState<Participant[]>([])
+/**
+ * The participants changes of the event form being filled (creation or edit): friends
+ * added (`invites`) and existing participants removed (`retraits`), in one state since
+ * adding a friend may cancel a removal (rules: functions/brouillonInvites). Nothing is
+ * sent from here: the form's ✓ sends them (POST /evenements with the creation, or the
+ * edit page's save), and leaving without ✓ drops them (resetInvites).
+ *
+ * @author Philip — invitations only sent on the form's ✓: "Invite" in the friend picker
+ *   used to POST the invitation right away (and the X to DELETE the participant), even
+ *   when the edit was then cancelled
+ */
+export const InvitesProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
+    const [{ invites, retraits }, setBrouillon] = useState<BrouillonInvites>(BROUILLON_VIDE)
 
-    /** 
-     * @param {array} invite 
-     * @param {object} inviterUrl | {string:..., data:...}
-     */
-    const ajouterInvite = async (invite: Participant | Participant[], inviterUrl: InviterUrl = undefined) => {
-        log('ajouter invite', invite, inviterUrl)
+    const ajouterInvite = useCallback((invite: Participant | Participant[]) => {
+        const amis = Array.isArray(invite) ? invite : [invite]
+        log('ajouter invite', amis.map((ami) => ami.id))
+        setBrouillon((prev) => ajouterAuBrouillon(prev, amis))
+    }, [])
 
-        const newInvitesArray: Participant[] = Array.isArray(invite) ? invite : [invite]
+    const supprimerInvite = useCallback((inviteSupp: Participant) => {
+        setBrouillon((prev) => retirerDuBrouillon(prev, inviteSupp.id))
+    }, [])
 
-        const invitations: Participant[] = newInvitesArray.map((inv) => ({
-            id: inv.id,
-            privilege: 'lecteur',
-            pseudo: inv.pseudo,
-            fp_url: inv.fp_url,
-            statut: 'en_attente'
-        }))
+    const retirerParticipant = useCallback((participant: Participant) => {
+        setBrouillon((prev) => marquerRetrait(prev, participant))
+    }, [])
 
-        let valid = true
-        // Friends the API didn't invite because they're unavailable then (Philip — user story 20).
-        let idsIndisponibles = new Set<string>()
+    const resetInvites = useCallback(() => setBrouillon(BROUILLON_VIDE), [])
 
-        if (inviterUrl) {
-            let text2: string[] = []
-            newInvitesArray.forEach((inviteItem, i) => {
-                if (i === 1) text2.push('et')
-                else if (i > 1) text2.push(',')
-
-                if (inviteItem.pseudo) text2.push(inviteItem.pseudo)
-            })
-            const text2Str = text2.join(' ')
-            try {
-                // inviterUrl peut être string ou objet
-                const url = inviterUrl
-
-                const response = await api.post(url, {participants: invitations})
-                log('ajouterInvite res:', response.data)
-
-                const indisponibles: { id: string, pseudo: string }[] = response.data?.indisponibles ?? []
-                const bloques: { id: string, pseudo: string }[] = response.data?.bloques ?? []
-                idsIndisponibles = new Set([...indisponibles, ...bloques].map((i) => i.id))
-                if (indisponibles.length > 0 || bloques.length > 0) avertirIndisponibles(indisponibles, bloques)
-                else ToastAbs.show({
-                    type: 'persoSucces',
-                    text1: 'invitations envoyées',
-                    text2: text2Str,
-                })
-            } catch (error) {
-                log('erreur ajouterInvite', error)
-                valid = false
-                catcher(error, `impossible d'inviter ${text2Str}`)
-            }
-        }
-        
-        log('invitations', invitations, "valide", valid)
-
-        if (valid) {
-            let nouvInvites = [...invites, ...invitations.filter((i) => !idsIndisponibles.has(i.id))]
-
-            // dédupliquer par id
-            nouvInvites = [...new Map(nouvInvites.map((i) => [i.id, i])).values()]
-
-            //log('nouvInvites', nouvInvites)
-            setInvites([...nouvInvites])
-        }
-    }
-
-    /** Retire un participant côté API puis du contexte local si la suppression réussit. */
-    const supprimerInvite = async (inviteSupp: Participant, supprimerUrl?: string): Promise<boolean> => {
-        log('supprimer invite', inviteSupp)       
-
-        let valid = true
-
-        if (supprimerUrl) {
-            log('invité a supprimer', inviteSupp)
-            try {
-                const response = await api.delete(`${supprimerUrl}/${inviteSupp.id}`)
-                if(response.status == 200){
-                    ToastAbs.show({
-                        type: 'persoSucces',
-                        text2: response.data?.message,
-                    })
-                }
-            } catch (error) {
-                valid = false
-                catcher(error, 'impossible de supprimer le participants')
-            }
-        }
-
-        if (valid) {
-            setInvites((prev) => prev.filter((invite) => invite.id !== inviteSupp.id))
-        }
-        return valid
-    }
-
-    const resetInvites = ()=>{
-        setInvites([])
-    }
-
-    return (    
-        <InvitesContexte.Provider value={{invites, ajouterInvite, resetInvites, supprimerInvite}}>
+    return (
+        <InvitesContexte.Provider value={{ invites, retraits, ajouterInvite, supprimerInvite, retirerParticipant, resetInvites }}>
             {children}
         </InvitesContexte.Provider>
-    )   
+    )
 }
+
 /**
- * 
- * @returns {array} invites
- * @returns {function} ajouterInvite(array)
- * @returns {function} resetInvites
- * @returns {function} supprimerInvite(idPubliqueInvite)
+ * @returns {InvitesContextValue} The form's pending participants changes.
  */
 export const useInvites = (): InvitesContextValue => {
     const ctx = useContext(InvitesContexte)

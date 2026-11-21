@@ -61,11 +61,13 @@
     "repeatedUntil": "évènement répété chaque {{unit}} jusqu'au :",
     "private": "privé",
     "public": "public",
-    "participants": "participants"
+    "participants": "participants",
+    "removedOnConfirm_one": "{{count}} participant sera retiré au ✓",
+    "removedOnConfirm_other": "{{count}} participants seront retirés au ✓"
   },
   "participantRemoval": {
     "confirmTitle": "Retirer ce participant ?",
-    "confirmMessage": "Voulez-vous retirer {{pseudo}} de cet événement ?",
+    "confirmMessage": "Êtes-vous sûr ? {{pseudo}} fait déjà partie de l'évènement.",
     "cancel": "Annuler",
     "remove": "Retirer"
   },
@@ -135,19 +137,31 @@
     "participantsLoadFailed": "erreur au chargement des participants"
   },
   "invitationReview": {
-    "hint": "Touche l'évènement de {{pseudo}} ou le tien pour répondre.",
     "leader": "Organisateur",
     "me": "Moi",
     "loadFailed": "Impossible de charger les horaires de l'invitation",
     "retry": "Impossible de charger les horaires. Touche pour réessayer.",
     "private": "Privé",
-    "commonSlot": "Dispo"
+    "availabilityPartial": "Dispo partielle",
+    "availabilityAll": "Tout le monde dispo",
+    "availablePeople": "{{compte}} dispo : {{noms}}",
+    "alreadyProposed": "Cette plage est déjà proposée.",
+    "proposeRange": "Proposer {{plage}}",
+    "allTooShort": "Tout le monde est libre par moments, mais moins longtemps que l’évènement.",
+    "availabilityTitle": "Disponibilité commune",
+    "rangeAlreadyProposed": "déjà proposée"
   },
   "invitationDecision": {
     "accept": "Accepter",
     "refuse": "Refuser",
     "refuseFailed": "Impossible de refuser l'invitation",
-    "invitedBy": "Invité par"
+    "invitedBy": "Invité par",
+    "refusedTitle": "Invitation refusée",
+    "proposeQuestion": "Aimerais-tu proposer une autre date?",
+    "proposeHint": "Les participants vont voter. Si l'organisateur choisit ta date, tu recevras une nouvelle invitation.",
+    "proposeYes": "Proposer une autre date",
+    "proposeNo": "Non merci",
+    "done": "OK"
   },
   "unavailability": {
     "reasonPlaceholder": "raison (optionnelle)...",
@@ -192,7 +206,16 @@
     "notFreeTitle": "Plus tout le monde est libre",
     "notFreeMessage": "{{pseudos}} : plus libre à ce moment",
     "confirmPropose": "Proposer {{plage}}?",
-    "confirm": "Confirmer"
+    "confirm": "Confirmer",
+    "proposeTitle": "Proposer un report",
+    "moveTitle": "Déplacer l’évènement",
+    "move": "Déplacer",
+    "confirmMove": "Déplacer l’évènement {{plage}}?",
+    "date": "Date",
+    "time": "Heure",
+    "keepsDuration": "La durée de l’évènement est conservée.",
+    "futureOnly": "Choisis un moment à venir.",
+    "sameTime": "C’est déjà la plage actuelle."
   },
   "album": {
     "title": "Album photo",
