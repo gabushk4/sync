@@ -1,7 +1,8 @@
 const tintColorLight = '#2f95dc';
 const tintColorDark = '#fff';
 
-export const DEFAULT_HUE = 274
+/** The app's default theme hue: DEFAULT_SETTINGS' and "reset to default"'s (they differed: 260 / 274). */
+export const DEFAULT_HUE = 260
 
 export default {
   light: {

@@ -1,6 +1,5 @@
 import TextInputAbs from "@/abstractions/textInputAbs";
 import ProfilPic from "@/components/pfp";
-import { useAPI } from "@/contextes/contexteAPI";
 import { useFont } from "@/contextes/contexteFont";
 import { useMembre } from "@/contextes/contexteMembre";
 import { usePalette } from "@/contextes/contextePalette";
@@ -10,6 +9,7 @@ import log from "@/functions/log";
 import { useActionFab } from "@/hooks/useActionFAB";
 import { FPType, isFpObject } from "@/types/pfp";
 import Ionicons from "@react-native-vector-icons/ionicons";
+import { router } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from 'react-i18next';
 import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from "react-native";
@@ -82,13 +82,26 @@ export default function EditProfil() {
         saveBtn: { backgroundColor: colors.primary, borderWidth: 1, borderColor: colors.border },
         cancelBtn: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
         separator: {
-            height: 1, 
+            height: 1,
             width: '90%',
             backgroundColor: colors.border,
             alignSelf: 'center',
             marginTop: 8,
             marginBottom:8
-        }
+        },
+        boutonMotDePasse: {
+            marginTop: 8,
+            height: 46,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: colors.border,
+            backgroundColor: colors.card,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+        },
+        texteBoutonMotDePasse: { color: colors.text, fontFamily: fonts.body, fontSize: 16 },
     })
 
     return (
@@ -126,10 +139,20 @@ export default function EditProfil() {
                     onChangeText={setBio}
                     style={[s.input, s.bioInput]}
                     multiline
-                    placeholder={t('edit.bioPlaceholder')}                    
+                    placeholder={t('edit.bioPlaceholder')}
                 />
 
-                
+                {/* Changing the password, in its own modal (Philip — user story 50). */}
+                <View style={s.separator}/>
+                <TouchableOpacity
+                    style={s.boutonMotDePasse}
+                    onPress={() => router.push('/(modals)/motDePasse' as any)}
+                    accessibilityRole="button"
+                >
+                    <Ionicons name="key-outline" size={18} color={colors.text} />
+                    <Text style={s.texteBoutonMotDePasse}>{t('password.open')}</Text>
+                </TouchableOpacity>
+
             </ScrollView>
         </KeyboardAvoidingView>
     )
