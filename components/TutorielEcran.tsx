@@ -26,6 +26,7 @@ import Radius from "@/constants/Radius";
 import { SpotlightOverlay } from "./spotlightOverlay";
 import {SecondaryBtn, MainBtn} from "@/abstractions/touchableOpacityAbs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { measureSpotlightEvents } from "@/events/mesureSpotlightEvents";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -73,27 +74,40 @@ export function TutorielEcran() {
     position: PositionCible;
   } | null>(null);
   const cleCible = `${pathname}:${step}:${explicationIndex}:${cibleCourante?.testID ?? ""}`;
+  const sequenceMesure = React.useRef(0);
+  const tutorielRef = React.useRef<View>(null);
+
+  const mesurerCible = React.useCallback(() => {
+    const targetRef = cibleCourante?.targetRef;
+    const target = targetRef?.current;
+    const tutoriel = tutorielRef.current;
+    if (!target || !tutoriel) return;
+
+    const sequenceCourante = ++sequenceMesure.current;
+    tutoriel.measureInWindow((origineX, origineY) => {
+      if (sequenceCourante !== sequenceMesure.current) return;
+      target.measureInWindow((x, y, width, height) => {
+        if (sequenceCourante !== sequenceMesure.current) return;
+        setMesureCible({
+          cle: cleCible,
+          targetRef,
+          position: { x: x - origineX, y: y - origineY, width, height },
+        });
+      });
+    });
+  }, [cibleCourante?.targetRef, cleCible]);
 
   React.useLayoutEffect(() => {
-    let actif = true;
-    const targetRef = cibleCourante?.targetRef;
+    if (!isTutorialMode || isCompleted || !etape) return;
 
-    if (targetRef?.current) {
-      targetRef.current.measureInWindow((x, y, width, height) => {
-        if (actif) {
-          setMesureCible({
-            cle: cleCible,
-            targetRef,
-            position: { x, y, width, height },
-          });
-        }
-      });
-    }
+    const unsubscribe = measureSpotlightEvents.onMeasureSpotlight(mesurerCible);
+    mesurerCible();
 
     return () => {
-      actif = false;
+      sequenceMesure.current += 1;
+      unsubscribe();
     };
-  }, [cibleCourante?.targetRef, cleCible]);
+  }, [isTutorialMode, isCompleted, etape, mesurerCible]);
 
   const mesureCorrespondante =
     mesureCible?.cle === cleCible &&
@@ -139,13 +153,6 @@ export function TutorielEcran() {
   // Guard
   if (!isTutorialMode || isCompleted || !etape) return null;
 
-  // Position du text container (bulle) :
-  // 1. textPosition définie explicitement sur l'explication courante (priorité)
-  // 2. sinon textPosition défini sur l'étape
-  // 3. sinon, si une ref est mesurée : milieu du composant ref (par défaut)
-  // 4. sinon : position par défaut selon l'écran
-  // SpotlightOverlay affiche le trou sur positionCible (mesure de la ref en priorité,
-  // sinon position hardcodée dans l'objet).
   const afficherSpotlight = Boolean(positionCible);
 
   // Texte affiché : explication courante si disponible, sinon message de l'étape
@@ -159,7 +166,7 @@ export function TutorielEcran() {
   const message = afficherExplication && t(explication.text);
 
   return (
-    <View style={styles.conteneur}>
+    <View ref={tutorielRef} style={styles.conteneur}>
       {/* Badge « Mode démo » */}
       <View style={[styles.badge, {top: insets.top, backgroundColor: colors.card, }]}>
         <Text style={[styles.badgeText, { fontFamily: fonts.body, color: colors.warning }]}>Tuto</Text>

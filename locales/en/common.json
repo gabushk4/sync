@@ -89,6 +89,12 @@
 			"annuler": "Keep going",
 			"confirmer": "Skip"
 		},
+		"etape2": {
+			"explication1": "Select the “Unavailability” tab to set up recurring time for yourself."
+		},
+		"etape3": {
+			"explication1": "Here, you can reserve recurring solo time: sleeping, traveling, and more."
+		},
 		"etape1": {
 			"homeTitle": "Welcome to Sync !",
 			"home" : "This tutorial will guide you towards everything that awaits you here. You can skip this anytime",

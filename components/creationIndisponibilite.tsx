@@ -1,9 +1,11 @@
 import { useLocalSearchParams, useNavigation } from "expo-router";
-import { forwardRef, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DateTime } from "luxon";
+import { StyleSheet, View } from "react-native";
 
 import { useAPI } from "@/contextes/contexteAPI";
+import { useTutoriel } from "@/contextes/contexteTutoriel";
 
 import { CreationHandle } from "@/components/creationEvenement";
 import EventForm, { EventFormHandle } from "@/components/eventForm";
@@ -17,6 +19,7 @@ import titreEvenement from "@/functions/titreEvenement";
 import useEnvoiCreation, { corpsCreation } from "@/hooks/useEnvoiCreation";
 import { defaultEvent, Event } from "@/types/calendar";
 import { conflitsDeLaReponse, EvenementEnConflit, NouvelEvenement } from "@/types/conflit";
+import { eventFormIds } from "@/constants/tutorial";
 
 /**
  * Unavailability page: a stretch where the member is busy, stored as an event of
@@ -41,8 +44,10 @@ const CreationIndisponibilite = forwardRef<CreationHandle>(function CreationIndi
     const { t } = useTranslation('events')
     const navigation = useNavigation()
     const { api } = useAPI()
+    const { enregistrerCible } = useTutoriel()
 
     const formRef = useRef<EventFormHandle>(null)
+    const tutorialTargetRef = useRef<View>(null)
     const [event] = useState<Event>(defaultEvent)
     const { enChargement, envoyerUneFois } = useEnvoiCreation()
     // Conflict screen over this page (409 answer), or null.
@@ -51,6 +56,11 @@ const CreationIndisponibilite = forwardRef<CreationHandle>(function CreationIndi
     const { start, end } = useLocalSearchParams<{ start?: string, end?: string }>()
     const maintenant = DateTime.now()
     const { debutSuggere, finDemandee } = plagePreremplie(start, end, maintenant)
+
+    useEffect(
+        () => enregistrerCible(eventFormIds.dnd, tutorialTargetRef),
+        [enregistrerCible],
+    )
 
     /**
      * Validates the form (start not past) and sends the unavailability, then goes
@@ -116,7 +126,7 @@ const CreationIndisponibilite = forwardRef<CreationHandle>(function CreationIndi
     useImperativeHandle(ref, () => ({ envoyer }))
 
     return (
-        <>
+        <View ref={tutorialTargetRef} testID={eventFormIds.dnd} style={styles.formulaire}>
             <EventForm
                 ref={formRef}
                 event={event}
@@ -134,8 +144,14 @@ const CreationIndisponibilite = forwardRef<CreationHandle>(function CreationIndi
                     onSortie={quitterConflit}
                 />
             )}
-        </>
+        </View>
     )
 })
 
 export default CreationIndisponibilite
+
+const styles = StyleSheet.create({
+    formulaire: {
+        flex: 1,
+    },
+})

@@ -54,6 +54,7 @@ export function SpotlightOverlay({
   const Y = useSharedValue(y);
   const w = useSharedValue(width);
   const h = useSharedValue(height);
+  const opaciteVoile = useSharedValue(0);
   const dernierContextePosition = useRef({ pathname, step, explicationIndex });
 
   // X, Y, w, h sont des useSharedValue (refs stables) : leur référence ne
@@ -81,6 +82,13 @@ export function SpotlightOverlay({
     w.value = withTiming(width, cfg);
     h.value = withTiming(height, cfg);
   }, [pathname, step, explicationIndex, x, y, width, height, X, Y, w, h]);
+
+  useLayoutEffect(() => {
+    opaciteVoile.value = withTiming(1, { duration: 250 });
+  }, [opaciteVoile]);
+  const voileAnime = useAnimatedStyle(() => ({
+    opacity: opaciteVoile.value,
+  }));
 
   // ───── Bloqueurs de touches (transparent, captent le toucher) ─────
   const topBlocker = useAnimatedStyle(() => ({
@@ -122,25 +130,27 @@ export function SpotlightOverlay({
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
       {/* Visuel décoratif uniquement : masque SVG arrondi */}
-      <Svg width={W} height={H} style={StyleSheet.absoluteFill} pointerEvents="none">
-        <Defs>
-          <Mask id="spotlight-mask">
-            <Rect width={W} height={H} fill="white" />
-            <ARect
-              animatedProps={holeProps}
-              rx={radius}
-              ry={radius}
-              fill="black"
-            />
-          </Mask>
-        </Defs>
-        <Rect
-          width={W}
-          height={H}
-          fill={overlayColor}
-          mask="url(#spotlight-mask)"
-        />
-      </Svg>
+      <Animated.View style={[StyleSheet.absoluteFill, voileAnime]} pointerEvents="none">
+        <Svg width={W} height={H} style={StyleSheet.absoluteFill} pointerEvents="none">
+          <Defs>
+            <Mask id="spotlight-mask">
+              <Rect width={W} height={H} fill="white" />
+              <ARect
+                animatedProps={holeProps}
+                rx={radius}
+                ry={radius}
+                fill="black"
+              />
+            </Mask>
+          </Defs>
+          <Rect
+            width={W}
+            height={H}
+            fill={overlayColor}
+            mask="url(#spotlight-mask)"
+          />
+        </Svg>
+      </Animated.View>
 
       {/* Bloqueurs de touches (transparents) autour du trou */}
       <Animated.View style={[styles.blocker, topBlocker]} />

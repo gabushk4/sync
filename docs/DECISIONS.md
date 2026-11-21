@@ -24,3 +24,34 @@
 - **Contexte :** Le tutoriel change d'écran à chaque étape ; une mesure tardive de la cible pouvait encore déplacer la bulle pendant la transition de page.
 - **Décision :** N'animer les positions que lorsque l'index d'explication change sans changement de route ni d'étape. Appliquer directement les nouvelles positions pour les changements d'étape, de route et les mesures.
 - **Fichiers impactés :** `components/TutorielEcran.tsx`, `components/spotlightOverlay.tsx`.
+
+## 2026-11-21 - Séparation des styles statiques et dynamiques
+- **Contexte :** Les styles de `PagesGlissables` mélangeaient les valeurs statiques avec celles provenant du contexte et des mesures, et certains objets étaient définis directement dans le JSX.
+- **Décision :** Déclarer les styles statiques au niveau du module avec `StyleSheet.create`. Construire dans le composant un objet nommé pour les styles dépendant du contexte, des props, de l'état ou du layout, puis le combiner aux styles statiques. Utiliser `useMemo` lorsque la stabilité de la référence est utile, sans mémoïser systématiquement tous les styles.
+- **Fichiers impactés :** `components/pagesGlissables.tsx`, `.agents/skills/vercel-react-native-skills/AGENTS.md`, `.agents/skills/vercel-react-native-skills/SKILL.md`.
+
+## 2026-11-21 - Rafraîchissement du spotlight après défilement des onglets
+- **Contexte :** La mesure initiale du tutoriel ne suivait pas la position d'une cible lorsque la barre des onglets défilait.
+- **Décision :** Utiliser un événement dédié émis en fin de défilement pour remesurer la cible active; nettoyer l'abonnement et invalider les mesures asynchrones devenues obsolètes.
+- **Fichiers impactés :** `components/pagesGlissables.tsx`, `components/TutorielEcran.tsx`, `events/mesureSpotlightEvents.ts`.
+
+## 2026-11-21 - Coordonnées du spotlight relatives à son calque
+- **Contexte :** La cible mesurée dans la fenêtre pouvait être décalée par rapport au calque plein écran du tutoriel.
+- **Décision :** Mesurer aussi l'origine du calque et soustraire cette origine aux coordonnées fenêtre de la cible.
+- **Fichiers impactés :** `components/TutorielEcran.tsx`.
+
+## 2026-11-21 - Mesure après la transition de création
+- **Contexte :** La mesure initiale du spotlight pouvait se faire avant la fin de l'animation d'entrée de l'écran `create`.
+- **Décision :** Émettre une nouvelle demande de mesure à l'événement `transitionEnd` de l'écran natif, uniquement pour une transition d'entrée.
+- **Fichiers impactés :** `app/(tabs)/home/create.tsx`, `events/mesureSpotlightEvents.ts`.
+
+## 2026-11-21 - Fondu entrant du voile du spotlight
+- **Contexte :** L'assombrissement apparaissait brusquement au montage du spotlight.
+- **Décision :** Animer l'opacité du rectangle SVG du voile avec Reanimated, sans modifier la géométrie du trou ni les bloqueurs tactiles.
+- **Fichiers impactés :** `components/spotlightOverlay.tsx`.
+
+## 2026-11-21 - Opacité du voile sur une vue native
+- **Contexte :** L'animation de l'opacité comme propriété SVG pouvait invalider le dessin du masque à chaque frame.
+- **Décision :** Appliquer le fondu sur une `Animated.View` native enveloppant le SVG, en laissant le masque SVG statique hors du fondu.
+- **Fichiers impactés :** `components/spotlightOverlay.tsx`.
+

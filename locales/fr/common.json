@@ -89,6 +89,12 @@
 			"annuler": "Continuer le tutoriel",
 			"confirmer": "Passer"
 		},
+		"etape2": {
+			"explication1": "Sélectionne l’onglet « Indisponibilité » pour passer à la création de ton temps solo récurrent."
+		},
+		"etape3": {
+			"explication1": "Ici, tu peux réserver ton temps solo récurrent : dormir, voyager, etc."
+		},
 		"etape1": {
 			"homeTitle": "Bienvenue sur Sync!",
 			"home":"Ce tutoriel te guidera vers les possibilités que l'app t'offre. Tu peux fermer ce tutoriel à tout moment",

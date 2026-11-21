@@ -1,14 +1,22 @@
+import Icon from "@react-native-vector-icons/ionicons";
 import { useLocalSearchParams, useNavigation } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import Icon from "@react-native-vector-icons/ionicons";
+import type { ParamListBase } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
-import { useActionFab } from "@/hooks/useActionFAB";
+//hooks / contexts
 import { usePalette } from "@/contextes/contextePalette";
+import { useActionFab } from "@/hooks/useActionFAB";
 
+//components
 import CreationEvenement, { CreationHandle } from "@/components/creationEvenement";
 import CreationIndisponibilite from "@/components/creationIndisponibilite";
 import PagesGlissables from "@/components/pagesGlissables";
+import { measureSpotlightEvents } from "@/events/mesureSpotlightEvents";
+
+//constants
+import { eventFormIds } from '@/constants/tutorial';
 
 /** Pages of the screen, in order. */
 const PAGES = ['evenement', 'indisponibilite'] as const
@@ -27,7 +35,7 @@ const PAGES = ['evenement', 'indisponibilite'] as const
 export default function Create() {
     const { t } = useTranslation('events')
     const { colors } = usePalette()
-    const navigation = useNavigation()
+    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
 
     const { page } = useLocalSearchParams<{ page?: string, depuis_dispo_commune?: string }>()
     const pageInitiale = Math.max(PAGES.indexOf(page as typeof PAGES[number]), 0)
@@ -38,7 +46,7 @@ export default function Create() {
     const refs = [evenementRef, indisponibiliteRef]
 
     // A distinct owner per page: changing page hands the FAB over to the new one.
-    useActionFab(PAGES[pageCourante] === 'evenement' ? "eventCreate" : "unavailabilityCreate", {
+    useActionFab(PAGES[pageCourante] === eventFormIds.events ? "eventCreate" : "unavailabilityCreate", {
         action: () => refs[pageCourante].current?.envoyer(),
         config: {
             visible: true,
@@ -48,17 +56,26 @@ export default function Create() {
 
     useEffect(() => {
         navigation.setOptions({
-            headerTitle: t(PAGES[pageCourante] === 'evenement' ? 'navigation.create' : 'navigation.unavailability')
+            headerTitle: t(PAGES[pageCourante] ===eventFormIds.events ? 'navigation.create' : 'navigation.unavailability')
         })
     }, [pageCourante, navigation, t])
+
+    useEffect(() => navigation.addListener('transitionEnd', ({ data }) => {
+        if (!data.closing) measureSpotlightEvents.emitMeasureSpotlight()
+    }), [navigation])
 
     return (
         <PagesGlissables
             pageInitiale={pageInitiale}
             onChangerPage={setPageCourante}
             pages={[
-                { id: 'evenement', titre: t('creationPages.event'), contenu: <CreationEvenement ref={evenementRef} /> },
-                { id: 'indisponibilite', titre: t('creationPages.unavailability'), contenu: <CreationIndisponibilite ref={indisponibiliteRef} /> },
+                { id: eventFormIds.events, titre: t('creationPages.event'), contenu: <CreationEvenement ref={evenementRef} /> },
+                {
+                    id: eventFormIds.dnd,
+                    titre: t('creationPages.unavailability'),
+                    contenu: <CreationIndisponibilite ref={indisponibiliteRef} />,
+                    conditionTutoriel: "onglet_indisponibilite_selectionne",
+                },
             ]}
         />
     )

@@ -19,7 +19,8 @@
 ## 5. Suivi, Lint & Mémoire persistante (Au fur et à mesure)
 - **Lint :** Sur chaque fichier modifié, lance `npx eslint <fichier>` et corrige toutes les erreurs avant de passer au suivant.
 - **Session (`HANDOFF.md`) :** APPEND uniquement (ne réécris jamais le fichier) ce qui est fait, ce qui reste, et les blocages éventuels. Si tu t'arrêtes avant la fin, laisse des instructions claires pour l'agent suivant.
-- **Décisions (`docs/DECISIONS.md`) :** Après chaque choix technique, ajout de dépendance ou changement d'architecture, ajoute une entrée datée (`YYYY-MM-DD : Contexte / Décision / Fichiers impactés`) dans `docs/DECISIONS.md`.
+- **Décisions (`docs/DECISIONS.md`) :** Après chaque choix technique qui affecte le comportement, la logique, une convention de code réutilisable ou l'architecture, ainsi qu'après tout ajout de dépendance, ajoute une entrée datée (`YYYY-MM-DD : Contexte / Décision / Fichiers impactés`) dans `docs/DECISIONS.md`, même si la décision est d'abord appliquée à un seul fichier pour guider un alignement ultérieur.
+- **Alignement sur les décisions :** Avant un changement ou une demande d'alignement, consulte `docs/DECISIONS.md` et applique les décisions pertinentes aux fichiers concernés. Lorsqu'un alignement du code existant est demandé, recherche les autres emplacements concernés et aligne-les dans le périmètre demandé, sans élargir le travail à des zones sans rapport.
 
 ## 6. Structure du projet (Racine relative `./`)
 - `abstractions/` : Couche d'abstraction UI au-dessus de React Native (style / DRY)

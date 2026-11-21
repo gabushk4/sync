@@ -960,3 +960,42 @@ Projet React Native + Expo (SDK 58), Expo Router, déjà avancé. Fiche techniqu
 - **Fait :** Les positions de la bulle et du spotlight s'animent seulement entre explications d'une même étape. Les mesures tardives et changements d'étape/route sont appliqués directement.
 - **Vérifications :** ESLint ciblé sur les deux composants du tutoriel ; `npx tsc --noEmit` passe.
 - **Reste / blocages :** Aucun.
+
+## 2026-11-21 — Styles de PagesGlissables
+- **Fait :** Les styles statiques sont déclarés hors du composant ; les styles dépendant du contexte et des mesures restent calculés dans le composant. Aucun style n'est défini directement dans le JSX.
+- **Vérifications :** ESLint et TypeScript sont bloqués par des changements locaux préexistants dans `components/pagesGlissables.tsx` : `useRef` appelé dans un `map` et attribut `ref={}` vide.
+- **Reste / blocages :** Corriger ces changements locaux avant de pouvoir valider le composant.
+
+## 2026-11-21 — Règle de séparation des styles React Native
+- **Fait :** La règle de styling du skill distingue maintenant les styles statiques au niveau module des styles dépendant du contexte, des props, de l'état ou du layout, et recommande d'éviter les objets inline dans le JSX.
+- **Vérifications :** Documentation seulement ; aucune vérification nécessaire.
+- **Reste / blocages :** Aucun.
+
+## 2026-11-21 — Consignation et application des décisions
+- **Fait :** Les règles demandent maintenant de consigner dans `docs/DECISIONS.md` les changements de logique et conventions réutilisables, puis de consulter ces décisions lors d'un alignement du code.
+- **Vérifications :** Documentation seulement ; aucune vérification nécessaire.
+- **Reste / blocages :** Aucun.
+## 2026-11-21 - Mesure du spotlight après défilement
+- **Fait :** L'abonnement à l'événement est limité au tutoriel actif, nettoyé à la désactivation ou au changement de cible; les callbacks de mesure obsolètes sont ignorés. Les onglets émettent l'événement à la fin du geste et de l'inertie, et leurs refs sont créées avec `useMemo`.
+- **Vérifications :** `npx eslint components/TutorielEcran.tsx components/pagesGlissables.tsx events/mesureSpotlightEvents.ts` et `npm run typecheck` passent.
+- **Reste / blocages :** Aucun.
+## 2026-11-21 - Repère du spotlight
+- **Fait :** La position de la cible est maintenant exprimée relativement à l'origine mesurée de la vue racine du tutoriel, plutôt que d'appliquer directement les coordonnées fenêtre au calque.
+- **Vérifications :** ESLint ciblé sur `components/TutorielEcran.tsx` et `npm run typecheck` passent.
+- **Reste / blocages :** À confirmer visuellement sur l'écran de création, car aucune exécution sur appareil n'a été effectuée.
+## 2026-11-21 - Mesure après ouverture de create
+- **Fait :** La route `create` émet une nouvelle demande de mesure à la fin de sa transition d'entrée; la fermeture de l'écran n'émet pas de mesure.
+- **Vérifications :** ESLint ciblé sur `app/(tabs)/home/create.tsx` et `npm run typecheck` passent.
+- **Reste / blocages :** À confirmer sur appareil au premier affichage après navigation.
+## 2026-11-21 - Fondu entrant du spotlight
+- **Fait :** L'opacité du voile SVG passe progressivement de 0 à 1 au montage; la découpe et les bloqueurs tactiles ne changent pas.
+- **Vérifications :** ESLint ciblé sur `components/spotlightOverlay.tsx` et `npm run typecheck` passent.
+- **Reste / blocages :** Aucun.
+## 2026-11-21 - Optimisation du fondu du spotlight
+- **Fait :** Le fondu du voile anime maintenant l'opacité d'une vue native qui enveloppe le SVG, plutôt que la propriété SVG elle-même.
+- **Vérifications :** ESLint ciblé sur `components/spotlightOverlay.tsx` et `npm run typecheck` passent.
+- **Reste / blocages :** À valider visuellement; si le lag persiste, profiler les animations de géométrie des bloqueurs et du masque.
+## 2026-11-21 - Étape de sélection de l'onglet indisponibilité
+- **Fait :** Le clic sur l'onglet valide l'étape 2; l'étape 3 cible le formulaire et attend sa création. Les anciens numéros sauvegardés sont migrés vers la nouvelle séquence.
+- **Vérifications :** ESLint ciblé, `npm run typecheck` et parsing JSON des locales FR/EN passent.
+- **Reste / blocages :** À valider en navigation réelle; le swipe ne valide intentionnellement pas l'étape 2.

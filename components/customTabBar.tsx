@@ -1,23 +1,23 @@
 //contexts
+import { FabConfig, useFabActions, useFabState } from "@/contextes/contexteFAB";
 import { usePalette } from "@/contextes/contextePalette";
 import { useTutoriel } from "@/contextes/contexteTutoriel";
-import { useFabActions, useFabState, FabConfig } from "@/contextes/contexteFAB";
 
 //dependancies
 import Icon from "@react-native-vector-icons/ionicons";
-import { BottomTabBar, type BottomTabBarProps } from 'expo-router/js-tabs';
 import { useRouter } from "expo-router";
+import { BottomTabBar, type BottomTabBarProps } from 'expo-router/js-tabs';
 import React, { useEffect, useRef, useState } from "react";
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import Animated, { useAnimatedStyle, withTiming, useSharedValue } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 
 //components - abstractions
 import ToastAbs from "@/abstractions/toastAbs";
 
 //constants
 import { withTimingConfig } from "@/constants/ReanimatedConfs";
-import { fab } from "@/constants/tutorialIds";
 import { toastTypes } from "@/constants/toastConfig";
+import { fab } from "@/constants/tutorial";
 
 const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
@@ -46,7 +46,7 @@ const Fab = React.memo(function Fab() {
     const config = useFabState();
     const { actionRef } = useFabActions();
     const { colors } = usePalette();
-    const { enregistrerCible, validerAction } = useTutoriel();
+    const { enregistrerCible, validerAction, etapeCourante } = useTutoriel();
     const router = useRouter();
 
     // Contenu actuellement affiché (reste en place pendant le fade-out)
@@ -116,16 +116,16 @@ const Fab = React.memo(function Fab() {
         ToastAbs.show({ type: toastTypes.error, text2: display.bloque });
         return;
         }
-        // Étape 1 du tutoriel : clic sur le NavFab ouvre la création d'événement.
-        validerAction('creation_evenement_ouverte');
+        if(etapeCourante?.target === fab)
+          validerAction(etapeCourante.successCondition);
         if (display.href) {
-        router.push(
-            display.params
-            ? ({ pathname: display.href as unknown as string, params: display.params } as any)
-            : (display.href as any)
-        );
+          router.push(
+              display.params
+              ? ({ pathname: display.href as unknown as string, params: display.params } as any)
+              : (display.href as any)
+          );
         } else {
-        actionRef.current?.();
+          actionRef.current?.();
         }
     };
 

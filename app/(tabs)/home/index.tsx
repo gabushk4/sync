@@ -8,30 +8,34 @@ import { router, useFocusEffect } from 'expo-router';
 import { DateTime } from 'luxon';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import Animated, { cancelAnimation, scrollTo, useAnimatedReaction, 
-  useAnimatedRef, useAnimatedStyle, useSharedValue, withDecay, 
-  withRepeat, withSpring, withTiming } from 'react-native-reanimated';
-import { Dimensions, Easing, Image, Keyboard, 
-  StyleSheet, Text, TouchableOpacity, useColorScheme, 
-  View } from 'react-native';
+import {
+    Dimensions, Easing, Image, Keyboard,
+    StyleSheet, Text, TouchableOpacity, useColorScheme,
+    View
+} from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import Animated, {
+    cancelAnimation, scrollTo, useAnimatedReaction,
+    useAnimatedRef, useAnimatedStyle, useSharedValue, withDecay,
+    withRepeat, withSpring, withTiming
+} from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
 //hooks
 import { useNavFab } from '@/hooks/useNavFAB';
 
 //functions
+import AutoRefresh from '@/functions/autoRefresh';
 import { getCommonFreeSlotsSurPlage } from '@/functions/availability';
 import catcher from '@/functions/catcher';
+import { convertirTimestampHeure } from '@/functions/convertirTimestamp';
 import { convertUTCToLocal } from '@/functions/convertirUTCenLocal';
+import { estJourFerie, formaterEvenementsMembre, joursFeriesDuJour, paramsPlage } from '@/functions/evenementsMembre';
+import { debutCreationPourJour } from '@/functions/jourCreation';
 import log from '@/functions/log';
-import { heuresVersDate, positionHeures } from '@/functions/positionTimeline';
 import normaliserRecherche from '@/functions/normaliserRecherche';
 import ouvrirDetailsEvenement from '@/functions/ouvrirDetailsEvenement';
-import AutoRefresh from '@/functions/autoRefresh';
-import { convertirTimestampHeure } from '@/functions/convertirTimestamp';
-import { debutCreationPourJour, estJourPasse } from '@/functions/jourCreation';
-import { estJourFerie, formaterEvenementsMembre, joursFeriesDuJour, paramsPlage } from '@/functions/evenementsMembre';
+import { heuresVersDate, positionHeures } from '@/functions/positionTimeline';
 
 //components
 import BarreRecherche from '@/components/barreRecherche';
@@ -42,17 +46,17 @@ import Timeline from '@/components/timeline';
 import TrousHoraire, { PlageChoisie } from '@/components/trousHoraire';
 
 //contexts
+import { useAPI } from '@/contextes/contexteAPI';
 import { useFont } from '@/contextes/contexteFont';
+import { useGestionScroll } from '@/contextes/contexteGestionListes';
 import { useMembre } from '@/contextes/contexteMembre';
+import { usePalette } from '@/contextes/contextePalette';
 import { useTimeline } from '@/contextes/contexteTimeline';
 import { useTutoriel } from '@/contextes/contexteTutoriel';
-import { useAPI } from '@/contextes/contexteAPI';
-import { useGestionScroll } from '@/contextes/contexteGestionListes';
-import { usePalette } from '@/contextes/contextePalette';
 
 //constants
 import { withSpringConfig } from '@/constants/ReanimatedConfs';
-import { homeIds } from '@/constants/tutorialIds'; 
+import { homeIds } from '@/constants/tutorial';
 
 //dummy datas
 //import {seedData} from '@/seed'

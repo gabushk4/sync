@@ -22,7 +22,8 @@ import {
 } from "@/constants/etapesTutoriel";
 
 const TUTORIAL_COMPLETED_KEY = "tutorial_completed";
-const TUTORIAL_STEP_KEY = "tutorial_step";
+const TUTORIAL_STEP_KEY = "tutorial_step_v2";
+const LEGACY_TUTORIAL_STEP_KEY = "tutorial_step";
 const TUTO_DB_NAME = "tutorial.db";
 
 export type CibleTutoriel = {
@@ -37,7 +38,7 @@ export type CibleTutoriel = {
 };
 
 export type TutorielContextType = {
-  /** Étape courante (0 = pas commencé, 1..11 = étapes du parcours) */
+  /** Étape courante (0 = pas commencé, 1..12 = étapes du parcours) */
   step: number;
   /** Configuration de l'étape courante */
   etapeCourante: EtapeTutoriel | undefined;
@@ -137,15 +138,24 @@ export const TutorielProvider = ({ children }: { children: ReactNode }) => {
 
     const charger = async () => {
       try {
-        const [completedRaw, stepRaw] = await Promise.all([
+        const [completedRaw, stepV2Raw, legacyStepRaw] = await Promise.all([
           AsyncStorage.getItem(TUTORIAL_COMPLETED_KEY),
           AsyncStorage.getItem(TUTORIAL_STEP_KEY),
+          AsyncStorage.getItem(LEGACY_TUTORIAL_STEP_KEY),
         ]);
 
         if (!actif) return;
 
+        const stepRaw = stepV2Raw ?? legacyStepRaw;
+        let etapeSauvegardee = stepRaw ? parseInt(stepRaw, 10) : 0;
+        if (!Number.isFinite(etapeSauvegardee)) etapeSauvegardee = 0;
+        if (!stepV2Raw && etapeSauvegardee >= 2) etapeSauvegardee += 1;
+
         setIsCompleted(completedRaw === "true");
-        setStepState(stepRaw ? parseInt(stepRaw, 10) : 0);
+        setStepState(etapeSauvegardee);
+        if (!stepV2Raw) {
+          await AsyncStorage.setItem(TUTORIAL_STEP_KEY, String(etapeSauvegardee));
+        }
       } catch (error) {
         console.warn("Erreur lecture état tutoriel", error);
       } finally {

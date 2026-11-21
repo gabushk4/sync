@@ -74,7 +74,7 @@ Reference these guidelines when:
 - `ui-menus` - Use native context menus
 - `ui-native-modals` - Use native modals when possible
 - `ui-measure-views` - Use onLayout, not measure()
-- `ui-styling` - Use StyleSheet.create or Nativewind
+- `ui-styling` - Use StyleSheet.create or Nativewind; keep static styles outside components and context-/prop-dependent styles inside components
 
 ### 5. State Management (MEDIUM)
 
