@@ -24,6 +24,11 @@ type Props = {
     plage: (debut: string, fin: string) => string
     /** useReportEvenement's envoyerCreneau: whether it was sent. */
     onEnvoyer: (creneau: Creneau) => Promise<boolean>
+    /**
+     * Always unfolded, without its title row (the screen it's in has its own title): the
+     * proposal after a refusal (PropositionApresRefus).
+     */
+    toujoursOuvert?: boolean
 }
 
 /**
@@ -35,10 +40,11 @@ type Props = {
  * (the invitees confirm again). Confirmed in place (ConfirmationEnvoi).
  *
  * @author Philip — proposing a postponement from the event's management view
+ * @author Philip — `toujoursOuvert`: also the "propose another date?" after a refusal
  * @param {Props} props
  * @returns {JSX.Element}
  */
-export default function SelecteurReport({ plageActuelle, deplacement, enCours, plage, onEnvoyer }: Props) {
+export default function SelecteurReport({ plageActuelle, deplacement, enCours, plage, onEnvoyer, toujoursOuvert = false }: Props) {
     const { t } = useTranslation('events')
     const { colors } = usePalette()
     const { fonts } = useFont()
@@ -117,11 +123,13 @@ export default function SelecteurReport({ plageActuelle, deplacement, enCours, p
 
     return (
         <View style={s.contenu}>
-            <TouchableOpacity style={s.entete} onPress={() => setOuvert((o) => !o)} accessibilityRole="button" accessibilityState={{ expanded: ouvert }}>
-                <Text style={s.titre}>{t(deplacement ? 'postpone.moveTitle' : 'postpone.proposeTitle')}</Text>
-                <Ionicons name={ouvert ? 'chevron-up' : 'chevron-down'} size={20} color={colors.text} />
-            </TouchableOpacity>
-            {ouvert && (
+            {!toujoursOuvert && (
+                <TouchableOpacity style={s.entete} onPress={() => setOuvert((o) => !o)} accessibilityRole="button" accessibilityState={{ expanded: ouvert }}>
+                    <Text style={s.titre}>{t(deplacement ? 'postpone.moveTitle' : 'postpone.proposeTitle')}</Text>
+                    <Ionicons name={ouvert ? 'chevron-up' : 'chevron-down'} size={20} color={colors.text} />
+                </TouchableOpacity>
+            )}
+            {(ouvert || toujoursOuvert) && (
                 <>
                     <View style={s.selecteurs}>
                         {Platform.OS === 'android' ? (

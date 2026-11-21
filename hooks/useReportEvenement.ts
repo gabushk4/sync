@@ -64,7 +64,8 @@ export type DonneesReport = {
  * @param {{ onPlageChangee?: () => void }} [options] - Called once the creator moved the event.
  * @returns {{ donnees: DonneesReport | null, charger: () => Promise<void>, enCours: string | null,
  *   setEnCours: (v: string | null) => void, plage: (debut: string, fin: string) => string,
- *   envoyerCreneau: (creneau: Creneau) => Promise<boolean>, alerterRefus: (error: any) => Promise<boolean> }}
+ *   envoyerCreneau: (creneau: Creneau, options?: { annoncer?: boolean }) => Promise<boolean>,
+ *   alerterRefus: (error: any) => Promise<boolean> }}
  */
 export default function useReportEvenement(idEvenement: string | null | undefined, { onPlageChangee }: { onPlageChangee?: () => void } = {}) {
     const { t } = useTranslation('events')
@@ -142,21 +143,27 @@ export default function useReportEvenement(idEvenement: string | null | undefine
      * Sends a confirmed common free slot: the creator moves the event there, an invitee
      * proposes it.
      *
+     * @author Philip — `annoncer: false`: no success toast, for a screen that says it
+     *   itself (the proposal after a refusal, PropositionApresRefus: its Modal's toast
+     *   would vanish as it closes)
      * @param {Creneau} creneau
+     * @param {{ annoncer?: boolean }} [options] - `annoncer` (default true): success toast.
      * @returns {Promise<boolean>} Whether it was sent.
      */
-    const envoyerCreneau = async (creneau: Creneau) => {
+    const envoyerCreneau = async (creneau: Creneau, { annoncer = true }: { annoncer?: boolean } = {}) => {
         if (!donnees || enCours) return false
         const deplacement = donnees.peut_deplacer
         setEnCours('creneau')
         try {
             await api.post(`/postpone/evenements/${idEvenement}${deplacement ? '/deplacer' : ''}`, { debut: creneau.debut, fin: creneau.fin })
-            ToastAbs.show({
-                type: toastTypes.success,
-                text1: t(deplacement ? 'postpone.movedTitle' : 'postpone.sentTitle'),
-                text2: t(deplacement ? 'postpone.movedMessage' : 'postpone.sentMessage'),
-                position: 'top',
-            })
+            if (annoncer) {
+                ToastAbs.show({
+                    type: toastTypes.success,
+                    text1: t(deplacement ? 'postpone.movedTitle' : 'postpone.sentTitle'),
+                    text2: t(deplacement ? 'postpone.movedMessage' : 'postpone.sentMessage'),
+                    position: 'top',
+                })
+            }
             await charger()
             if (deplacement) onPlageChangee?.()
             return true

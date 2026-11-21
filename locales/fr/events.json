@@ -155,7 +155,13 @@
     "accept": "Accepter",
     "refuse": "Refuser",
     "refuseFailed": "Impossible de refuser l'invitation",
-    "invitedBy": "Invité par"
+    "invitedBy": "Invité par",
+    "refusedTitle": "Invitation refusée",
+    "proposeQuestion": "Aimerais-tu proposer une autre date?",
+    "proposeHint": "Les participants vont voter. Si l'organisateur choisit ta date, tu recevras une nouvelle invitation.",
+    "proposeYes": "Proposer une autre date",
+    "proposeNo": "Non merci",
+    "done": "OK"
   },
   "unavailability": {
     "reasonPlaceholder": "raison (optionnelle)...",

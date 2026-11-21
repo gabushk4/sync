@@ -1395,3 +1395,37 @@ L'endpoint `GET /admin/os_metrics/points` n'existe pas encore : "je get aucuns p
   (friends fr/en), type `InviterUrl` (`types/invites.ts`). `SupprimerUrl` était déjà
   inutilisé avant : laissé.
 - Vérifs : tsc OK, eslint 0 erreur (16 warnings préexistants), jest 23/23.
+
+---
+
+## Ajout (21/11/2026) — au refus d'une invitation : « Aimerais-tu proposer une autre date? »
+- Règle la remarque qui a fait fermer la PR #57 (« Au refus, une proposition de postpone
+  n'est pas proposée comme mentionné dans la US »).
+- Choix de l'user : on refuse d'abord, puis on demande ; choix de la date = seulement date +
+  heure (SelecteurReport, durée conservée).
+- API : rien à changer. Un invité qui a refusé a déjà `peut_proposer` (statut ≠ acceptee) ;
+  si le créateur applique sa proposition, notifierModificationEvenement réinvite tout le
+  monde (en attente), lui compris.
+- `hooks/useDecisionInvitation.tsx` : après un refus réussi, GET /postpone/evenements/:id ;
+  si `peut_proposer` (pas récurrent, pas passé) et l'invitation a ses dates → ouvre la
+  modale générique `/(modals)/dataRenderer` (clé `propositionApresRefus`, titre
+  « Invitation refusée », sans bouton rond) ; sinon toast du refus comme avant. Le GET se
+  fait AVANT `onRepondu` (fil rafraîchi / POP_TO_TOP) : l'écran dessous et la modale
+  changent ensemble. Pas de toast de refus quand la modale s'ouvre (son titre le dit).
+  - Pourquoi une route et pas un <Modal> dans la carte : le fil se recharge toutes les 5 s
+    et retire les invitations refusées (list.tsx `estInvitationRefusee`) → la carte (et un
+    Modal rendu dedans) disparaît ; la page de décision, elle, revient à l'accueil.
+- `components/propositionApresRefus.tsx` (nouveau) : étapes question (Proposer une autre
+  date / Non merci) → choix (SelecteurReport `toujoursOuvert`, Annuler) → envoyée (✓ +
+  OK). Fermeture : `modalEvents.emitClosing()` ; glisser vers le bas / toucher dehors = non.
+- `hooks/useReportEvenement.ts` : `envoyerCreneau(creneau, { annoncer: false })` = pas de
+  toast de succès (le toast de la modale disparaîtrait avec sa route ; l'étape « envoyée »
+  le dit). Défaut inchangé pour les autres appels.
+- `components/selecteurReport.tsx` : prop `toujoursOuvert` (pas de rangée titre/chevron).
+- Locales fr/en `invitationDecision.*` : refusedTitle, proposeQuestion, proposeHint,
+  proposeYes, proposeNo, done.
+- Vérifs : eslint 0 sur les 4 fichiers, tsc OK, jest 23/23.
+- Non testé sur appareil : refuser depuis la carte du fil ET depuis la page de décision
+  (la modale doit rester ouverte quand la carte disparaît / quand la page revient à
+  l'accueil), sélecteurs natifs dans la feuille (iOS compact, dialogues Android), envoi →
+  étape « envoyée », Non merci, évènement récurrent (pas de question, toast du refus).
