@@ -10,7 +10,7 @@ export type FriendListType = 'select' | 'consult' | 'message'
 const DELAI_FERMETURE_MODAL_MS = 350
 const attendre = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-export function useFriendList(type: 'select'): (friends: Participant | Array<Participant>, inviterUrl?: string) => void
+export function useFriendList(type: 'select'): (friends: Participant | Participant[]) => void
 export function useFriendList(type: 'consult'): (friend: Participant) => void
 export function useFriendList(type: 'message'): (friend: Participant) => Promise<void>
 export function useFriendList(type: FriendListType) {
@@ -18,8 +18,9 @@ export function useFriendList(type: FriendListType) {
     const {demarrerConversationAvecAmi} = useConversations()
 
     switch (type) {
+        // Added to the form's pending invitations only: sent with its ✓ (Philip).
         case 'select':
-            return (friends: Participant | Array<Participant>, inviterUrl?:string) => ajouterInvite(friends, inviterUrl)
+            return (friends: Participant | Participant[]) => ajouterInvite(friends)
         case 'consult':
             return (friend: Participant) => router.navigate({ pathname: '/(tabs)/profile/[membreId]', params: { membreId: friend.id } })
         case 'message':

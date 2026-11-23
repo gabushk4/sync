@@ -1,4 +1,3 @@
-export type InviterUrl = string | undefined
 export type SupprimerUrl = {
     string: string;
     params?: Record<string, any>

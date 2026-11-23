@@ -17,6 +17,7 @@ import { defaultEvent, Event } from "@/types/calendar";
 import ToastAbs from "@/abstractions/toastAbs";
 import ConflitEvenement, { SortieConflit } from "@/components/conflitEvenement";
 import { toastTypes } from "@/constants/toastConfig";
+import { creationEvents, PlageCreee } from "@/events/creationEvents";
 import { debutDejaPasse, plagePreremplie } from "@/functions/jourCreation";
 import { conflitsDeLaReponse, EvenementEnConflit, NouvelEvenement } from "@/types/conflit";
 import { Participant } from "@/types/invites";
@@ -59,6 +60,9 @@ const CreationEvenement = forwardRef<CreationHandle>(function CreationEvenement(
     const {membre, getMembre} = useMembre()
     
     const formRef = useRef<EventFormHandle>(null)
+    // The range of the event being sent: the home timeline moves to it once created
+    // (here or from the conflict screen).
+    const plageEnvoyeeRef = useRef<PlageCreee | null>(null)
 
     const { start, end, friend, depuis, depuis_dispo_commune } = useLocalSearchParams<{ start?: string, end?: string, friend?: string, depuis?: string, depuis_dispo_commune?:string }>()
     console.log({depuis_dispo_commune})
@@ -72,9 +76,12 @@ const CreationEvenement = forwardRef<CreationHandle>(function CreationEvenement(
      *   The previous `retour` param prevented the removal in `beforeRemove` and
      *   navigated to the profile itself, which native-stack doesn't support on iOS
      *   (the screen was removed natively but kept in JS state).
+     * @author Philip — the home timeline moves to the created event's range first
+     *   (creationEvents), instead of staying where it was before the creation
      * @returns {void}
      */
     const quitterApresCreation = () => {
+        if (plageEnvoyeeRef.current) creationEvents.creee(plageEnvoyeeRef.current)
         if (depuis === 'profil') navigation.goBack()
         else navigation.dispatch({ type: 'POP_TO_TOP' })
     }
@@ -204,6 +211,7 @@ const CreationEvenement = forwardRef<CreationHandle>(function CreationEvenement(
                     participants: invites.map((i) => ({ id: i.id, privilege: i.privilege })),
                     depuis_dispo_commune: depuis_dispo_commune ? true : false,
                 }
+                plageEnvoyeeRef.current = { debut: values.start, fin: values.end }
 
                 const response = await api.post('/evenements/', nouveau)
 

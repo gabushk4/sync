@@ -11,7 +11,8 @@
 		"eventPastShort": "over",
 		"eventPast": "This event is already over.",
 		"invitationExpired": "This invitation expired: it is too late to answer it.",
-		"left": "You left this event: you're no longer part of it."
+		"left": "You left this event: you're no longer part of it.",
+		"replaced": "The event moved to another time: answer the newer notification."
 	},
 	"list": {
 		"emptyState": "There's nothing for you...\nTake this moment for yourself!",

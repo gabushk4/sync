@@ -37,6 +37,7 @@ import { useTimeline } from '@/contextes/contexteTimeline';
 //import {seedData} from '@/seed'
 import { withSpringConfig } from '@/constants/ReanimatedConfs';
 import { calendrierEvents } from '@/events/calendrierEvents';
+import { creationEvents, PlageCreee } from '@/events/creationEvents';
 import { rechercheAmiEvents } from '@/events/rechercheAmiEvents';
 import AutoRefresh from '@/functions/autoRefresh';
 import { convertirTimestampHeure } from '@/functions/convertirTimestamp';
@@ -56,8 +57,6 @@ const AnimatedStyleMinVal = 0.1
 const LIST_HEIGHT = 104
 /** Friends' rows loaded at a time: 10 more each time the rows are scrolled to the bottom */
 const AMIS_PAR_PAGE = 10
-// Height of the floating back-to-now button.
-const HAUTEUR_RETOUR = 34
 // Max events per request in the month view (the API defaults to 20, too few for a month).
 
 
@@ -70,7 +69,7 @@ const RAYON_ONGLET = 10
 // consulte le 16; sa borne API exclusive est le 21 à 00:00. On ne charge donc
 // pas une nouvelle semaine depuis chaque jour affiché.
 const JOURS_FENETRE = 7
-const { width: WIN_W, height: WIN_H } = Dimensions.get('window')
+const { width: WIN_W } = Dimensions.get('window')
 
 /**
  * Short month name of `dt` for the "back to today" tab ("oct", "janv"), without
@@ -135,7 +134,7 @@ export default function Home() {
 
   //Sates
   const [tempsClassement, setTempsClassement] = useState(() => DateTime.now())
-  const [friends, setFriends] = useState<Array<any>>([])
+  const [friends, setFriends] = useState<any[]>([])
 
   // ── Friend search (user story 22, Philip) ──
   // The magnifier left of the hours opens a search bar over the timeline; the
@@ -232,7 +231,7 @@ export default function Home() {
     if (rechercheRef.current && amisSansRechercheRef.current) setFriends(amisSansRechercheRef.current)
     appliquerRecherche('')
   }
-  const [userEvents, setUserEvents] = useState<Array<any>>([])
+  const [userEvents, setUserEvents] = useState<any[]>([])
   const [todayDateTime, setTodayDateTime] = useState<DateTime>()
   // Forward scroll changes to JS only when the visible calendar day changes or
   // the window itself is rebased, never on every animation frame.
@@ -408,8 +407,8 @@ export default function Home() {
   }, [amisAvecDisponibilites, rechercheOuverte, motifRecherche])
   const aucunResultat = rechercheOuverte && !!motifRecherche && amisAffiches.length === 0
     && rechercheRepondue === texteRecherche.trim()
-  const [chargementEchec, setChargementEchec] = useState(false)
-  const [chargementEvenements, setChargementEvenements] = useState(false)
+  const [, setChargementEchec] = useState(false)
+  const [chargementEvenements] = useState(false)
   // Pre-fills the create screen with the day currently displayed, at the suggested
   // hour (see debutCreationPourJour).
   const debutCreation = todayDateTime && debutCreationPourJour(todayDateTime)
@@ -714,6 +713,49 @@ export default function Home() {
     [])
 
   /**
+   * Something was just created (see creationEvents): moves to its time range right
+   * away, while this screen is still hidden under the creation screen — its day (the
+   * window around it, like a day picked in the calendar) and its hours in the middle of
+   * the rows (its start near the left when it's longer than the rows). Recorded as this
+   * screen's offset, so the focus effect puts it back there instead of where the member
+   * was before opening the creation.
+   *
+   * @author Philip — back on the created event's time range after a creation
+   * @param {PlageCreee} plage - Local start and end of what was created.
+   * @returns {void}
+   */
+  const allerALaPlageCreee = ({ debut, fin }: PlageCreee) => {
+    // In the window's zone: the rows' wall-clock layout (positionHeures) reads it.
+    const zone = windowStartRef.current.zone
+    const debutLocal = debut.setZone(zone)
+    const finLocal = fin.setZone(zone)
+    const jour = debutLocal.startOf('day')
+    if (!jourAfficheRef.current?.hasSame(jour, 'day')) {
+      setTodayDateTime(jour)
+      dateAujShared.set(jour.toMillis())
+      jourDemandeRef.current = jour
+      afficherDepuisCache(jour)
+    }
+    // The window starts three days before the displayed day (like the day arrows).
+    const debutFenetre = jour.minus({ days: 3 })
+    chargerFenetre(debutFenetre)
+    const cellule = pxHeures + L_HEURES
+    const largeur = (positionHeures(finLocal, debutFenetre) - positionHeures(debutLocal, debutFenetre)) * cellule
+    const offset = clampOffset(largeur <= WIN_W - WIDTH_COL
+      // Fits in the rows: centered on them.
+      ? offsetCentreSur(debutLocal.plus({ milliseconds: finLocal.diff(debutLocal).toMillis() / 2 }), debutFenetre)
+      // Longer: its start near the left, half an hour in.
+      : positionHeures(debutLocal, debutFenetre) * cellule - cellule / 2)
+    offsetAccueilRef.current = offset
+    offsetX.set(offset)
+  }
+  // The latest handler (the hour's width can change with the zoom), for the
+  // subscription made once below.
+  const allerALaPlageCreeeRef = useRef(allerALaPlageCreee)
+  useEffect(() => { allerALaPlageCreeeRef.current = allerALaPlageCreee })
+  useEffect(() => creationEvents.abonner((plage) => allerALaPlageCreeeRef.current(plage)), [])
+
+  /**
    * Arrows of the bottom bar: shows the previous / next day.
    *
    * @param {number} delta - -1 for the previous day, 1 for the next one.
@@ -817,7 +859,7 @@ export default function Home() {
   const majMaxY = () => {
     maxY.set(Math.max(0, amisAffiches.length * (LIST_HEIGHT + 4) - zoneH.current))
   }
-  useEffect(majMaxY, [amisAffiches.length])
+  useEffect(majMaxY, [amisAffiches.length, maxY])
 
   // A tap anywhere on the rows clears the picked range ("click off"). Shorter than the
   // hold that starts a selection on the member's row (200 ms), so that hold never
@@ -1011,6 +1053,9 @@ export default function Home() {
       })      
 
       return pauseALaSortie
+      // On focus only: the pollers are resumed / created here once per visit (their
+      // callbacks read refs); as dependencies they would be rebuilt on every render.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
   );
 
