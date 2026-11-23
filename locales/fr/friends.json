@@ -12,7 +12,6 @@
 		"emptyState": "Ajoute des amis grâce à l'option :",
 		"unavailable": "indisponible à ce moment",
 		"pickFriends": "Choisis des amis",
-		"inviteCount": "Inviter ({{count}})",
 		"addCount": "Ajouter ({{count}})"
 	},
 	"add": {

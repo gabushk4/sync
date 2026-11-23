@@ -1,20 +1,21 @@
 /**
  * Color of an answer to an invitation: accepted green, refused red, pending (or
- * unknown) yellow. Shared by the invitation review (colored events and legend)
+ * unknown) orange. Shared by the invitation review (colored events and legend)
  * and the decision page's participants list.
  *
  * @author Philip — user story 8 (reviewing an invitation)
+ * @author Philip — pending in orange (`enAttente`) instead of yellow
  * @param {string | null | undefined} statut - 'acceptee' | 'en_attente' | 'refusee'.
- * @param {{ success: string, error: string, warning: string }} colors - Palette (usePalette).
+ * @param {{ success: string, error: string, enAttente: string }} colors - Palette (usePalette).
  * @returns {string}
  */
 export default function couleurStatutInvitation(
     statut: string | null | undefined,
-    colors: { success: string, error: string, warning: string },
+    colors: { success: string, error: string, enAttente: string },
 ): string {
     if (statut === 'acceptee') return colors.success
     if (statut === 'refusee') return colors.error
-    return colors.warning
+    return colors.enAttente
 }
 
 /**

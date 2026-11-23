@@ -61,11 +61,13 @@
     "repeatedUntil": "event repeats every {{unit}} until:",
     "private": "private",
     "public": "public",
-    "participants": "participants"
+    "participants": "participants",
+    "removedOnConfirm_one": "{{count}} participant will be removed on ✓",
+    "removedOnConfirm_other": "{{count}} participants will be removed on ✓"
   },
   "participantRemoval": {
     "confirmTitle": "Remove this participant?",
-    "confirmMessage": "Do you want to remove {{pseudo}} from this event?",
+    "confirmMessage": "Are you sure? {{pseudo}} is already part of the event.",
     "cancel": "Cancel",
     "remove": "Remove"
   },
@@ -135,19 +137,31 @@
     "participantsLoadFailed": "Error loading participants"
   },
   "invitationReview": {
-    "hint": "Tap {{pseudo}}'s event or yours to answer.",
     "leader": "Organizer",
     "me": "Me",
     "loadFailed": "Unable to load the invitation's schedules",
     "retry": "Couldn't load the schedules. Tap to try again.",
     "private": "Private",
-    "commonSlot": "Free"
+    "availabilityPartial": "Some available",
+    "availabilityAll": "Everyone available",
+    "availablePeople": "{{compte}} free: {{noms}}",
+    "alreadyProposed": "This time has already been proposed.",
+    "proposeRange": "Propose {{plage}}",
+    "allTooShort": "Everyone is free at times, but for less than the event lasts.",
+    "availabilityTitle": "Common availability",
+    "rangeAlreadyProposed": "already proposed"
   },
   "invitationDecision": {
     "accept": "Accept",
     "refuse": "Refuse",
     "refuseFailed": "Unable to refuse the invitation",
-    "invitedBy": "Invited by"
+    "invitedBy": "Invited by",
+    "refusedTitle": "Invitation refused",
+    "proposeQuestion": "Would you like to propose another date?",
+    "proposeHint": "The participants will vote. If the organizer picks your date, you'll get a new invitation.",
+    "proposeYes": "Propose another date",
+    "proposeNo": "No thanks",
+    "done": "OK"
   },
   "unavailability": {
     "reasonPlaceholder": "reason (optional)...",
@@ -192,7 +206,16 @@
     "notFreeTitle": "Not everyone is free anymore",
     "notFreeMessage": "{{pseudos}}: not free then anymore",
     "confirmPropose": "Propose {{plage}}?",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "proposeTitle": "Propose another time",
+    "moveTitle": "Move the event",
+    "move": "Move",
+    "confirmMove": "Move the event to {{plage}}?",
+    "date": "Date",
+    "time": "Time",
+    "keepsDuration": "The event keeps its duration.",
+    "futureOnly": "Pick a time in the future.",
+    "sameTime": "That's already the current time."
   },
   "album": {
     "title": "Photo album",

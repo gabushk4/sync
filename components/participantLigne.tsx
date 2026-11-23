@@ -1,6 +1,5 @@
 import Radius from '@/constants/Radius';
 import { useAPI } from '@/contextes/contexteAPI';
-import { useInvites } from '@/contextes/contexteInvites';
 import { useMembre } from '@/contextes/contexteMembre';
 import { usePalette } from '@/contextes/contextePalette';
 import catcher from '@/functions/catcher';
@@ -14,10 +13,13 @@ import ProfilPic from './pfp';
 
 type Props = {
     participant: Participant;
-    participantsUrl?: string;
     height: number;
     peutGererParticipants?: boolean;
-    onParticipantSupprime?: (participantId: string) => void;
+    /** Already in the event (saved before this edit), not just added in the form. */
+    existant?: boolean;
+    /** Picked in the form, invited with its ✓: no invitation yet, so no status icon. */
+    aInviter?: boolean;
+    onRetirer?: (participant: Participant) => void;
 }
 
 /**
@@ -26,21 +28,24 @@ type Props = {
  * REFUSÉ — user story 9) and, when allowed, a button to remove them.
  * SUBJECT TO CHANGE: may be revised depending on how teammates implement their own user stories.
  *
+ * @author Philip — the X no longer removes on the server: it only changes the form, saved
+ *   with its ✓. A participant already in the event asks for a confirmation first; one just
+ *   added in the form (no invitation sent yet) goes away at once.
  * @param {Props} props
  * @param {Participant} props.participant - Participant to show (fetched if pseudo/picture are missing).
- * @param {string} [props.participantsUrl] - Event's participants endpoint; undefined while creating the event.
  * @param {number} props.height - Row height.
  * @param {boolean} [props.peutGererParticipants=false] - Shows the remove button (Nathan: remove a participant).
- * @param {(participantId: string) => void} [props.onParticipantSupprime] - Called once the participant was removed.
+ * @param {boolean} [props.existant=false] - Already in the event: the X asks for a confirmation.
+ * @param {boolean} [props.aInviter=false] - Picked in the form, not invited yet: no status icon.
+ * @param {(participant: Participant) => void} [props.onRetirer] - Removes them from the form.
  * @returns {JSX.Element | null}
  */
-export default function ParticipantLigne({participant, participantsUrl = undefined, height, peutGererParticipants = false, onParticipantSupprime} : Props){
+export default function ParticipantLigne({participant, height, peutGererParticipants = false, existant = false, aInviter = false, onRetirer} : Props){
     const { t } = useTranslation('events')
     const { colors } = usePalette()
     const colorScheme = useColorScheme()
     const {api} = useAPI()
     const {membre} = useMembre()
-    const { supprimerInvite } = useInvites()
 
     const icone = {
         admin: colorScheme === "dark" ? require('@/assets/icones/admin-dark-icon.png'):require('@/assets/icones/admin-light-icon.png'),
@@ -54,20 +59,28 @@ export default function ParticipantLigne({participant, participantsUrl = undefin
     // nothing without a public id. Derived during the render (it used to be copied into
     // a state by an effect, which drew the row once more for nothing).
     const p = !participant.id ? undefined : participant.pseudo ? participant : participantCharge
-    const [suppressionEnCours, setSuppressionEnCours] = useState(false)
 
     /**
-     * Removes this participant (server-side too when the event already exists),
-     * then hides the row.
+     * The X: a participant already in the event is only removed once confirmed (cancel:
+     * nothing changes); one just added in the form goes away at once (the member changed
+     * their mind, nothing was sent).
      *
-     * @returns {Promise<void>}
+     * @returns {void}
      */
-    const supprimerParticipant = async () => {
-        if (!p || suppressionEnCours) return
-        setSuppressionEnCours(true)
-        const succes = await supprimerInvite(p, participantsUrl)
-        setSuppressionEnCours(false)
-        if (succes) onParticipantSupprime?.(p.id)
+    const retirer = () => {
+        if (!p) return
+        if (!existant) {
+            onRetirer?.(p)
+            return
+        }
+        Alert.alert(
+            t('participantRemoval.confirmTitle'),
+            t('participantRemoval.confirmMessage', { pseudo: p.pseudo }),
+            [
+                { text: t('participantRemoval.cancel'), style: 'cancel' },
+                { text: t('participantRemoval.remove'), style: 'destructive', onPress: () => onRetirer?.(p) },
+            ]
+        )
     }
 
     /**
@@ -204,7 +217,7 @@ export default function ParticipantLigne({participant, participantsUrl = undefin
                     {/* User story 9: each participant's answer to the invitation, as an
                         icon + label (PENDING / ACCEPTED / DECLINED). */}
                     <View style={s.status}>
-                        {p.statut && (                            
+                        {p.statut && !aInviter && (
                             <Image
                                 source={iconeStatutInvitation(p.statut, colorScheme)}
                                 style={{height:18, width:18}}
@@ -216,16 +229,11 @@ export default function ParticipantLigne({participant, participantsUrl = undefin
 
                 <View style={s.rightAction}>
                     {peutSupprimer && (
-                        <TouchableOpacity onPress={() => {
-                            Alert.alert(
-                                t('participantRemoval.confirmTitle'),
-                                t('participantRemoval.confirmMessage', { pseudo: p.pseudo }),
-                                [
-                                    { text: t('participantRemoval.cancel'), style: 'cancel' },
-                                    { text: t('participantRemoval.remove'), style: 'destructive', onPress: supprimerParticipant },
-                                ]
-                            )
-                        }} disabled={suppressionEnCours}>
+                        <TouchableOpacity
+                            onPress={retirer}
+                            accessibilityRole="button"
+                            accessibilityLabel={t('participantRemoval.remove')}
+                        >
                             <Image
                                 source={icone.croix}
                                 style={{transform:[{rotate:'45deg'}], height:24, width:24}}
