@@ -1,6 +1,8 @@
 import { LinkProps } from "expo-router"
 import { TextInputProps } from "react-native"
 
+import { DEFAULT_HUE } from "@/constants/Colors"
+
 export type AppSettings = {
 	language: 'en' | 'fr'
 	timezone: string,
@@ -10,7 +12,8 @@ export type AppSettings = {
 export const DEFAULT_SETTINGS: AppSettings = {
 	language: 'fr',
 	timezone: 'Etc/UTC',
-	theme: 260
+	// Same constant as "reset to default" (Philip — user story 49).
+	theme: DEFAULT_HUE
 }
 
 export type SettingKey = keyof AppSettings
@@ -59,6 +62,14 @@ type InputSettings = SettingBase & {
 	setDefault?: () => void
 }
 
+/** A color in a circle; touching it opens its picker (the theme's, Philip — user story 49). */
+type ColorSetting = SettingBase & {
+	type: 'color'
+	/** CSS color shown in the circle. */
+	value: string
+	onPress: () => void
+}
+
 type Section = {
 	id: string
 	titleKey: string
@@ -72,5 +83,6 @@ type Setting =
 	| LinkSetting
 	| Section
 	| InputSettings
+	| ColorSetting
 
 export default Setting

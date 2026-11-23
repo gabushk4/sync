@@ -172,5 +172,28 @@
 		"updateFailed": "unable to update profile",
 		"loadFriendProfileFailed": "unable to load this friend's profile",
 		"friendProfileUnavailable": "this profile is unavailable"
+	},
+	"password": {
+		"open": "change my password",
+		"title": "change my password",
+		"current": "current password",
+		"new": "new password",
+		"confirm": "confirm the new password",
+		"ruleLength": "at least {{length}} characters",
+		"ruleSpecial": "a special character",
+		"ruleCase": "an upper and a lower case letter",
+		"sameHint": "it's the same as your current password: nothing will change",
+		"match": "the passwords match",
+		"noMatch": "the passwords don't match",
+		"show": "show the passwords",
+		"hide": "hide the passwords",
+		"submit": "change the password",
+		"failedTitle": "the password wasn't changed",
+		"wrongCurrent": "the current password is wrong",
+		"changedTitle": "password changed",
+		"changedMessage": "your password was changed. a confirmation email was sent to you: if it wasn't you, you can report it.",
+		"sameTitle": "all good",
+		"sameMessage": "that's already your password: nothing changed.",
+		"done": "ok"
 	}
 }
