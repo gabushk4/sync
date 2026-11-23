@@ -1,5 +1,6 @@
-import { StyleSheet, Text, TouchableOpacity, TouchableOpacityProps} from "react-native";
+import { StyleSheet, TouchableOpacity, TouchableOpacityProps} from "react-native";
 import { usePalette } from "@/contextes/contextePalette";
+import Animated, { LinearTransition } from "react-native-reanimated";
 
 export function SecondaryBtn({onPress, children, style} : TouchableOpacityProps) {
     const {colors} = usePalette()
@@ -14,16 +15,19 @@ export function SecondaryBtn({onPress, children, style} : TouchableOpacityProps)
     )
 }
 
-export function MainBtn({onPress, children, style} : TouchableOpacityProps) {
+export function MainBtn({onPress, children, style, ...props} : TouchableOpacityProps) {
     const {colors} = usePalette()
     
     return (
-       <TouchableOpacity 
-            style={[s.bouton, { borderWidth:1, borderColor:colors.border, backgroundColor: colors.primary }, style]}
-            onPress={onPress}
-        >
-            {children}
-        </TouchableOpacity>     
+        <Animated.View layout={LinearTransition.duration(250)}>
+            <TouchableOpacity
+                {...props}
+                style={[s.bouton, { borderWidth:1, borderColor:colors.border, backgroundColor: colors.primary }, style]}
+                onPress={onPress}
+            >
+                {children}
+            </TouchableOpacity>
+        </Animated.View>
     )
 }
 

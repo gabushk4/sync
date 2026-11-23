@@ -55,3 +55,28 @@
 - **Décision :** Appliquer le fondu sur une `Animated.View` native enveloppant le SVG, en laissant le masque SVG statique hors du fondu.
 - **Fichiers impactés :** `components/spotlightOverlay.tsx`.
 
+## 2026-11-21 - Fondu du voile limité aux changements d'étape et d'écran
+- **Contexte :** La cible du spotlight peut disparaître momentanément pendant sa mesure, ce qui remontait le composant et relançait son fondu au milieu d'une même étape.
+- **Décision :** Ne lancer le fondu qu'à la première apparition et lors d'un changement de route ou d'étape; réafficher le voile sans animation si la cible revient dans le même contexte.
+- **Fichiers impactés :** `components/TutorielEcran.tsx`, `components/spotlightOverlay.tsx`.
+
+## 2026-11-22 - Abstractions de composants dans `abstractions/`
+- **Contexte :** Les styles et comportements des composants de base (Touchables, inputs, switch, QR code, etc.) étaient dupliqués dans plusieurs fichiers, sans homogénéité visuelle ni de comportement.
+- **Décision :** Développer des abstractions réutilisables dans le dossier `abstractions/` (ex: `touchableOpacityAbs.tsx`, `textInputAbs.tsx`, `switchAbs.tsx`, `toastAbs.tsx`, etc.) pour homogénéiser les styles et comportements des composants à travers l'app.
+- **Conséquences :** Tout nouveau composant doit préférer les abstractions existantes avant d'en créer un nouveau. Les fichiers impactés sont dans `abstractions/` et les composants qui les utilisent.
+
+## 2026-11-22 - Animation continue des indicateurs du slideshow
+- **Contexte :** Les indicateurs du slideshow devaient changer de couleur selon la page active et suivre progressivement le défilement.
+- **Décision :** Utiliser une SharedValue Reanimated pour la page active, l'interpoler avec les couleurs `secondary` et `muted`, et mettre à jour cette valeur pendant le scroll ainsi qu'à la fin du mouvement.
+- **Fichiers impactés :** `components/SlideshowIntro.tsx`.
+
+## 2026-11-22 - Transition de largeur de MainBtn
+- **Contexte :** Le libellé de `MainBtn` varie selon l'étape et la langue, ce qui fait changer sa largeur brusquement.
+- **Décision :** Animer le layout de `MainBtn` avec `LinearTransition`, en conservant sa largeur intrinsèque au contenu.
+- **Fichiers impactés :** `abstractions/touchableOpacityAbs.tsx`.
+
+## 2026-11-22 - Rejouer le tutoriel depuis les réglages
+- **Contexte :** Après avoir terminé le tutoriel, le membre devait pouvoir le relancer sans réinitialiser manuellement le stockage.
+- **Décision :** Ajouter une ligne lien dans les réglages qui réinitialise la clé persistée et l'état du contexte afin que le slideshow réapparaisse immédiatement.
+- **Fichiers impactés :** `app/(tabs)/profile/settings/index.tsx`, `components/settingsRow.tsx`, `contextes/contexteTutoriel.tsx`, `types/settings.ts`.
+

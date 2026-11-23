@@ -999,3 +999,7 @@ Projet React Native + Expo (SDK 58), Expo Router, déjà avancé. Fiche techniqu
 - **Fait :** Le clic sur l'onglet valide l'étape 2; l'étape 3 cible le formulaire et attend sa création. Les anciens numéros sauvegardés sont migrés vers la nouvelle séquence.
 - **Vérifications :** ESLint ciblé, `npm run typecheck` et parsing JSON des locales FR/EN passent.
 - **Reste / blocages :** À valider en navigation réelle; le swipe ne valide intentionnellement pas l'étape 2.
+## 2026-11-21 - Fondu du voile limité aux changements d'étape et d'écran
+- **Fait :** Le voile ne relance plus son fondu si la cible disparaît puis réapparaît pendant une même étape; l'animation reste active à la première apparition et aux changements de route ou d'étape.
+- **Vérifications :** En attente de lint et du contrôle TypeScript.
+- **Reste / blocages :** À confirmer visuellement en navigation réelle.

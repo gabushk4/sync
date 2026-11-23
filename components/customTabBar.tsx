@@ -1,7 +1,6 @@
 //contexts
 import { FabConfig, useFabActions, useFabState } from "@/contextes/contexteFAB";
 import { usePalette } from "@/contextes/contextePalette";
-import { useTutoriel } from "@/contextes/contexteTutoriel";
 
 //dependancies
 import Icon from "@react-native-vector-icons/ionicons";
@@ -46,7 +45,6 @@ const Fab = React.memo(function Fab() {
     const config = useFabState();
     const { actionRef } = useFabActions();
     const { colors } = usePalette();
-    const { enregistrerCible, validerAction, etapeCourante } = useTutoriel();
     const router = useRouter();
 
     // Contenu actuellement affiché (reste en place pendant le fade-out)
@@ -54,11 +52,6 @@ const Fab = React.memo(function Fab() {
     const fabRef = useRef<View>(null);
 
     const shown = !!config && config.visible !== false;    
-
-    useEffect(() => {
-      if (!display || !shown) return;
-      return enregistrerCible(fab, fabRef);
-    }, [display, shown, enregistrerCible]);
 
     const progress = useSharedValue(0);
     // Whether the FAB is currently hidden (no config), and the pending swap timer.
@@ -116,8 +109,6 @@ const Fab = React.memo(function Fab() {
         ToastAbs.show({ type: toastTypes.error, text2: display.bloque });
         return;
         }
-        if(etapeCourante?.target === fab)
-          validerAction(etapeCourante.successCondition);
         if (display.href) {
           router.push(
               display.params

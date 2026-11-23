@@ -1863,42 +1863,6 @@ Use functional setState to compare—don't read state directly in the callback.
 
 Follow these styling patterns for cleaner, more consistent React Native code.
 
-**Separate static styles from context-dependent styles:**
-
-Keep styles that do not depend on component values in a module-level
-`StyleSheet.create`. Keep styles that depend on context, props, state, or
-measured layout in the component, and combine them with static styles using an
-array. This keeps theme values inside the component that reads the context
-without recreating the static stylesheet on every render.
-
-Avoid defining style objects directly in JSX. Give dynamic styles a name, and
-use `useMemo` when stable object identity is useful; do not memoize every style
-object by default.
-
-```tsx
-const styles = StyleSheet.create({
-  card: { padding: 16 },
-  title: { fontSize: 16 },
-})
-
-function Card() {
-  const { colors } = useTheme()
-  const themeStyles = useMemo(
-    () => ({
-      card: { backgroundColor: colors.surface },
-      title: { color: colors.text },
-    }),
-    [colors.surface, colors.text],
-  )
-
-  return (
-    <View style={[styles.card, themeStyles.card]}>
-      <Text style={[styles.title, themeStyles.title]}>Title</Text>
-    </View>
-  )
-}
-```
-
 **Always use `borderCurve: 'continuous'` with `borderRadius`:**
 
 **Use `gap` instead of margin for spacing between elements:**

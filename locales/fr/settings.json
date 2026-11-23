@@ -15,6 +15,8 @@
     "dangerZone":"zone dangereuse",
     "signOut":"se déconnecter",
     "open":"ouvrir",
+    "replayTutorial":"rejouer le tutoriel",
+    "replayTutorialFailed":"impossible de relancer le tutoriel",
     "deleteAccount":"supprimer mon compte",
     "exportData":"exporter mes données",
     "theme":"palette",
@@ -22,6 +24,7 @@
     "appVersion":"version {{version}}",
     "about":"à propos de sync",
     "privacyPolicy":"politique de confidentialité",
+    "usageContract":"contrat d'utilisation",
     "minorSecurity":"sécurité des mineurs",
     "imports":"importer et gérer un calendrier",
     "calendarImports":{

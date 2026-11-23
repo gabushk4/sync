@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import '../i18n';
 
 //Providers
@@ -43,7 +43,7 @@ import { SettingsProvider, useSettings } from '@/contextes/contexteSettings';
 import { SignalementsProvider } from '@/contextes/contexteSignalements';
 import { TimelineProvider } from '@/contextes/contexteTimeline';
 import { TutorielProvider, useTutoriel } from '@/contextes/contexteTutoriel';
-import { TutorielEcran } from '@/components/TutorielEcran';
+import SlideshowIntro from '@/components/SlideshowIntro';
 import { initLocalization } from '@/locales/initLocale';
 import { configurerAffichagePremierPlan } from '@/functions/notificationsPush';
 import useNotificationsPush from '@/hooks/useNotificationsPush';
@@ -132,23 +132,8 @@ function RootLayoutNav() {
   const { navTheme } = usePalette();
   const { state } = useAuth()
   const pathname = usePathname()
-  const { etapeCourante, isTutorialMode, validerAction } = useTutoriel();
+  const { isCompleted, isLoading, marquerTermine } = useTutoriel();
 
-  useEffect(() => {
-    if (
-      state !== 'authenticated' ||
-      !isTutorialMode ||
-      etapeCourante?.id !== 1 ||
-      !pathname.endsWith('/home/create')
-    ) {
-      return;
-    }
-
-    validerAction(etapeCourante.successCondition);
-  }, [state, isTutorialMode, etapeCourante, pathname, validerAction]);
-
-  // User story 45: push registration, toast of a push received while the app is open,
-  // and opening a tapped notification.
   useNotificationsPush()
 
   useEffect(() => {
@@ -193,6 +178,19 @@ function RootLayoutNav() {
     return <ChargementEcran />;
   }
 
+  // Slideshow d'intro : écran intermédiaire plein écran entre login et home.
+  // Remplace complètement la navigation tant qu'il n'est pas terminé.
+  if (state === 'authenticated' && !isLoading && !isCompleted) {
+    return (
+      <>
+        <ThemeProvider value={navTheme}>
+          <SlideshowIntro onFinish={marquerTermine} />
+        </ThemeProvider>
+        <Toast config={toastConfig} />
+      </>
+    );
+  }
+
   return (
     <>
       <ThemeProvider value={navTheme}>
@@ -228,39 +226,6 @@ function RootLayoutNav() {
         </View>
         <Toast config={toastConfig}/>
       </ThemeProvider>
-
-      {/* Tutoriel : uniquement quand l'utilisateur est authentifié */}
-      {state === 'authenticated' && (
-        <>
-          <TutorielBootstrapperNav />
-          <TutorielEcran />
-        </>
-      )}
     </>
   );
-}
-
-/**
- * TutorielBootstrapperNav : démarre automatiquement le tutoriel au premier lancement.
- * Doit être rendu à l'intérieur du TutorielProvider et de l'AuthProvider.
- */
-export function TutorielBootstrapperNav() {
-  const { isCompleted, isLoading, isTutorialMode, startTutorial } = useTutoriel();
-  const demarrageAutomatiqueTente = useRef(false);
-
-  useEffect(() => {
-    if (
-      isLoading ||
-      isCompleted ||
-      isTutorialMode ||
-      demarrageAutomatiqueTente.current
-    ) {
-      return;
-    }
-
-    demarrageAutomatiqueTente.current = true;
-    void startTutorial();
-  }, [isLoading, isCompleted, isTutorialMode, startTutorial]);
-
-  return null;
 }

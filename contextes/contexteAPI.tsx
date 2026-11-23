@@ -52,8 +52,6 @@ function getApiBaseUrl() {
 
 const APIBaseURL = getApiBaseUrl()  
 
-
-
 export const APIProvider = ({ children }: { children: React.ReactNode }) => {
   //log("api provider render")
   

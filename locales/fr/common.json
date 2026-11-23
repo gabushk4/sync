@@ -81,30 +81,31 @@
 		"profileTitle": "profile"
 	},
 	"tuto": {
-		"bouton_passer": "Passer",
+		"bouton_commencer": "Commencer",
 		"bouton_suivant": "Suivant",
-		"passer": {
-			"titre": "Passer le tutoriel?",
-			"message": "Tu pourras revoir le tutoriel plus tard dans les réglages.",
-			"annuler": "Continuer le tutoriel",
-			"confirmer": "Passer"
+		"bouton_precedent": "Précédent",
+		"slide1": {
+			"titre": "Bienvenue sur Sync!",
+			"message": "Un réseau social qui t'aide à t'organiser avec tes proches. Plus de scroll infini qui t'isoles, voici un vrai réseau SOCIAL."
 		},
-		"etape2": {
-			"explication1": "Sélectionne l’onglet « Indisponibilité » pour passer à la création de ton temps solo récurrent."
+		"slide2": {
+			"titre": "Timelines superposées",
+			"message": "Tes disponibilités et celles de tes amis s'affichent ensemble pour trouver vos créneaux communs instantanément."
 		},
-		"etape3": {
-			"explication1": "Ici, tu peux réserver ton temps solo récurrent : dormir, voyager, etc."
+		"slide3": {
+			"titre": "Le bouton d'action rapide",
+			"message": "Sa fonction change selon l'écran:",
+			"fab": {
+				"home": "Sur l’écran d’accueil",
+				"messaging": "Sur l’écran de messagerie",
+				"createEdit": "Sur l’écran de création/modification",
+				"details": "Sur l’écran des détails",
+				"profile": "Sur l’écran de profil"
+			}
 		},
-		"etape1": {
-			"homeTitle": "Bienvenue sur Sync!",
-			"home":"Ce tutoriel te guidera vers les possibilités que l'app t'offre. Tu peux fermer ce tutoriel à tout moment",
-			"schedulesTitle": "La vue Sync",
-			"schedules": "Les horaires de tes amis s'affichent ici pour trouver un créneau où vous êtes tous libres.",
-			"fabTitle": "Le bouton d'action rapide",
-			"fab": "Son action change selon l'écran où tu te trouves.",
-			"creationTitle": "Créer ( + )",
-			"creation": "Ici, il permet de créer un évènement. Vas-y clic!"
-			
+		"slide4": {
+			"titre": "Ta liste de premiers pas",
+			"message": "Elle s'affiche dans ton profil. Chaque tâche est cliquable et te dirige vers l'écran concerné."
 		}
 	}
 }

@@ -72,14 +72,23 @@ export default function SettingRow({ setting }: SettingRowProps) {
             )}
             {setting.type === 'link' && (
                 <View style={s.action}>
-                    <LinkAbs
-                        href={setting.href}
-                        externalLink={setting.externalLink}
-                        disabled={setting.disabled ?? false}
-                        style={s.status}
-                    >
-                        {t('open')}
-                    </LinkAbs>
+                    {'onPress' in setting ? (
+                        <TouchableOpacity
+                            onPress={setting.onPress}
+                            disabled={setting.disabled ?? false}
+                        >
+                            <Text style={linkStyle(c, f)}>{t('open')}</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <LinkAbs
+                            href={setting.href}
+                            externalLink={setting.externalLink}
+                            disabled={setting.disabled ?? false}
+                            style={s.status}
+                        >
+                            {t('open')}
+                        </LinkAbs>
+                    )}
                 </View>
             )}
             {setting.type === 'input' && (

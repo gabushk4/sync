@@ -149,12 +149,6 @@ export default function ProfilEcran(){
             opacity: optionOpacity.value
         }
     })
-    const importOptionAnimated = useAnimatedStyle(() => {
-        return {
-            bottom: importOptionBottom.value,
-            opacity: optionOpacity.value
-        }
-    })
     const adminOptionAnimated = useAnimatedStyle(() => ({
         bottom: adminOptionBottom.value,
         opacity: optionOpacity.value

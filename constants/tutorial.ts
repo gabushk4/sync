@@ -14,15 +14,27 @@ const eventFormIds = {
 
 const pathNames = {
     home: "(tabs)/home",
-    createEvent: "(tabs)/home/create"
+    createEvent: "(tabs)/home/create",
+    profil: "(tabs)/profil"
+}
+
+const screenIds = {
+    full: 'screen-full',
 }
 
 const fabId = 'fab'
+
+const successConditions ={
+    createEventSelected: "creation_evenement_ouverte" 
+}
+
 
 export {
     homeIds,
     fabId as fab,
     eventFormIds,
     pathNames,
-    tabPrefix
+    screenIds,
+    tabPrefix,
+    successConditions
 }

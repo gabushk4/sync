@@ -83,6 +83,8 @@
 	"tuto": {
 		"bouton_passer": "Skip",
 		"bouton_suivant": "Next",
+		"bouton_commencer": "Get started",
+		"bouton_precedent": "Previous",
 		"passer": {
 			"titre": "Skip the tutorial?",
 			"message": "You can replay the tutorial later in Settings.",
@@ -93,7 +95,8 @@
 			"explication1": "Select the “Unavailability” tab to set up recurring time for yourself."
 		},
 		"etape3": {
-			"explication1": "Here, you can reserve recurring solo time: sleeping, traveling, and more."
+			"explication1": "Here, you can reserve recurring solo time: sleeping, traveling, and more.",
+			"explication2": "Once completed, press on the FAB to submit it."
 		},
 		"etape1": {
 			"homeTitle": "Welcome to Sync !",
@@ -104,6 +107,29 @@
 			"fab": "Its action changes by the contexte you're into.",
 			"creationTitle": "Create ( + )",
 			"creation": "Here it allows you to create an event. Cm'on clic on it!"
+		},
+		"slide1": {
+			"titre": "Welcome to Sync",
+			"message": "Discover how to organize your availability with your friends."
+		},
+		"slide2": {
+			"titre": "Overlapping timelines",
+			"message": "Your availability and your friends' appear together to find your common slots."
+		},
+		"slide3": {
+			"titre": "The fast action button",
+			"message": "Its icon changes by screen: create an event, confirm, or open your QR code.",
+			"fab": {
+				"home": "On the home screen",
+				"messaging": "On the messaging screen",
+				"createEdit": "On the create/edit screen",
+				"details": "On the details screen",
+				"profile": "On the profile screen"
+			}
+		},
+		"slide4": {
+			"titre": "Your first steps list",
+			"message": "It appears in your profile. Each task is clickable and takes you to the relevant screen."
 		}
 	}
 }

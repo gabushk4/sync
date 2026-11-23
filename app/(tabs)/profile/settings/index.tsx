@@ -1,10 +1,12 @@
 import Container from "@/abstractions/container";
+import ToastAbs from "@/abstractions/toastAbs";
 
 import Separator, { isLast } from "@/components/listSeparator";
 
 import { useFont } from "@/contextes/contexteFont";
 import { usePalette } from "@/contextes/contextePalette";
 import { useSettings } from "@/contextes/contexteSettings";
+import { useTutoriel } from "@/contextes/contexteTutoriel";
 
 import { getAvailableTimezones } from "@/functions/timezones";
 
@@ -15,6 +17,7 @@ import Radius from "@/constants/Radius";
 import ServerStatus from "@/components/serverStatus";
 import SettingRow from "@/components/settingsRow";
 import { DEFAULT_HUE } from "@/constants/Colors";
+import { toastTypes } from "@/constants/toastConfig";
 import log from "@/functions/log";
 import * as Camera from 'expo-camera';
 import Constants from 'expo-constants';
@@ -26,8 +29,9 @@ import React, { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 
-const ABOUT_URL = 'https://sync.app/about';
-const PRIVACY_URL = 'https://app.notion.com/p/syncapp/Politique-de-confidentialit-sync-28b05fccf55c80638d84ce250bccadd1';
+const ABOUT_URL = 'https://www.syncalkemy.ca/';
+const PRIVACY_URL = 'https://www.syncalkemy.ca/confidentialite.html';
+const USAGE_CONTRACT = 'https://www.syncalkemy.ca/contrat_dutilisation.html'
 const MINOR_SEC_URL = 'https://app.notion.com/p/syncapp/Normes-li-s-a-la-s-curit-des-mineurs-2ae05fccf55c80909cc7f3783d0d3953' 
 
 
@@ -54,6 +58,7 @@ export default function Settings(){
     const {t} = useTranslation('settings')
     const { settings: values, hydrated, setSetting } = useSettings()
     const {hue, setHue} = usePalette()
+    const { rejouerTutoriel } = useTutoriel()
 
     const [permissions, setPermissions] = useState<Permissions>()
     const [, requestCameraPermission, getCameraPermission] = Camera.useCameraPermissions()
@@ -65,6 +70,15 @@ export default function Settings(){
         log("opening settings")
         Linking.openSettings()
     }
+
+    const replayTutorial = useCallback(async () => {
+        try {
+            await rejouerTutoriel()
+        } catch (error) {
+            console.warn("Impossible de rejouer le tutoriel", error)
+            ToastAbs.show({ type: toastTypes.error, text2: t('replayTutorialFailed') })
+        }
+    }, [rejouerTutoriel, t])
 
     const requestCamera = async (enabled: boolean) => {
         log("enabled", enabled)
@@ -144,6 +158,12 @@ export default function Settings(){
             onChangeText(text) {
                 setLocalHue(Number(text))                
             }
+        },
+        {
+            id: 'replayTutorial',
+            titleKey: 'replayTutorial',
+            type: 'link',
+            onPress: replayTutorial,
         },
         {
             id: 'imports',
@@ -349,6 +369,7 @@ export default function Settings(){
                     {[
                         { id: 'about', titleKey: 'about', href: ABOUT_URL },
                         { id: 'privacyPolicy', titleKey: 'privacyPolicy', href: PRIVACY_URL },
+                        { id: 'usageContract', titleKey: 'usageContract', href: USAGE_CONTRACT },
                         { id: 'minorSecurity', titleKey: 'minorSecurity', href: MINOR_SEC_URL },
                     ].map((setting, index, links) => (
                         <React.Fragment key={setting.id}>

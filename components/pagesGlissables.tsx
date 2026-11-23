@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
 export default function PagesGlissables({ pages, pageInitiale = 0, onChangerPage, integre = false }: Props) {
     const { colors } = usePalette()
     const { fonts } = useFont()
-    const { enregistrerCible, validerAction } = useTutoriel()
+    const { enregistrerCible } = useTutoriel()
 
     const scrollViewRef = useRef<ScrollView>(null)
     const ongletsScrollViewRef = useRef<ScrollView>(null)
@@ -224,9 +224,7 @@ export default function PagesGlissables({ pages, pageInitiale = 0, onChangerPage
         Haptics.clickLeger()
         scrollViewRef.current?.scrollTo({ x: largeurPages * index })
         changerPage(index)
-        const conditionTutoriel = pages[index]?.conditionTutoriel
-        if (conditionTutoriel) validerAction(conditionTutoriel)
-    }, [largeurPages, changerPage, pages, validerAction])
+    }, [largeurPages, changerPage, pages])
 
     /**
      * Enregistre la largeur visible de la barre d'onglets.
@@ -272,6 +270,7 @@ export default function PagesGlissables({ pages, pageInitiale = 0, onChangerPage
         console.log("currentOffset", currentOffset)
         const index = Math.round(currentOffset / largeurPages)
         changerPage(index)
+        measureSpotlightEvents.emitMeasureSpotlight()
     },[largeurPages, changerPage])
 
     const notifierFinDefilementOnglets = useCallback(() => {
