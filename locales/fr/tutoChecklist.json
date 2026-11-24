@@ -1,0 +1,34 @@
+{
+  "checklist": {
+    "title": "Premiers pas",
+    "progress": "{{done}} sur {{total}} terminé",
+    "hide": "Masquer",
+    "allDone":"C'est complet!",
+    "tasks": {
+      "addedEvent": {
+        "title": "Crée un événement",
+        "description": "Depuis l’accueil, touche + pour planifier quelque chose avec tes amis."
+      },
+      "addedFriend": {
+        "title": "Ajoute un ami",
+        "description": "Scanne son code QR ou entre son code depuis ton profil."
+      },
+      "importedEvents": {
+        "title": "Importe ton calendrier",
+        "description": "Connecte Google, Outlook ou ton appareil, ou importe un fichier depuis les réglages."
+      },
+      "invitedFriend": {
+        "title": "Invite un ami à un événement",
+        "description": "Ouvre un événement et touche Inviter pour choisir parmi tes amis."
+      },
+      "createdDiscussion": {
+        "title": "Lance la discussion à même l'évènement",
+        "description": "Depuis un événement, ouvre le groupe de discussion pour vous organiser."
+      },
+      "fromSharedAvailability": {
+        "title": "Planifie depuis une disponibilité commune",
+        "description": "Sur la timeline, touche un moment où vous êtes tous libres pour créer un événement."
+      }
+    }
+  }
+}

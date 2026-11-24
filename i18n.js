@@ -17,6 +17,7 @@ import frProfile from './locales/fr/profile.json';
 import frScanQR from './locales/fr/scanQR.json';
 import frSettings from './locales/fr/settings.json';
 import frErrors from './locales/fr/errors.json'
+import frTutoChecklist from './locales/fr/tutoChecklist.json'
 
 import enAuth from './locales/en/auth.json';
 import enCalendar from './locales/en/calendar.json';
@@ -32,13 +33,44 @@ import enProfile from './locales/en/profile.json';
 import enScanQR from './locales/en/scanQR.json';
 import enSettings from './locales/en/settings.json';
 import enErrors from './locales/en/errors.json'
+import enTutoChecklist from './locales/en/tutoChecklist.json'
 
 i18n.use(initReactI18next).init({
   resources: {
-        fr: { common: frCommon, home: frHome, events: frEvents, friends: frFriends, calendar: frCalendar, settings: frSettings, auth: frAuth, feed: frFeed, profile: frProfile, inbox: frInbox, notifications: frNotifications, scanQR: frScanQR, formats: frFormats, errors: frErrors },
-      en: { common: enCommon, home: enHome, events: enEvents, friends: enFriends, calendar: enCalendar,  settings: enSettings, auth: enAuth, feed: enFeed, profile: enProfile, inbox: enInbox, notifications: enNotifications, scanQR: enScanQR, formats: enFormats, errors: enErrors},
+        fr: { 
+          common: frCommon, 
+          home: frHome, 
+          events: frEvents, 
+          friends: frFriends, 
+          calendar: frCalendar, 
+          settings: frSettings, 
+          auth: frAuth, 
+          feed: frFeed, 
+          profile: frProfile, 
+          inbox: frInbox, 
+          notifications: frNotifications, 
+          scanQR: frScanQR, 
+          formats: frFormats, 
+          errors: frErrors,
+          tutoChecklist:  frTutoChecklist},
+      en: { 
+        common: enCommon, 
+        home: enHome,
+        events: enEvents, 
+        friends: enFriends, 
+        calendar: enCalendar,  
+        settings: enSettings, 
+        auth: enAuth, 
+        feed: enFeed, 
+        profile: enProfile, 
+        inbox: enInbox, 
+        notifications: enNotifications, 
+        scanQR: enScanQR, 
+        formats: enFormats, 
+        errors: enErrors,
+        tutoChecklist: enTutoChecklist},
   },
-    ns: ['common', 'home', 'events', 'profile', 'settings', 'auth', 'scanQR', 'friends', 'feed', 'notifications', 'inbox', 'calendar', 'formats'],
+    ns: ['common', 'home', 'events', 'profile', 'settings', 'auth', 'scanQR', 'friends', 'feed', 'notifications', 'inbox', 'calendar', 'formats', 'tutoChecklist'],
   defaultNS: 'common',
   lng: DEFAULT_LANGUAGE,
   fallbackLng: 'fr',

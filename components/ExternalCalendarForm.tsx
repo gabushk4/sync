@@ -1,6 +1,6 @@
 import Container from '@/abstractions/container';
 import CalendarOptions from '@/components/calendarOptions';
-import ExternalCalendarRow from '@/components/ExternalCalendarRow';
+import ExternalCalendarRow from '@/components/externalCalendarRow';
 import ModalBase from '@/components/modalBase';
 import Radius from '@/constants/Radius';
 import { useFont } from '@/contextes/contexteFont';

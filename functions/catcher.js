@@ -18,8 +18,8 @@ export default function catcher(error, titre){
     const fallback = i18n.t('default', { ns: 'errors', returnObjects: true })
     const localized = i18n.t(errorKey, { ns: 'errors', returnObjects: true })
     const hasLocalizedError = i18n.exists(errorKey, { ns: 'errors' })
-  const details = hasLocalizedError && typeof localized === 'object' ? localized : fallback
-  const errorTitle = hasLocalizedError ? details.title : (titre ?? details.title)
+    const details = hasLocalizedError && typeof localized === 'object' ? localized : fallback
+    const errorTitle = hasLocalizedError ? details.title : (titre ?? details.title)
     const errorMessage = error?.response?.data?.message ?? details.message ?? error?.message
 
     if (status === 304) {

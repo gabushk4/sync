@@ -33,6 +33,8 @@ export const RouteAbsProvider = ({ children }: { children: ReactNode }) => {
 
   const ajouterEcran = (ecranCourant: string) => {
     setRoute((prev) => {
+      // Empêche la boucle infinie : ne pas ajouter si l'écran est déjà le dernier
+      if (prev[prev.length - 1] === ecranCourant) return prev;
       const nouvRoute = [...prev, ecranCourant];
       if (nouvRoute.length > 10) {
         nouvRoute.shift();

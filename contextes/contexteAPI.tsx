@@ -114,7 +114,6 @@ export const APIProvider = ({ children }: { children: React.ReactNode }) => {
         if (requeteOriginale?.__requestStartedAt && Date.now() - requeteOriginale.__requestStartedAt >= 5000) {
           error.__requeteLente = true
         }
-        console.log("error response", error.response)
 
         if (!error.response) {
           return Promise.reject(error)

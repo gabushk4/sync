@@ -1,6 +1,8 @@
 import React, { useCallback, useRef, useState } from 'react';
 import {
   Dimensions,
+  Image,
+  ImageProps,
   ScrollView,
   StyleSheet,
   Text,
@@ -19,10 +21,13 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
 } from 'react-native-reanimated';
+import Radius from '@/constants/Radius';
+import AppIcon from '@/svgs/appIcon';
+import IntroTodoList from './introTodoList';
 
 const TUTORIAL_COMPLETED_KEY = 'tutorial_completed';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 type Slide = {
   id: string;
@@ -36,52 +41,74 @@ const SLIDES: Slide[] = [
     id: 'slide1',
     titre: 'slide1.titre',
     message: 'slide1.message',
+    contenu: (
+      <View style={{width:'100%', height:'70%', justifyContent:'center', alignItems:'center'}}>
+        <AppIcon size={100}/>
+      </View>
+    )
   },
   {
     id: 'slide2',
     titre: 'slide2.titre',
     message: 'slide2.message',
+    contenu: (
+      <ImageSlide
+        image={require('@/assets/tuto-timelines.png')}
+      />
+    )
   },
   {
     id: 'slide3',
     titre: 'slide3.titre',
     message: 'slide3.message',
     contenu: (
-      <FabIconsGrid
-        items={[
-          {
-            icon: 'add',
-            title: 'home',
-            text: 'Ajoute un événement ou une indisponibilité',
-          },
-          {
-            icon: 'add',
-            title: 'messaging',
-            text: 'Crée une conversation avec un ami',
-          },
-          {
-            icon: 'checkmark',
-            title: 'createEdit',
-            text: 'Confirme la création ou l’édition',
-          },
-          {
-            icon: 'pencil',
-            title: 'details',
-            text: 'Éditer un événement',
-          },
-          {
-            icon: 'qr-code',
-            title: 'profile',
-            text: "Ouvre le code QR et le formulaire d'ajout d'ami",
-          },
-        ]}
-      />
+      <>
+        <View style={{height:'20%', width:'100%', alignItems:'center', justifyContent:'center'}}>
+          <ImageSlide
+            image={require('@/assets/tuto-fab.png')}
+          />
+        </View>
+        <View style={{height:'80%'}}>
+          <FabIconsGrid
+            items={[
+              {
+                icon: 'add',
+                title: 'home',
+                text: 'Ajoute un événement ou une indisponibilité',
+              },
+              {
+                icon: 'add',
+                title: 'messaging',
+                text: 'Crée une conversation avec un ami',
+              },
+              {
+                icon: 'checkmark',
+                title: 'createEdit',
+                text: 'Confirme la création ou l’édition',
+              },
+              {
+                icon: 'pencil',
+                title: 'details',
+                text: 'Éditer un événement',
+              },
+              {
+                icon: 'qr-code',
+                title: 'profile',
+                text: "Ouvre le code QR et le formulaire d'ajout d'ami",
+              },
+            ]}
+          />
+        </View>
+      </>
     ),
   },
   {
     id: 'slide4',
     titre: 'slide4.titre',
     message: 'slide4.message',
+    contenu: (
+      <IntroTodoList/>
+    )
   },
 ];
 
@@ -92,39 +119,42 @@ type FabIconItem = {
 };
 
 function ImageSlide({
-  imagePath,
-  title,
-  text
+  image,
 } : {
-  imagePath: string;
-  title: string;
-  text: string;
+  image: ImageProps['source'];
 }) {
   const { colors } = usePalette();
-  const { fonts } = useFont();
   
   return (
-    
-    <>
-      {/* Placeholder image : l'utilisateur ajoute ses images ici */}
-      <View style={[styles.imagePlaceholder, { backgroundColor: colors.card }]} />
-      <Text
-        style={[
-          styles.titre,
-          { color: colors.text, fontFamily: fonts.title },
-        ]}
-      >
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.message,
-          { color: colors.text, fontFamily: fonts.body },
-        ]}
-      >
-        {text}
-      </Text>
-    </>
+    <View style={[styles.imagePlaceholder, { backgroundColor: colors.card, borderColor:colors.border }]}>
+      <Image
+        source={image}
+        style={{width: '100%', height:'100%'}}
+        resizeMode='contain'
+      />
+    </View>
+  )
+}
+
+function IconCell({item} : { item: FabIconItem }){
+
+  const { t } = useTranslation('common', { keyPrefix: 'tuto.slide3.fab' });
+  const { colors } = usePalette();
+  const { fonts } = useFont();
+
+  return(
+    <View style={[styles.iconCell, { width: '48%' }]}>   
+      <Icon name={item.icon} size={28} color={colors.text} style={{marginTop:8}}/>   
+      <View style={styles.iconTextContainer}>
+        <Text style={[styles.iconTitle, { color: colors.text, fontFamily: fonts.body }]}>
+          {t(item.title)}
+        </Text>
+        <Text style={[styles.iconText, { color: colors.muted, fontFamily: fonts.body }]}>
+          {item.text}
+        </Text>
+      </View>
+      
+    </View>
   )
 }
 
@@ -134,10 +164,6 @@ function ImageSlide({
  * - Si le nombre est impair, la dernière icône est centrée sur toute la largeur.
  */
 function FabIconsGrid({ items }: { items: FabIconItem[] }) {
-  const { t } = useTranslation('common', { keyPrefix: 'tuto.slide3.fab' });
-  const { colors } = usePalette();
-  const { fonts } = useFont();
-
   return (
     <View style={styles.gridContainer}>
       {items.map((item, i) => {
@@ -152,25 +178,9 @@ function FabIconsGrid({ items }: { items: FabIconItem[] }) {
               isPair ? styles.rowPair : styles.rowSingle,
             ]}
           >
-            <View style={[styles.iconCell, { width: '48%' }]}>
-              <Icon name={item.icon} size={28} color={colors.text} />
-              <Text style={[styles.iconTitle, { color: colors.text, fontFamily: fonts.body }]}>
-                {t(item.title)}
-              </Text>
-              <Text style={[styles.iconText, { color: colors.muted, fontFamily: fonts.body }]}>
-                {item.text}
-              </Text>
-            </View>
+            <IconCell item={item}/>
             {second && (
-              <View style={[styles.iconCell, { width: '48%' }]}>
-                <Icon name={second.icon} size={28} color={colors.text} />
-                <Text style={[styles.iconTitle, { color: colors.text, fontFamily: fonts.body }]}>
-                  {t(second.title)}
-                </Text>
-                <Text style={[styles.iconText, { color: colors.muted, fontFamily: fonts.body }]}>
-                  {second.text}
-                </Text>
-              </View>
+              <IconCell item={second} />
             )}
           </View>
         );
@@ -360,23 +370,31 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   slide: {
+    flex:3,
     width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
     alignItems: 'center',
     justifyContent: 'center',
   },
   slideContent: {
+    flex:1,
     paddingHorizontal: 40,
     paddingTop: 60,
     width: '100%',
     alignItems: 'center',
   },
   imagePlaceholder: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
+    width: '100%',
+    height: '80%',
+    borderWidth: 1,
+    borderRadius: Radius.lg,
     marginBottom: 32,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   contenuWrapper: {
+    flex:2,
     width: '100%',
     alignItems: 'center',
     marginBottom: 24,
@@ -404,12 +422,17 @@ const styles = StyleSheet.create({
   },
   rowPair: {
     justifyContent: 'space-between',
+    gap:8
   },
   rowSingle: {
     justifyContent: 'center',
-  },
+  }, 
   iconCell: {
     alignItems: 'center',
+    flexDirection: 'column'
+  },
+  iconTextContainer:{
+    flexDirection:'column',
   },
   iconTitle: {
     fontWeight: '600',
@@ -419,7 +442,6 @@ const styles = StyleSheet.create({
   iconText: {
     fontSize: 13,
     textAlign: 'center',
-    marginTop: 2,
   },
   dotsContainer: {
     flexDirection: 'row',

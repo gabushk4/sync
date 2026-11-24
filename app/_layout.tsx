@@ -43,7 +43,7 @@ import { SettingsProvider, useSettings } from '@/contextes/contexteSettings';
 import { SignalementsProvider } from '@/contextes/contexteSignalements';
 import { TimelineProvider } from '@/contextes/contexteTimeline';
 import { TutorielProvider, useTutoriel } from '@/contextes/contexteTutoriel';
-import SlideshowIntro from '@/components/SlideshowIntro';
+import SlideshowIntro from '@/components/slideshowIntro';
 import { initLocalization } from '@/locales/initLocale';
 import { configurerAffichagePremierPlan } from '@/functions/notificationsPush';
 import useNotificationsPush from '@/hooks/useNotificationsPush';

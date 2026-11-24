@@ -12,11 +12,7 @@ const eventFormIds = {
     
 }
 
-const pathNames = {
-    home: "(tabs)/home",
-    createEvent: "(tabs)/home/create",
-    profil: "(tabs)/profil"
-}
+
 
 const screenIds = {
     full: 'screen-full',
@@ -33,8 +29,7 @@ export {
     homeIds,
     fabId as fab,
     eventFormIds,
-    pathNames,
-    screenIds,
+        screenIds,
     tabPrefix,
     successConditions
 }
