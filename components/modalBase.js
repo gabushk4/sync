@@ -338,6 +338,7 @@ export default function ModalBase({ children, canDismiss = true, onDismiss = noo
                 </GestureDetector>
                 <LinearGradient
                     style={s.bottomGradient}
+                    pointerEvents="none"
                     start={{x:0, y:1}}
                     end={{x:0, y:0}}
                     colors={[colors.card, 'transparent']}
