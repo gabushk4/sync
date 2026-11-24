@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useFocusEffect } from "expo-router/react-navigation";
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Dimensions, Image, Keyboard, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, View } from 'react-native';
 
@@ -42,14 +42,14 @@ export default function ConnexionEcran(){
         masquer:colorsScheme === 'dark'?require('@/assets/icones/masquer-dark-icon.png'):require('@/assets/icones/masquer-light-icon.png')
     }
 
-    const [pseudo, setPseudo] = useState<string>('');
-    const [mdp, setMdp] = useState<string>('');
+    const [pseudo, setPseudo] = useState('')
+    const [mdp, setMdp] = useState('')
     const [masquerMdp, setMasquerMdp] = useState(true)
-    const [estDesactive, setEstDesactive] = useState(true)
     const [enChargement, setEnChargement] = useState(false)
 
+    const estDesactive = useMemo(() => enChargement || pseudo.trim().length === 0 || mdp.length < 8, [enChargement, pseudo, mdp])
+
     const connecter = async () => {
-        setEstDesactive(true);
         setEnChargement(true);
         try {
             log('se connecter');
@@ -71,8 +71,8 @@ export default function ConnexionEcran(){
             log('Erreur connexion:', error.message);
             catcher(error, t('errors.loginFailed'));
             setMdp('');
-        } finally {
-            setEnChargement(false);
+        }finally{
+            setEnChargement(false)
         }
     };
 
@@ -138,35 +138,31 @@ export default function ConnexionEcran(){
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 >
                     <Text style={[s.title]}>sync</Text>
-                    <TextInputAbs  
+                    <TextInputAbs
                         ref={refPseudo}
-                        placeholder={t('login.usernamePlaceholder')} 
+                        placeholder={t('login.usernamePlaceholder')}
                         value={pseudo}
                         returnKeyType='next'
-                        onChangeText={(text) => {
-                            setPseudo(text); 
-                            if (pseudo.length > 0 && mdp.length > 8)
-                                setEstDesactive(false)
-                        }}
-                        onSubmitEditing={() => {
-                            if(refMdp.current)
-                                refMdp.current?.focus()
-                        }}
+                        onChangeText={setPseudo}
+                        onSubmitEditing={() => refMdp.current?.focus()}
+                        autoComplete='username'
+                        textContentType='username'
+                        autoCapitalize='none'
+                        autoCorrect={false}
                         style={{ width: largeur }}
-                    />         
+                    />
                     <View style={{width: largeur, justifyContent:'center'}}>
                         <TextInputAbs
                             ref={refMdp}
                             placeholder={t('login.passwordPlaceholder')}
                             secureTextEntry={masquerMdp}
                             value={mdp}
-                            onChangeText={(text) => {
-                                setMdp(text)
-                                if (pseudo.length > 0 && mdp.length > 8)
-                                    setEstDesactive(false)
-                            }}
+                            onChangeText={setMdp}
                             autoComplete='current-password'
-                        />  
+                            textContentType='password'
+                            autoCapitalize='none'
+                            autoCorrect={false}
+                        /> 
                         <TouchableOpacity style={{position:'absolute', right:8}}
                             onPress={()=>{
                                 Haptics.click()

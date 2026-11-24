@@ -13,6 +13,17 @@ import { AccessTokenProvider } from '@/contextes/contexteToken';
 import { ThemeProvider } from "expo-router/react-navigation";
 
 //Contexts
+import { AuthProvider, useAuth } from '@/contextes/contexteAuth';
+import { ConversationsProvider } from '@/contextes/contexteConversations';
+import { EventDraftProvider } from '@/contextes/contexteEventDraft';
+import { GestionScrollProvider } from '@/contextes/contexteGestionListes';
+import { InvitesProvider } from '@/contextes/contexteInvites';
+import { MockModeProvider } from '@/contextes/contexteMockMode';
+import { NotificationProvider } from '@/contextes/contexteNotifications';
+import { SettingsProvider, useSettings } from '@/contextes/contexteSettings';
+import { SignalementsProvider } from '@/contextes/contexteSignalements';
+import { TimelineProvider } from '@/contextes/contexteTimeline';
+import { TutorielProvider, useTutoriel } from '@/contextes/contexteTutoriel';
 
 //Dependencies
 import { router, Stack, usePathname } from 'expo-router';
@@ -27,26 +38,16 @@ import {
 
 //Components
 import Toast from 'react-native-toast-message';
-
-//Functions
 import ChargementEcran from '@/components/chargementEcran';
 import RequestStatus from '@/components/requestStatus';
-import { toastConfig } from '@/constants/toastConfig';
-import { AuthProvider, useAuth } from '@/contextes/contexteAuth';
-import { ConversationsProvider } from '@/contextes/contexteConversations';
-import { EventDraftProvider } from '@/contextes/contexteEventDraft';
-import { GestionScrollProvider } from '@/contextes/contexteGestionListes';
-import { InvitesProvider } from '@/contextes/contexteInvites';
-import { MockModeProvider } from '@/contextes/contexteMockMode';
-import { NotificationProvider } from '@/contextes/contexteNotifications';
-import { SettingsProvider, useSettings } from '@/contextes/contexteSettings';
-import { SignalementsProvider } from '@/contextes/contexteSignalements';
-import { TimelineProvider } from '@/contextes/contexteTimeline';
-import { TutorielProvider, useTutoriel } from '@/contextes/contexteTutoriel';
 import SlideshowIntro from '@/components/slideshowIntro';
-import { initLocalization } from '@/locales/initLocale';
+
+//Functions
 import { configurerAffichagePremierPlan } from '@/functions/notificationsPush';
+import { initLocalization } from '@/locales/initLocale';
 import useNotificationsPush from '@/hooks/useNotificationsPush';
+
+import { toastConfig } from '@/constants/toastConfig';
 
 // This is the default configuration
 configureReanimatedLogger({

@@ -398,12 +398,14 @@ export default function Home() {
   // loaded. A fully booked selected day must not hide availability on the other
   // six days of the planning window.
   const dispoCommunesPossibles = evenementsMembreAJour && evenementsAmisAJour
+  
   const disponibilitesAmis = useMemo(() => friends.map((ami) => ({
     ami,
     commonFreeSlots: dispoCommunesPossibles
       ? getCommonFreeSlotsSurPlage(evenementsHoraire, ami.evenements, windowStart, JOURS_FENETRE)
       : [],
   })), [friends, dispoCommunesPossibles, evenementsHoraire, windowStart])
+
   const amisAvecDisponibilites = useMemo(() => {
     const maintenant = tempsClassement
     return disponibilitesAmis.map(({ ami, commonFreeSlots }) => {
