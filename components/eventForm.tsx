@@ -449,22 +449,7 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
                     />
                 </View>
             )}
-            {!indisponibilite && (
-                <AlertesEvenement
-                    moments={alertes}
-                    mode={mode === 'details' ? 'details' : 'edition'}
-                    editable={mode !== 'details' || event.privilege_membre === 'editeur'}
-                    onChange={async (moments) => {
-                        if (mode === 'details') {
-                            const enregistre = await onAlertesChange?.(moments)
-                            if (enregistre === false) return
-                            setAlertes(moments)
-                        } else {
-                            setAlertes(moments)
-                        }
-                    }}
-                />
-            )}
+            
             {/* Extern calendar infos */}
             {event.source !== 'sync' && event.couleur &&
                 <TouchableOpacity
@@ -627,9 +612,24 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
                 </TouchableOpacity>
             )}
 
+            {!indisponibilite && (
+                <AlertesEvenement
+                    moments={alertes}
+                    mode={mode === 'details' ? 'details' : 'edition'}
+                    editable={mode !== 'details' || event.privilege_membre === 'editeur'}
+                    onChange={async (moments) => {
+                        if (mode === 'details') {
+                            const enregistre = await onAlertesChange?.(moments)
+                            if (enregistre === false) return
+                            setAlertes(moments)
+                        } else {
+                            setAlertes(moments)
+                        }
+                    }}
+                />
+            )}
+
             {blocsFin}
-            {/* room for the tab bar's FAB area under the last block */}
-            {mode === 'details' && <View style={{ height: 70 }} />}
 
             <Modal visible={showTextModal} transparent={true} backdropColor="transparent">
                 <Pressable />

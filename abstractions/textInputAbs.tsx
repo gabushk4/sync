@@ -13,7 +13,7 @@ type Props = {
     'onEndEditing' | 'pointerEvents' | 'autoCorrect' | 'autoCapitalize' | 'onChange'
 >;
 
-const TextInputAbs = forwardRef<TextInput, Props>(({
+const TextInputAbs = forwardRef<TextInput, Props>( function TextInputAbs({
     readOnly = false,
     value,
     onLayout,
@@ -40,7 +40,7 @@ const TextInputAbs = forwardRef<TextInput, Props>(({
     autoCorrect = true,
     autoCapitalize = 'sentences',
     onChange = (e) =>{}
-}, ref) => {
+}, ref){
     const { colors } = usePalette();
     const { fonts } = useFont();
 

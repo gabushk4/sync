@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { createContext, useContext } from "react";
-import log from "../fonctions/log";
+import log from "../functions/log";
 
 export const ListesVisiblesContext = createContext()
 
