@@ -11,7 +11,8 @@
 		"eventPastShort": "passé",
 		"eventPast": "Cet évènement est déjà passé.",
 		"invitationExpired": "Cette invitation a expiré : il est trop tard pour y répondre.",
-		"left": "Tu as quitté cet évènement : tu n'y participes plus."
+		"left": "Tu as quitté cet évènement : tu n'y participes plus.",
+		"replaced": "L'évènement a changé de plage : réponds à la nouvelle notification."
 	},
 	"list": {
 		"emptyState": "Il n'y a rien pour toi...\nAlors profite de ce moment pour toi !",
@@ -48,7 +49,9 @@
 			"event": "Un de tes évènements a changé",
 			"friendship": "Tu as un nouvel ami",
 			"friendRequest": "Nouvelle demande d'ami",
-			"other": "Nouvelle notification"
+			"other": "Nouvelle notification",
+			"message": "Nouveau message",
+			"album": "Album photo"
 		},
 		"tapToOpen": "Touche pour voir"
 	}

@@ -81,7 +81,8 @@ function DefaultFriendList({ openProfiles, type}: { openProfiles: boolean, type:
     }, [getAmis]))
 
     return (
-        <ModalBase>
+        // writing to a friend (Messages' +): the ✕ in the bottom right corner
+        <ModalBase boutonADroite={type === 'message'}>
             <View style={{ height: '100%', width: '100%' }}>
                 <View style={{ width: '100%', alignItems: 'center' }}>
                     <Text style={{ color: colors.text, fontFamily: fonts.body, fontSize: 20 }}>{t('list.title')}</Text>

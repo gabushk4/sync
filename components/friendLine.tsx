@@ -18,8 +18,6 @@ type Props = {
     suggestedIntervals?: Interval[];
     /** Has an unavailability over the event's range: greyed out, can't be picked. */
     indisponible?: boolean;
-    /** Picking friends to invite: shows a check circle on the right. */
-    selectionnable?: boolean;
 }
 
 /**
@@ -29,7 +27,7 @@ type Props = {
  *   then" instead of their friendship date and suggestions, and they can't be picked —
  *   the app warns before inviting someone who said "don't disturb me then"
  */
-export default function FriendLine({ friend, onPress, listType, selected, suggestedIntervals = [], indisponible = false, selectionnable = false }: Props) {
+export default function FriendLine({ friend, onPress, listType, selected, suggestedIntervals = [], indisponible = false }: Props) {
     const { fonts } = useFont();
     const { colors } = usePalette();
     const { t, i18n } = useTranslation('friends');
@@ -39,8 +37,7 @@ export default function FriendLine({ friend, onPress, listType, selected, sugges
     return (
         <View style={{ width: '100%', paddingHorizontal: 4, paddingVertical: 4, opacity: indisponible ? 0.55 : 1 }}>
             <TouchableOpacity style={{ minHeight: 72, width: '100%', flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 12, borderWidth: 1, borderColor: indisponible ? colors.indisponible : colors.border, backgroundColor: selected ? colors.secondary : colors.card, paddingHorizontal: 12, paddingVertical: 8 }}
-                onPress={onPress} disabled={indisponible}
-                accessibilityState={selectionnable ? { selected, disabled: indisponible } : undefined}>
+                onPress={onPress} disabled={indisponible}>
                 <ProfilPic size={52} pfp={friend.fp_url}/>
                 <View style={{ flex: 1, justifyContent: 'center', minWidth: 0 }}>
                     <Text numberOfLines={1} style={{ fontFamily: fonts.body, color: colors.text, fontSize: 17 }}>{friend.pseudo}</Text>
@@ -66,12 +63,6 @@ export default function FriendLine({ friend, onPress, listType, selected, sugges
                             onPress={() => log("supprimer ami:", friend.pseudo, friend.id)}>
                             <Ionicons name="trash" color={colors.text}/>
                         </TouchableOpacity>}
-                    {selectionnable && !indisponible &&
-                        <Ionicons
-                            name={selected ? 'checkmark-circle' : 'ellipse-outline'}
-                            size={26}
-                            color={selected ? colors.text : colors.muted}
-                        />}
                 </View>
             </TouchableOpacity>
         </View>

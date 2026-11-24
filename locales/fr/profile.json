@@ -1,4 +1,6 @@
 {
+	"editProfile": "Modifier le profil",
+	"changePhoto": "Changer la photo de profil",
 	"navigation": {
 		"profile": "Profil",
 		"edit": "éditer le profil",
@@ -174,5 +176,28 @@
 		"updateFailed": "impossible de modifier le profil",
 		"loadFriendProfileFailed": "impossible de charger le profil de cet ami",
 		"friendProfileUnavailable": "ce profil est indisponible"
+	},
+	"password": {
+		"open": "changer mon mot de passe",
+		"title": "changer mon mot de passe",
+		"current": "mot de passe actuel",
+		"new": "nouveau mot de passe",
+		"confirm": "confirmer le nouveau mot de passe",
+		"ruleLength": "au moins {{length}} caractères",
+		"ruleSpecial": "un caractère spécial",
+		"ruleCase": "une majuscule et une minuscule",
+		"sameHint": "c'est le même que ton mot de passe actuel : rien ne changera",
+		"match": "les mots de passe correspondent",
+		"noMatch": "les mots de passe ne correspondent pas",
+		"show": "afficher les mots de passe",
+		"hide": "masquer les mots de passe",
+		"submit": "changer le mot de passe",
+		"failedTitle": "le mot de passe n'a pas été changé",
+		"wrongCurrent": "le mot de passe actuel est incorrect",
+		"changedTitle": "mot de passe changé",
+		"changedMessage": "ton mot de passe a été changé. un courriel de confirmation t'a été envoyé : si ce n'était pas toi, tu pourras le signaler.",
+		"sameTitle": "tout est beau",
+		"sameMessage": "c'est déjà ton mot de passe : rien n'a changé.",
+		"done": "ok"
 	}
 }

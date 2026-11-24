@@ -9,7 +9,7 @@ import catcher from "@/functions/catcher";
 import log from "@/functions/log";
 // convertirUTCversLocale was renamed convertUTCToLocal on master (it throws on an invalid date).
 import { convertUTCToLocal } from "@/functions/convertirUTCenLocal";
-import { Conversation, ConversationBrute, EnvoiMessage, Message, MessageBrut } from "@/types/messaging";
+import { Conversation, ConversationBrute, EnvoiMessage, Message, MessageBrut, Vu } from "@/types/messaging";
 
 /**
  * Story #1 et #16 (Isma) : messagerie texte et vocale.
@@ -26,6 +26,8 @@ type ConversationsContextType = {
     conversations: Conversation[]
     nonLusTotal: number
     messages: Message[]
+    /** group conversations: who has seen up to which message */
+    vus: Vu[]
     conversationOuverte: string | undefined
     /** id of the conversation whose messages have arrived at least once (vs still loading) */
     messagesChargesPour: string | undefined
@@ -34,6 +36,8 @@ type ConversationsContextType = {
     envoyerMessage: (conversationId: string, message: EnvoiMessage) => Promise<Message | undefined>
     demarrerConversationAvecAmi: (amiId: string) => Promise<string | undefined>
     rafraichirConversations: () => void
+    /** erases a conversation on my side only (the others keep it); throws if it failed */
+    effacerConversation: (conversationId: string) => Promise<void>
 }
 
 const ConversationsContexte = createContext<ConversationsContextType | undefined>(undefined)
@@ -50,19 +54,34 @@ function versLocale(date?: string | null): DateTime {
 }
 
 /**
- * Le serveur construit l'adresse des vocaux avec son BASE_URL, qui devient faux dès que
- * l'IP du Mac change (autre Wi-Fi, partage de connexion...). On garde seulement le chemin
- * (/audio/xxx.m4a) et on le colle à l'adresse que l'app utilise déjà pour joindre le serveur.
+ * Le serveur construit l'adresse des vocaux et des photos avec son BASE_URL, qui devient faux
+ * dès que l'IP du Mac change (autre Wi-Fi, partage de connexion...). On garde seulement le
+ * chemin (/audio/xxx.m4a, /img/messages/xxx.jpg) et on le colle à l'adresse que l'app
+ * utilise déjà pour joindre le serveur.
  */
-function versUrlAudio(url: string | undefined, baseApp: string): string | undefined {
+function versUrlMedia(url: string | undefined, baseApp: string, dossier: '/audio/' | '/img/'): string | undefined {
     if (!url) return undefined
-    const debutChemin = url.indexOf('/audio/')
+    const debutChemin = url.indexOf(dossier)
     if (debutChemin === -1) return url
     return `${baseApp.replace(/\/$/, '')}${url.slice(debutChemin)}`;
 }
 
 function convertirMessage(m: MessageBrut, baseApp: string): Message {
-    return { ...m, audioUrl: versUrlAudio(m.audioUrl, baseApp), envoyeLe: versLocale(m.envoyeLe) }
+    return {
+        ...m,
+        audioUrl: versUrlMedia(m.audioUrl, baseApp, '/audio/'),
+        imageUrls: m.imageUrls?.map((url) => versUrlMedia(url, baseApp, '/img/') ?? url),
+        envoyeLe: versLocale(m.envoyeLe),
+    }
+}
+
+/**
+ * Conversation open right now (see ouvrirConversation), for code outside React:
+ * a push for a new message in it doesn't show a toast (useNotificationsPush).
+ */
+let conversationAffichee: string | undefined
+export function conversationOuverteMaintenant(): string | undefined {
+    return conversationAffichee
 }
 
 function convertirConversation(c: ConversationBrute): Conversation {
@@ -88,6 +107,16 @@ function typeMimeAudio(nomFichier: string) {
     }
 }
 
+function typeMimeImage(nomFichier: string) {
+    switch (nomFichier.split('.').pop()?.toLowerCase()) {
+        case 'png': return 'image/png'
+        case 'gif': return 'image/gif'
+        case 'webp': return 'image/webp'
+        case 'heic': return 'image/heic'
+        default: return 'image/jpeg'
+    }
+}
+
 /* ---------- provider ---------- */
 
 export function ConversationsProvider({ children }: { children: React.ReactNode }) {
@@ -103,6 +132,7 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
 
     const [conversations, setConversations] = useState<Conversation[]>([])
     const [messages, setMessages] = useState<Message[]>([])
+    const [vus, setVus] = useState<Vu[]>([])
     const [conversationOuverte, setConversationOuverte] = useState<string | undefined>()
     const [messagesChargesPour, setMessagesChargesPour] = useState<string | undefined>()
 
@@ -115,6 +145,7 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
         if (state !== 'authenticated') {
             setConversations([])
             setMessages([])
+            setVus([])
             setConversationOuverte(undefined)
             setMessagesChargesPour(undefined)
         }
@@ -144,6 +175,7 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
             refreshMessages.current?.stop()
             refreshMessages.current = undefined
             idOuvertRef.current = undefined
+            conversationAffichee = undefined
             return
         }
 
@@ -170,6 +202,7 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
         refreshMessages.current?.stop()
         refreshMessages.current = undefined
         idOuvertRef.current = undefined
+        conversationAffichee = undefined
         setConversationOuverte(undefined)
     }, [])
 
@@ -177,8 +210,10 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
         refreshMessages.current?.stop()
 
         idOuvertRef.current = conversationId
+        conversationAffichee = conversationId
         setConversationOuverte(conversationId)
         // another conversation's messages: emptied (the screen also filters them out)
+        // (an old `vus` can stay: the screen only uses the ones on this conversation's messages)
         setMessages((ms) => (ms.length > 0 && ms[0].conversationId !== conversationId ? [] : ms))
         setMessagesChargesPour((id) => (id === conversationId ? id : undefined))
 
@@ -190,6 +225,7 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
                 if (idOuvertRef.current !== conversationId) return
                 const liste: MessageBrut[] = data?.messages ?? []
                 setMessages(liste.map((m) => convertirMessage(m, baseRef.current)))
+                setVus(data?.vus ?? [])
                 setMessagesChargesPour(conversationId)
                 // le serveur vient de marquer les messages comme lus (nouvelle liste seulement si ça change)
                 setConversations((cs) => (cs.some((c) => c.id === conversationId && c.nonLus !== 0)
@@ -216,6 +252,20 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
 
         if (envoi.type === 'texte') {
             reponse = await apiRef.current.post(url, { type: 'texte', contenu: envoi.contenu })
+        } else if (envoi.type === 'image') {
+            // every photo in the same "image" field: one message (an album when several)
+            const form = new FormData()
+            form.append('type', 'image')
+            envoi.photos.forEach((photo, i) => {
+                const nomFichier = photo.nomFichier || photo.uri.split('/').pop() || `photo-${i + 1}.jpg`
+                form.append('image', { uri: photo.uri, name: nomFichier, type: photo.mimeType || typeMimeImage(nomFichier) } as any)
+            })
+
+            reponse = await apiRef.current.post(url, form, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+                transformRequest: (d) => d, // axios ne doit pas sérialiser le FormData en React Native
+                timeout: 60000,
+            })
         } else {
             const nomFichier = envoi.uri.split('/').pop() || 'vocal.m4a'
             const form = new FormData()
@@ -273,6 +323,20 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
         refreshConversations.current?.forceRefresh()
     }, [])
 
+    // Removed from the list right away (the list is reloaded from the server either way, so
+    // it comes back if the server refused); its messages kept in memory are dropped, so
+    // reopening it from a friend shows a fresh conversation.
+    const effacerConversation = useCallback(async (conversationId: string) => {
+        setConversations((cs) => cs.filter((c) => c.id !== conversationId))
+        setMessages((ms) => (ms[0]?.conversationId === conversationId ? [] : ms))
+        setMessagesChargesPour((id) => (id === conversationId ? undefined : id))
+        try {
+            await apiRef.current.post(`/conversations/${conversationId}/effacer`)
+        } finally {
+            refreshConversations.current?.forceRefresh()
+        }
+    }, [])
+
     const nonLusTotal = useMemo(() => conversations.reduce((total, c) => total + (c.nonLus || 0), 0), [conversations])
 
     // same object until something changes: every screen using the conversations
@@ -281,6 +345,7 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
         conversations,
         nonLusTotal,
         messages,
+        vus,
         conversationOuverte,
         messagesChargesPour,
         ouvrirConversation,
@@ -288,8 +353,9 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
         envoyerMessage,
         demarrerConversationAvecAmi,
         rafraichirConversations,
-    }), [conversations, nonLusTotal, messages, conversationOuverte, messagesChargesPour, ouvrirConversation,
-        fermerConversation, envoyerMessage, demarrerConversationAvecAmi, rafraichirConversations])
+        effacerConversation,
+    }), [conversations, nonLusTotal, messages, vus, conversationOuverte, messagesChargesPour, ouvrirConversation,
+        fermerConversation, envoyerMessage, demarrerConversationAvecAmi, rafraichirConversations, effacerConversation])
 
     return (
         <ConversationsContexte.Provider value={value}>

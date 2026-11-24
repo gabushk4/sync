@@ -2,27 +2,27 @@ import Icon from "@react-native-vector-icons/ionicons";
 import * as Brightness from 'expo-brightness';
 import { router } from 'expo-router';
 import { useFocusEffect, useIsFocused } from "expo-router/react-navigation";
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Dimensions, ImageSourcePropType, Modal, Pressable, StyleSheet, Text, TouchableOpacity, useColorScheme, View, ViewStyle } from 'react-native';
-import Animated, { createAnimatedComponent, interpolate, useAnimatedProps, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
+import { ActivityIndicator, Alert, Dimensions, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
+import Animated, { createAnimatedComponent, interpolate, LinearTransition, ReduceMotion, useAnimatedProps, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
 import { interpolatePath, parse } from 'react-native-redash';
 import Svg, { Path } from 'react-native-svg';
 
 import { path1 as closeMenuPath1, path2 as closeMenuPath2, path3 as closeMenuPath3 } from '@/svgs/closeMenu';
 import { path1 as hamburgerMenuPath1, path2 as hamburgerMenuPath2, path3 as hamburgerMenuPath3 } from '@/svgs/hamburgerMenu';
 
-import { useAPI } from '@/contextes/contexteAPI';
 import { useFont } from '@/contextes/contexteFont';
 import { useMembre } from '@/contextes/contexteMembre';
 import { usePalette } from '@/contextes/contextePalette';
 import { useRouteAbs } from '@/contextes/contexteRoute';
 
 import log from '@/functions/log';
+import catcher from '@/functions/catcher';
+import ChooseImage from '@/functions/choisirImage';
 
 import { useActionFab } from '@/hooks/useActionFAB';
 
-import { FPType, isFpObject } from '@/types/pfp';
 
 import Haptics from '@/abstractions/haptics';
 import MemberCode from '@/components/memberCode';
@@ -33,30 +33,26 @@ import { convertirTimestampDateCourte } from "@/functions/convertirTimestamp";
 const MENU_OPTIONS_GAP = 8
 const FLOATING_BTN_HEIGHT = 64
 
+// Created once, outside the component (created during render, they were new components
+// on every render, which resets them)
+const AnimatedTouchableOpacity = createAnimatedComponent(TouchableOpacity)
+const AnimatedPath = createAnimatedComponent(Path)
+
 export default function ProfilEcran(){
     const { t } = useTranslation('profile')
     const { colors } = usePalette()
     const { fonts } = useFont()
-    const colorScheme = useColorScheme()
 
     const isFocused = useIsFocused()
-    const { APIBaseURL } = useAPI()
     const { ajouterEcran } = useRouteAbs()
-    const { membre, getMembre, patchStatutDisponibilite } = useMembre()
+    const { membre, getMembre, patchStatutDisponibilite, patchProfil } = useMembre()
 
     const {height: WIN_H} = Dimensions.get('window') 
-    const icones = {        
-        profilDef:colorScheme === 'dark' ?require('@/assets/icones/profil-dark-icon.png'):require('@/assets/icones/profil-light-icon.png'),        
-    }    
-
-    const fpRef = useRef<FPType>(membre.fp)
-    
     const oldBrightness = useRef<number>(0)
     
     const [avertissementVisible, setAvertissementVisible] = useState(false)
     const [menuStatutVisible, setMenuStatutVisible] = useState(false)
     const [texteStatutVisible, setTexteStatutVisible] = useState(true)
-    const [, setFpSource] = useState<ImageSourcePropType>(icones.profilDef)
     const [hamburgerMenuOpen, setHamburgerMenuOpen] = useState<boolean>(false)
 
 //#region ValeursAnimé
@@ -69,9 +65,7 @@ export default function ProfilEcran(){
     const hamburgerMenuBg = useSharedValue(colors.primary)
 
     const paramsOptionBottom = useSharedValue(0)
-    const editOptionBottom = useSharedValue(0)
     const logOutOptionBottom = useSharedValue(0)
-    const importOptionBottom = useSharedValue(0) // stories #4 et #7 : importer un calendrier
     const adminOptionBottom = useSharedValue(0)
     const optionOpacity = useSharedValue(0)
 
@@ -83,15 +77,15 @@ export default function ProfilEcran(){
     const banniereAnimee = useAnimatedStyle(() => {
         "worklet"
         return{
-            height: banniereH.value,
-            opacity: opaciteAnime.value,
+            height: banniereH.get(),
+            opacity: opaciteAnime.get(),
         }
     })
     const infosMembreAnime = useAnimatedStyle<ViewStyle>(()=>{
         "worklet"
         return{
-            alignItems: infosMembreAlignItems.value,
-            opacity: opaciteInfosMembre.value
+            alignItems: infosMembreAlignItems.get(),
+            opacity: opaciteInfosMembre.get()
         }
     })
 
@@ -101,7 +95,7 @@ export default function ProfilEcran(){
     const pathProps1 = useAnimatedProps(() => {
         "worklet"
         return {
-            d: interpolatePath(hamburgerMenuOpenShared.value, [0, 1], [hamburgerMenuP1, closeMenuP1])
+            d: interpolatePath(hamburgerMenuOpenShared.get(), [0, 1], [hamburgerMenuP1, closeMenuP1])
         }
     })
 
@@ -111,7 +105,7 @@ export default function ProfilEcran(){
     const pathProps2 = useAnimatedProps(() => {
         "worklet"
         return {
-            d: interpolatePath(hamburgerMenuOpenShared.value, [0, 1], [hamburgerMenuP2, closeMenuP2])
+            d: interpolatePath(hamburgerMenuOpenShared.get(), [0, 1], [hamburgerMenuP2, closeMenuP2])
         }
     })
 
@@ -121,54 +115,42 @@ export default function ProfilEcran(){
     const pathProps3 = useAnimatedProps(() => {
         "worklet"
         return {
-            d: interpolatePath(hamburgerMenuOpenShared.value, [0, 1], [hamburgerMenuP3, closeMenuP3])
+            d: interpolatePath(hamburgerMenuOpenShared.get(), [0, 1], [hamburgerMenuP3, closeMenuP3])
         }
     })
 
     const hamburgerMenuTriggerAnimated = useAnimatedStyle(() => {
         return {
-            backgroundColor:hamburgerMenuBg.value
+            backgroundColor:hamburgerMenuBg.get()
         }
     })
     
     //Hamburger menu options animated styles
     const paramsOptionAnimated = useAnimatedStyle(() => {
         return {
-            bottom: paramsOptionBottom.value,
-            opacity: optionOpacity.value
-        }
-    })
-    const editOptionAnimated = useAnimatedStyle(() => {
-        return {
-            bottom: editOptionBottom.value,
-            opacity: optionOpacity.value
+            bottom: paramsOptionBottom.get(),
+            opacity: optionOpacity.get()
         }
     })
     const logOutOptionAnimated = useAnimatedStyle(() => {
         return {
-            bottom: logOutOptionBottom.value,
-            opacity: optionOpacity.value
-        }
-    })
-    const importOptionAnimated = useAnimatedStyle(() => {
-        return {
-            bottom: importOptionBottom.value,
-            opacity: optionOpacity.value
+            bottom: logOutOptionBottom.get(),
+            opacity: optionOpacity.get()
         }
     })
     const adminOptionAnimated = useAnimatedStyle(() => ({
-        bottom: adminOptionBottom.value,
-        opacity: optionOpacity.value
+        bottom: adminOptionBottom.get(),
+        opacity: optionOpacity.get()
     }))
     const backdropAnimated = useAnimatedStyle(() => {
         return {
-            opacity:interpolate(optionOpacity.value, [0, 1], [0, 0.5])
+            opacity:interpolate(optionOpacity.get(), [0, 1], [0, 0.5])
         }
     })
 
     const avertissementAnime = useAnimatedStyle(()=>{
         return{
-            opacity:opaciteAvertissement.value
+            opacity:opaciteAvertissement.get()
         }
     })
 
@@ -198,35 +180,56 @@ export default function ProfilEcran(){
         oldBrightness.current = await Brightness.getBrightnessAsync()
         if(oldBrightness.current <= minBrightness){
             setAvertissementVisible(true)
-            opaciteAvertissement.value = withTiming(1, {duration:500})
+            opaciteAvertissement.set(withTiming(1, {duration:500}))
         }
             
         setTimeout(async ()=>{            
             if(oldBrightness.current <= minBrightness){
-                opaciteAvertissement.value = withTiming(0, {duration:500})
+                opaciteAvertissement.set(withTiming(0, {duration:500}))
                 await Brightness.setBrightnessAsync(minBrightness)
             }
             router.push({ pathname: '/(modals)/ajouterAmi', params: { contexte: 'qrCode' } })
         }, oldBrightness.current <= minBrightness ? 2000: 0)       
         
     }   
+    const ouvrirEdition = () => router.push('/(tabs)/profile/edit')
+
+    // Tapping one's photo changes it right away: pick (square crop), upload, done.
+    // The rest of the profile is edited with the "Modifier le profil" button.
+    const [envoiPhoto, setEnvoiPhoto] = useState(false)
+    const changerPhoto = async () => {
+        if (envoiPhoto) return
+        await ChooseImage(async (img) => {
+            setEnvoiPhoto(true)
+            try {
+                await patchProfil(undefined, undefined, {
+                    uri: img.uri,
+                    mimeType: img.mimeType ?? 'image/jpeg',
+                    fileName: img.fileName ?? img.uri.split('/').pop(),
+                })
+            } catch (error) {
+                catcher(error, t('errors.updateFailed'))
+            } finally {
+                setEnvoiPhoto(false)
+            }
+        })
+    }
     const SPRING_DURATION_ESTIMATE = 250 
     const toggleHamburgerMenu = () => {   
         const isOpen = !hamburgerMenuOpen
         setHamburgerMenuOpen(isOpen)
-        hamburgerMenuOpenShared.value = withTiming(isOpen ? 1 : 0)
-        hamburgerMenuBg.value = withTiming(isOpen ? 'transparent' : colors.primary, withTimingConfig)
-        editOptionBottom.value = withDelay(0, withSpring(isOpen ? FLOATING_BTN_HEIGHT + MENU_OPTIONS_GAP : 0, withSpringConfig))
-        paramsOptionBottom.value = withDelay(40, withSpring(isOpen ? (FLOATING_BTN_HEIGHT + MENU_OPTIONS_GAP) * 2 : 0, withSpringConfig))
-        logOutOptionBottom.value = withDelay(80, withSpring(isOpen ? (FLOATING_BTN_HEIGHT + MENU_OPTIONS_GAP) * 3 : 0, withSpringConfig))
-        importOptionBottom.value = withDelay(120, withSpring(isOpen ? (FLOATING_BTN_HEIGHT + MENU_OPTIONS_GAP) * 4 : 0, withSpringConfig))
-        adminOptionBottom.value = withDelay(160, withSpring(isOpen ? (FLOATING_BTN_HEIGHT + MENU_OPTIONS_GAP) * 4 : 0, withSpringConfig))
-        optionOpacity.value = withDelay(isOpen ? 0 : 160, withTiming(isOpen ? 1 : 0, withTimingConfig))
+        hamburgerMenuOpenShared.set(withTiming(isOpen ? 1 : 0))
+        hamburgerMenuBg.set(withTiming(isOpen ? 'transparent' : colors.primary, withTimingConfig))
+        // (editing the profile is now a button on the profile card, not in this menu)
+        // log out closest to the menu button, settings above it
+        logOutOptionBottom.set(withDelay(0, withSpring(isOpen ? FLOATING_BTN_HEIGHT + MENU_OPTIONS_GAP : 0, withSpringConfig)))
+        paramsOptionBottom.set(withDelay(40, withSpring(isOpen ? (FLOATING_BTN_HEIGHT + MENU_OPTIONS_GAP) * 2 : 0, withSpringConfig)))
+        adminOptionBottom.set(withDelay(80, withSpring(isOpen ? (FLOATING_BTN_HEIGHT + MENU_OPTIONS_GAP) * 3 : 0, withSpringConfig)))
+        optionOpacity.set(withDelay(isOpen ? 0 : 160, withTiming(isOpen ? 1 : 0, withTimingConfig)))
         
         setTimeout(() => Haptics.click(), 0 + SPRING_DURATION_ESTIMATE)
         setTimeout(() => Haptics.clickLeger(), 40 + SPRING_DURATION_ESTIMATE)
         setTimeout(() => Haptics.click(), 80 + SPRING_DURATION_ESTIMATE)
-        setTimeout(() => Haptics.clickLeger(), 120 + SPRING_DURATION_ESTIMATE)
     }
     /* 
         const getWidgetsMembre = async ()=>{
@@ -254,10 +257,6 @@ export default function ProfilEcran(){
         }
     })
 
-    useEffect(()=>{
-        setFpSource({ uri: `${membre.fp}` })
-    }, [membre.fp])
-
     useFocusEffect(
         React.useCallback(() => {
             // Restore the full label each time this screen receives focus.
@@ -272,24 +271,14 @@ export default function ProfilEcran(){
             
             //getWidgetsMembre()
 
-            if (membre.fp) {
-                setFpSource({ uri: `${APIBaseURL}/${membre.fp}` });
-            } else if (isFpObject(membre.fp)) {
-                const current = fpRef.current;
-                if (isFpObject(current)) {
-                    setFpSource({ uri: current.uri });
-                }
-            } else {
-                setFpSource(icones.profilDef)
-            }
-
             return () => {
                 clearTimeout(minuterieMasquage)
             };
+        // only when the screen gets the focus: with membre in the deps, getMembre (which
+        // changes membre) could run again and again while a field stays empty
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [isFocused])
     );
-    const AnimatedTouchableOpacity = createAnimatedComponent(TouchableOpacity)
-    const AnimatedPath = createAnimatedComponent(Path)
 
 //#region StyleSheet
     const s = StyleSheet.create({   
@@ -337,6 +326,27 @@ export default function ProfilEcran(){
             justifyContent: 'center',
             zIndex:1
         },
+        boutonEditer: {
+            height: 42,
+            borderRadius: 10,
+            borderWidth: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+        },
+        // camera bottom left, mirroring the availability light (bottom right)
+        badgeCrayon: {
+            position: 'absolute',
+            left: 4,
+            bottom: 4,
+            width: 28,
+            height: 28,
+            borderRadius: 14,
+            borderWidth: 2,
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
         floatingOption: {
             position: 'absolute',
             zIndex:0
@@ -372,7 +382,22 @@ export default function ProfilEcran(){
                     <View style={[{minHeight:'48%', flexDirection:'column', gap:12, paddingBottom:12, borderTopLeftRadius: 16, borderTopRightRadius:16, backgroundColor:colors.card, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.7, shadowRadius: 8, elevation:5, borderBottomColor:colors.border, borderBottomWidth:1}]}>                
                         {/* Pfp */}
                         <Animated.View style={{ height: 120, width: 120, zIndex: 2, marginLeft: 16, marginTop: -56, justifyContent: 'center', alignItems: 'center' }}>
-                            <PfpWithAvailability size={120} pfp={membre.fp} statut={membre.statutDisponibilite} />
+                            {/* tapping one's own photo changes it (camera badge) */}
+                            <TouchableOpacity
+                                onPress={changerPhoto}
+                                disabled={envoiPhoto}
+                                activeOpacity={0.8}
+                                accessibilityRole="button"
+                                accessibilityLabel={t('changePhoto')}
+                                accessibilityState={{ busy: envoiPhoto }}
+                            >
+                                <PfpWithAvailability size={120} pfp={membre.fp} statut={membre.statutDisponibilite} />
+                                <View style={[s.badgeCrayon, { backgroundColor: colors.primary, borderColor: colors.card }]}>
+                                    {envoiPhoto
+                                        ? <ActivityIndicator size="small" color={colors.text} />
+                                        : <Icon name="camera" size={14} color={colors.text} />}
+                                </View>
+                            </TouchableOpacity>
                         </Animated.View>
                         {/* Pseudo and Code */}
                         <Animated.View style={[{ justifyContent: 'center', paddingHorizontal: 16}, infosMembreAnime]}>
@@ -381,23 +406,43 @@ export default function ProfilEcran(){
                                 <MemberCode code={membre.idPublique??''}/>
                             </View>                            
                             <Text style={[{color:colors.muted, fontSize:14, paddingLeft:4, fontFamily:fonts.body}]}>{t('memberSince', { date: convertirTimestampDateCourte(membre.tempsCreation) })}</Text>
-                            <TouchableOpacity
-                                accessibilityRole="button"
-                                accessibilityLabel={t('availability.change')}
-                                accessibilityState={{ expanded: menuStatutVisible }}
-                                onPress={() => setMenuStatutVisible(true)}
-                                style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: membre.statutDisponibilite === 'disponible' ? '#35B86B' : membre.statutDisponibilite === 'silencieux' ? '#E6B422' : '#E05252', backgroundColor: colors.card }}
+                            <Animated.View
+                                layout={LinearTransition.springify()
+                                    .mass(withSpringConfig.mass ?? 1)
+                                    .damping(withSpringConfig.damping ?? 10)
+                                    .reduceMotion(withSpringConfig.reduceMotion ?? ReduceMotion.System)}
+                                style={{ alignSelf: 'flex-start', marginTop: 8 }}
                             >
-                                <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: membre.statutDisponibilite === 'disponible' ? '#35B86B' : membre.statutDisponibilite === 'silencieux' ? '#E6B422' : '#E05252' }} />
-                                {texteStatutVisible && <Text style={{ color: colors.text, fontFamily: fonts.body, fontSize: 13 }}>{t(`availability.${membre.statutDisponibilite}`)}</Text>}
-                                <Icon name="chevron-down" size={16} color={colors.muted} />
-                            </TouchableOpacity>
+                                <TouchableOpacity
+                                    accessibilityRole="button"
+                                    accessibilityLabel={t('availability.change')}
+                                    accessibilityState={{ expanded: menuStatutVisible }}
+                                    onPress={() => setMenuStatutVisible(true)}
+                                    style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: membre.statutDisponibilite === 'disponible' ? '#35B86B' : membre.statutDisponibilite === 'silencieux' ? '#E6B422' : '#E05252', backgroundColor: colors.card }}
+                                >
+                                    <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: membre.statutDisponibilite === 'disponible' ? '#35B86B' : membre.statutDisponibilite === 'silencieux' ? '#E6B422' : '#E05252' }} />
+                                    {texteStatutVisible && <Text style={{ color: colors.text, fontFamily: fonts.body, fontSize: 13 }}>{t(`availability.${membre.statutDisponibilite}`)}</Text>}
+                                    <Icon name="chevron-down" size={16} color={colors.muted} />
+                                </TouchableOpacity>
+                            </Animated.View>
                         </Animated.View>
                         {/* TODO: avoir un bouton avec le compte des amis qui affiche la liste des amis */}
                         {/* Bio */}
                         <Animated.View style={{ width:'100%', paddingHorizontal:16, paddingVertical:4, flexShrink:1 }}>
                             <Text style={[s.bio,{color:colors.text, fontFamily:fonts.body, fontSize:16, width:'100%', maxHeight:66}]} numberOfLines={3} ellipsizeMode="tail">{membre.bio}</Text>
-                        </Animated.View>                        
+                        </Animated.View>
+                        {/* Edit profile: on the profile itself, where people look for it (it was
+                            hidden in the floating menu) */}
+                        <View style={{ paddingHorizontal: 16 }}>
+                            <TouchableOpacity
+                                onPress={ouvrirEdition}
+                                accessibilityRole="button"
+                                style={[s.boutonEditer, { borderColor: colors.border, backgroundColor: colors.background }]}
+                            >
+                                <Icon name="pencil-outline" size={18} color={colors.text} />
+                                <Text style={{ color: colors.text, fontFamily: fonts.body, fontSize: 16 }}>{t('editProfile')}</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View> 
                 </View>  
             <Modal transparent visible={menuStatutVisible} animationType="fade" onRequestClose={() => setMenuStatutVisible(false)}>
@@ -468,15 +513,6 @@ export default function ProfilEcran(){
                         }}
                         >
                             <Icon name='cog' color={colors.text} size={28} />
-                        </AnimatedTouchableOpacity>
-                        <AnimatedTouchableOpacity
-                            style={[s.floatingButton, s.floatingOption, editOptionAnimated]}
-                        onPress={() => {
-                            toggleHamburgerMenu()
-                            router.push('/(tabs)/profile/edit')
-                        }}
-                        >
-                            <Icon name='pencil' color={colors.text} size={28} />
                         </AnimatedTouchableOpacity>
                         <AnimatedTouchableOpacity
                             style={[s.floatingButton, s.floatingOption, { borderColor: colors.error }, logOutOptionAnimated]}

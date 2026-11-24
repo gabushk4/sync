@@ -1,4 +1,9 @@
 {
+	"title": "Messages",
+	"newMessage": "New message",
+	"list": {
+		"empty": "No conversations yet. Tap + to write to a friend."
+	},
 	"requests": {
 		"title": "Friend requests",
 		"empty": "You have no pending friend requests."
@@ -13,6 +18,9 @@
 		"admin": "Organizer",
 		"you": "you",
 		"openProfile": "See {{pseudo}}'s profile",
+		"profile": "Profile",
+		"viewProfile": "See profile",
+		"deleteForMe": "Delete conversation",
 		"createdOn": "Conversation created on {{date}}",
 		"eventGroup": "{{titre}}'s group chat",
 		"open": "{{nom}} conversation info",
@@ -24,5 +32,46 @@
 		"cancel": "Cancel",
 		"deleted": "Conversation deleted",
 		"deleteFailed": "Couldn't delete the conversation"
+	},
+	"photo": {
+		"send": "Choose photos",
+		"open": "See the photo",
+		"close": "Close the photo",
+		"sendFailed": "The photo couldn't be sent",
+		"remove": "Remove the photo",
+		"add": "Add photos",
+		"counter": "{{index}} / {{total}}"
+	},
+	"gallery": {
+		"title": "Photos",
+		"count": "{{count}} / {{max}}",
+		"cancel": "Cancel",
+		"done": "Done",
+		"limited": "Sync only sees the photos you chose.",
+		"manage": "Change",
+		"empty": "No photos",
+		"prepareFailed": "Couldn't prepare the photos"
+	},
+	"seenBy": "Seen by {{noms}}",
+	"preview": {
+		"photo": "📷 Photo",
+		"voice": "🎤 Voice message",
+		"photos": "📷 Photos"
+	},
+	"delete": {
+		"button": "Delete",
+		"title": "Delete this conversation?",
+		"message": "It will be deleted on your side only: {{nom}} keeps it. If you write to each other again, you'll start from an empty conversation.",
+		"confirm": "Delete",
+		"cancel": "Cancel",
+		"failed": "Couldn't delete the conversation"
+	},
+	"photos": {
+		"title": "Photos",
+		"section": "Photos ({{count}})",
+		"seeAll": "See all",
+		"open": "Photo by {{pseudo}}",
+		"empty": "No photos sent in this conversation.",
+		"loadFailed": "Couldn't load the photos"
 	}
 }

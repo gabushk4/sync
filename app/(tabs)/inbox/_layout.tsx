@@ -1,10 +1,18 @@
 import { Stack } from "expo-router";
+import { useTranslation } from "react-i18next";
+
+import { useFont } from "@/contextes/contexteFont";
 
 export default function InboxLayout() {
+    const { t } = useTranslation('inbox')
+    const { fonts } = useFont()
     return (
-        <Stack screenOptions={{ headerTransparent: false }}>
+        <Stack screenOptions={{ headerTransparent: false, headerTitleStyle: { fontFamily: fonts.title } }}>
+            {/* The conversations list: a header like the other tabs ("Messages"). New
+                message: the tab bar's middle button (chat bubble with a +) */}
             <Stack.Screen
-                name="index" options={{headerShown:false}}
+                name="index"
+                options={{ headerTitle: t('title') }}
             />
             <Stack.Screen
                 name="[conversationId]"
@@ -19,6 +27,11 @@ export default function InboxLayout() {
             <Stack.Screen
                 name="profil/[membreId]"
                 options={{ headerBackButtonDisplayMode: 'minimal', headerTitle: '' }}
+            />
+            {/* All the photos of a conversation (from its info; the screen sets its title) */}
+            <Stack.Screen
+                name="photos/[conversationId]"
+                options={{ headerBackButtonDisplayMode: 'minimal' }}
             />
         </Stack>
     )

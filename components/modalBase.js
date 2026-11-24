@@ -22,7 +22,21 @@ import Ionicons from "@react-native-vector-icons/ionicons"
 
 const noop = () => {}
 
-export default function ModalBase({ children, canDismiss = true, onDismiss = noop }){
+/**
+ * Every prop is listed: with a JSDoc, tsc only knows the props documented here.
+ *
+ * @param {Object} props
+ * @param {React.ReactNode} [props.children] - The sheet's content.
+ * @param {boolean} [props.canDismiss=true] - Closing dismisses the modal route.
+ * @param {() => void} [props.onDismiss] - Called once closed.
+ * @param {boolean} [props.afficherBoutonPleinEcran=true] - The round button (✕ / ✓) shown
+ *   when the modal is full screen; false for a modal that has its own confirm button (friend
+ *   picker) or is closed by swiping down / tapping outside only (the invitation review's
+ *   availability details, Philip).
+ * @param {boolean} [props.boutonADroite=false] - That button in the bottom right corner
+ *   instead of the bottom left.
+ */
+export default function ModalBase({ children, canDismiss = true, onDismiss = noop, afficherBoutonPleinEcran = true, boutonADroite = false }){
     const { colors } = usePalette()
     const {dismissButton, runDismissButtonAction} = useModal()
 
@@ -38,10 +52,15 @@ export default function ModalBase({ children, canDismiss = true, onDismiss = noo
             flex:1
         },
 
+        // The whole screen behind the sheet: a tap anywhere outside the modal closes it.
+        // (55% high with no top, it was laid out at the bottom by justifyContent
+        // 'flex-end', under the sheet: tapping above the modal did nothing.)
         overlayPressable: {
             position: 'absolute',
-            height: '55%',
-            width: '100%',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
         },
         blurBackdrop: {
             zIndex: -1,
@@ -123,6 +142,8 @@ export default function ModalBase({ children, canDismiss = true, onDismiss = noo
             left: 16,
             backgroundColor: colors.error,
         },
+        optionsADroite: { justifyContent: 'flex-end' },
+        closeButtonADroite: { left: 0, marginRight: 16 },
         expandButton: {
             position: 'absolute',
             zIndex: 20,
@@ -324,17 +345,17 @@ export default function ModalBase({ children, canDismiss = true, onDismiss = noo
             </Animated.View>
             </KeyboardAvoidingView>
             {/* Fullscreen options */}
-            <Animated.View style={[optionsAgrandirAnime, s.optionsRow]}>
+            {afficherBoutonPleinEcran && <Animated.View style={[optionsAgrandirAnime, s.optionsRow, boutonADroite && s.optionsADroite]}>
                 <TouchableOpacity 
                         onPress={() => {
                             runDismissButtonAction()
                             fermerModalBase()
                         }}
-                    style={[s.circleButtonBase, s.closeButton, {backgroundColor:dismissButton.bgColor}, dismissButton.style]}
+                    style={[s.circleButtonBase, s.closeButton, boutonADroite && s.closeButtonADroite, {backgroundColor:dismissButton.bgColor}, dismissButton.style]}
                 >
                         <Ionicons name={dismissButton.icon} size={40} color={colors.text} />
                 </TouchableOpacity>
-            </Animated.View>
+            </Animated.View>}
             </View>
         </GestureHandlerRootView>
     )         

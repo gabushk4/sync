@@ -1,5 +1,8 @@
 import { DateTime } from "luxon"
 
+/** 'image': one photo, 'album': several photos in one message */
+export type TypeMessage = 'texte' | 'vocal' | 'image' | 'album'
+
 export type Message = {
     id: string
     conversationId: string
@@ -7,9 +10,11 @@ export type Message = {
     /** pseudo and profile picture of the author (shown in group conversations) */
     auteurPseudo?: string
     auteurFpUrl?: string
-    type: 'texte' | 'vocal'
+    type: TypeMessage
     contenu?: string
     audioUrl?: string
+    /** photo or album message: the photos' addresses, in order */
+    imageUrls?: string[]
     dureeSecondes?: number
     envoyeLe: DateTime
     lu: boolean
@@ -23,7 +28,7 @@ export type Conversation = {
         fp_url?: string
     }
     dernierMessage?:{
-        type: 'texte' | 'vocal'
+        type: TypeMessage
         contenu?: string
         envoyeLe: DateTime
         auteurId: string
@@ -41,6 +46,14 @@ export type Conversation = {
 }
 
 export type MessageBrut = Omit<Message,'envoyeLe'> & {envoyeLe: string}
+
+/** Group conversations: the last message each other member has seen (GET .../messages `vus`) */
+export type Vu = {
+    membreId: string
+    pseudo: string
+    fp_url: string | null
+    messageId: string
+}
 export type ConversationBrute = Omit<Conversation,'dernierMessage'> & {
     dernierMessage?: Omit<NonNullable<Conversation['dernierMessage']>,'envoyeLe'> & { envoyeLe: string}
 }
@@ -50,3 +63,4 @@ export type ConversationBrute = Omit<Conversation,'dernierMessage'> & {
 export type EnvoiMessage =
     | { type: 'texte', contenu: string }
     | { type: 'vocal', uri: string, dureeSecondes: number }
+    | { type: 'image', photos: { uri: string, mimeType?: string, nomFichier?: string }[] }

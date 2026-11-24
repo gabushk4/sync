@@ -6,7 +6,10 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": ["sync", "com.alkemist.sync"],
+    "scheme": [
+      "sync",
+      "com.alkemist.sync"
+    ],
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
@@ -69,10 +72,21 @@
           "calendarPermission": "Sync doit accéder à vos calendriers pour importer vos événements."
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Sync accède à tes photos pour que tu puisses les envoyer dans tes conversations.",
+          "granularPermissions": [
+            "photo"
+          ]
+        }
+      ],
+      "expo-image"
     ],
     "experiments": {
-      "typedRoutes": true
+      "typedRoutes": true,
+      "reactCompiler": true
     },
     "extra": {
       "eas": {

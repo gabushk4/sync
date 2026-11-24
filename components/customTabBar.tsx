@@ -2,16 +2,11 @@ import { usePalette } from "@/contextes/contextePalette";
 import Icon from "@react-native-vector-icons/ionicons";
 import { BottomTabBar, type BottomTabBarProps } from 'expo-router/js-tabs';
 import { useRouter } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React from "react";
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import { useFabActions, useFabState, FabConfig } from "@/contextes/contexteFAB";
-import log from "@/functions/log";
+import { useFabActions, useFabState } from "@/contextes/contexteFAB";
 import ToastAbs from "@/abstractions/toastAbs";
 import { toastTypes } from "@/constants/toastConfig";
-import Animated, { useAnimatedStyle, withTiming, useSharedValue } from "react-native-reanimated";
-import { withTimingConfig } from "@/constants/ReanimatedConfs";
-
-const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
 const s = StyleSheet.create({
   container: { position: 'relative' },
@@ -34,96 +29,41 @@ const s = StyleSheet.create({
   },
 });
 
+// The tab's button shows right away when changing tabs: no fade-out of the previous
+// tab's icon then fade-in of the new one (it took ~0.5 s before the right icon was there).
 const Fab = React.memo(function Fab() {
     const config = useFabState();
     const { actionRef } = useFabActions();
     const { colors } = usePalette();
     const router = useRouter();
 
-    // Contenu actuellement affiché (reste en place pendant le fade-out)
-    const [display, setDisplay] = useState<FabConfig>(undefined);
-
-    const shown = !!config && config.visible !== false;    
-
-    const progress = useSharedValue(0);
-    // Whether the FAB is currently hidden (no config), and the pending swap timer.
-    const cacheRef = useRef(true);
-    const swapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  
-    useEffect(() => {
-        if (swapTimerRef.current) clearTimeout(swapTimerRef.current);
-        swapTimerRef.current = null;
-
-        // Plus de config, ou masqué : fade-out, on garde `display` pour l'animation
-        if (!config || config.visible === false) {
-        cacheRef.current = true;
-        progress.value = withTiming(0, withTimingConfig);
-        return;
-        }
-
-        // Coming back from hidden (e.g. closing the conflict screen over the create
-        // form): nothing to fade out, show the new content right away. It used to
-        // wait for a fade-out of the hidden button first, so it appeared late.
-        // Rectification (Philip) for a more conventional display.
-        if (cacheRef.current) {
-        cacheRef.current = false;
-        setDisplay(config);
-        progress.value = withTiming(1, { duration: 150 });
-        return;
-        }
-
-        const swap = () => setDisplay(config);
-
-        
-        const FADE_OUT_T = 150 //ms
-
-        // Fade-out
-        progress.value = withTiming(0.3, { duration: FADE_OUT_T })                        
-        swapTimerRef.current = setTimeout(() => {
-            //swap
-            swap();
-            //fade-in
-            progress.value = withTiming(1, withTimingConfig);    
-        }, FADE_OUT_T)        
-            
-    }, [config]);
-
-    const animatedStyle = useAnimatedStyle(() => ({
-        opacity: progress.value,
-        transform: [{ scale: 0.8 + 0.2 * progress.value }],
-    }));
-
-    if (!display) return null;
+    if (!config || config.visible === false) return null;
 
     const onPress = () => {
         // Blocked FAB (e.g. a past day): explain why instead of navigating.
-        if (display.bloque) {
-        ToastAbs.show({ type: toastTypes.error, text2: display.bloque });
-        return;
+        if (config.bloque) {
+            ToastAbs.show({ type: toastTypes.error, text2: config.bloque });
+            return;
         }
-        if (display.href) {
-        router.push(
-            display.params
-            ? ({ pathname: display.href as unknown as string, params: display.params } as any)
-            : (display.href as any)
-        );
+        if (config.href) {
+            router.push(
+                config.params
+                    ? ({ pathname: config.href as unknown as string, params: config.params } as any)
+                    : (config.href as any)
+            );
         } else {
-        actionRef.current?.();
+            actionRef.current?.();
         }
     };
 
-    
-    return  shown ? (
-        <>
-            <AnimatedTouchableOpacity
-            disabled={!shown}
+    return (
+        <TouchableOpacity
             onPress={onPress}
-            style={[s.fab, animatedStyle, { borderColor: colors.border, backgroundColor: colors.secondary }]}
-            >
-            {display.icon ?? <Icon name="add" color={colors.text} size={24} />}
-            </AnimatedTouchableOpacity>
-        </>
-    ) : null;
+            style={[s.fab, { borderColor: colors.border, backgroundColor: colors.secondary }]}
+        >
+            {config.icon ?? <Icon name="add" color={colors.text} size={24} />}
+        </TouchableOpacity>
+    );
 });
 
 export function CustomTabBar(props: BottomTabBarProps) {

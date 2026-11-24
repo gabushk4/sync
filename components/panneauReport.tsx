@@ -1,10 +1,12 @@
 import Ionicons from '@react-native-vector-icons/ionicons'
+import { DateTime } from 'luxon'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 import ToastAbs from '@/abstractions/toastAbs'
 import ConfirmationEnvoi from '@/components/confirmationEnvoi'
+import SelecteurReport from '@/components/selecteurReport'
 import Spinner from '@/components/spinner'
 import { toastTypes } from '@/constants/toastConfig'
 import { useAPI } from '@/contextes/contexteAPI'
@@ -22,28 +24,36 @@ type Props = {
     integre?: boolean
     /** A block of the event's form (details page): its rounded card and label style. */
     enBloc?: boolean
+    /**
+     * The event's current time: shows "propose another time" (a date and a time,
+     * SelecteurReport) above the proposals — the event's management view.
+     */
+    plageActuelle?: { debut: DateTime, fin: DateTime }
 }
 
 /**
  * Postponement on an event's page (user story 23): the open proposals. An invitee
  * votes yes / no on each; the creator sees their counts, selects one and "change the
  * time" moves the event (yes → attending, no → not attending, the others answer
- * again). Only while everyone is still free at their time: the API closes the others
- * (a vote / apply on one answers 409). Proposals are made from the invitation review.
+ * again). A proposal stays open whoever is busy at its time (the votes say who can
+ * come); applying one closes the others. Proposals are made from the invitation review,
+ * and, with `plageActuelle`, from a date and a time picked here.
  * Recurring events and unavailabilities can't be postponed (the API says so).
  *
  * @author Philip — user story 23 (postponement votes)
  * @author Philip — rectification: common free slots removed from the event's page
+ * @author Philip — "propose another time" back in the management view (`plageActuelle`):
+ *   sent like a common free slot (envoyerCreneau), the proposals reload and open
  * @param {Props} props
  * @returns {JSX.Element | null}
  */
-export default function PanneauReport({ idEvenement, onPlageChangee, integre = false, enBloc = false }: Props) {
+export default function PanneauReport({ idEvenement, onPlageChangee, integre = false, enBloc = false, plageActuelle }: Props) {
     const { t } = useTranslation('events')
     const { colors } = usePalette()
     const { fonts } = useFont()
     const { api } = useAPI()
 
-    const { donnees, charger, enCours, setEnCours, plage, alerterRefus } = useReportEvenement(idEvenement, { onPlageChangee })
+    const { donnees, charger, enCours, setEnCours, plage, envoyerCreneau, alerterRefus } = useReportEvenement(idEvenement, { onPlageChangee })
     const [ouvertSuggestions, setOuvertSuggestions] = useState(false)
     // Id of the suggestion the creator selected to apply.
     const [selection, setSelection] = useState<string | null>(null)
@@ -56,7 +66,8 @@ export default function PanneauReport({ idEvenement, onPlageChangee, integre = f
             await charger()
         } catch (error: any) {
             catcher(error, t('postpone.voteFailed'))
-            // 409: the vote ended (someone isn't free then anymore): it leaves the list.
+            // 409: the vote ended (the creator applied a proposal or moved the event): it
+            // leaves the list.
             if (error?.response?.status === 409) await charger()
         } finally {
             setEnCours(null)
@@ -127,8 +138,10 @@ export default function PanneauReport({ idEvenement, onPlageChangee, integre = f
     })
 
     if (!donnees) return null
-    const { est_createur, suggestions } = donnees
-    if (suggestions.length === 0) return null
+    const { est_createur, suggestions, peut_proposer, peut_deplacer } = donnees
+    // Only where it was asked for (management view), and only when the API allows it.
+    const peutChoisirPlage = !!plageActuelle && (peut_proposer || peut_deplacer)
+    if (suggestions.length === 0 && !peutChoisirPlage) return null
 
     const suggestionChoisie = suggestions.find((sg) => sg.id === selection)
 
@@ -164,10 +177,26 @@ export default function PanneauReport({ idEvenement, onPlageChangee, integre = f
 
     return (
         <View style={s.panneau}>
-            <TouchableOpacity style={s.entete} onPress={() => setOuvertSuggestions((o) => !o)} accessibilityRole="button">
-                <Text style={s.titre}>{t('postpone.suggestionsCount', { count: suggestions.length })}</Text>
-                <Ionicons name={ouvertSuggestions ? 'chevron-up' : 'chevron-down'} size={20} color={colors.text} />
-            </TouchableOpacity>
+            {peutChoisirPlage && plageActuelle && (
+                <SelecteurReport
+                    plageActuelle={plageActuelle}
+                    deplacement={peut_deplacer}
+                    enCours={enCours === 'creneau'}
+                    plage={plage}
+                    onEnvoyer={async (creneau) => {
+                        const envoye = await envoyerCreneau(creneau)
+                        // The new proposal shows in the list, opened.
+                        if (envoye && !peut_deplacer) setOuvertSuggestions(true)
+                        return envoye
+                    }}
+                />
+            )}
+            {suggestions.length > 0 && (
+                <TouchableOpacity style={s.entete} onPress={() => setOuvertSuggestions((o) => !o)} accessibilityRole="button">
+                    <Text style={s.titre}>{t('postpone.suggestionsCount', { count: suggestions.length })}</Text>
+                    <Ionicons name={ouvertSuggestions ? 'chevron-up' : 'chevron-down'} size={20} color={colors.text} />
+                </TouchableOpacity>
+            )}
             {ouvertSuggestions && suggestions.map((suggestion) => {
                 const contenu = (
                     <>
@@ -200,7 +229,7 @@ export default function PanneauReport({ idEvenement, onPlageChangee, integre = f
                     )
                     : <View key={suggestion.id} style={s.ligne}>{contenu}</View>
             })}
-            {ouvertSuggestions && est_createur && (
+            {ouvertSuggestions && est_createur && suggestions.length > 0 && (
                 <ConfirmationEnvoi
                     libelle={t('postpone.apply')}
                     icone="swap-horizontal"

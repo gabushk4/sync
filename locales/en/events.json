@@ -6,7 +6,8 @@
     "calendar": "Calendar",
     "invitationReview": "Invitation schedules",
     "unavailability": "New unavailability",
-    "unavailabilityDetails": "Unavailability details"
+    "unavailabilityDetails": "Unavailability details",
+    "album": "Event album"
   },
   "creationPages": {
     "event": "Event",
@@ -60,11 +61,13 @@
     "repeatedUntil": "event repeats every {{unit}} until:",
     "private": "private",
     "public": "public",
-    "participants": "participants"
+    "participants": "participants",
+    "removedOnConfirm_one": "{{count}} participant will be removed on ✓",
+    "removedOnConfirm_other": "{{count}} participants will be removed on ✓"
   },
   "participantRemoval": {
     "confirmTitle": "Remove this participant?",
-    "confirmMessage": "Do you want to remove {{pseudo}} from this event?",
+    "confirmMessage": "Are you sure? {{pseudo}} is already part of the event.",
     "cancel": "Cancel",
     "remove": "Remove"
   },
@@ -134,19 +137,31 @@
     "participantsLoadFailed": "Error loading participants"
   },
   "invitationReview": {
-    "hint": "Tap {{pseudo}}'s event or yours to answer.",
     "leader": "Organizer",
     "me": "Me",
     "loadFailed": "Unable to load the invitation's schedules",
     "retry": "Couldn't load the schedules. Tap to try again.",
     "private": "Private",
-    "commonSlot": "Free"
+    "availabilityPartial": "Some available",
+    "availabilityAll": "Everyone available",
+    "availablePeople": "{{compte}} free: {{noms}}",
+    "alreadyProposed": "This time has already been proposed.",
+    "proposeRange": "Propose {{plage}}",
+    "allTooShort": "Everyone is free at times, but for less than the event lasts.",
+    "availabilityTitle": "Common availability",
+    "rangeAlreadyProposed": "already proposed"
   },
   "invitationDecision": {
     "accept": "Accept",
     "refuse": "Refuse",
     "refuseFailed": "Unable to refuse the invitation",
-    "invitedBy": "Invited by"
+    "invitedBy": "Invited by",
+    "refusedTitle": "Invitation refused",
+    "proposeQuestion": "Would you like to propose another date?",
+    "proposeHint": "The participants will vote. If the organizer picks your date, you'll get a new invitation.",
+    "proposeYes": "Propose another date",
+    "proposeNo": "No thanks",
+    "done": "OK"
   },
   "unavailability": {
     "reasonPlaceholder": "reason (optional)...",
@@ -191,6 +206,56 @@
     "notFreeTitle": "Not everyone is free anymore",
     "notFreeMessage": "{{pseudos}}: not free then anymore",
     "confirmPropose": "Propose {{plage}}?",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "proposeTitle": "Propose another time",
+    "moveTitle": "Move the event",
+    "move": "Move",
+    "confirmMove": "Move the event to {{plage}}?",
+    "date": "Date",
+    "time": "Time",
+    "keepsDuration": "The event keeps its duration.",
+    "futureOnly": "Pick a time in the future.",
+    "sameTime": "That's already the current time."
+  },
+  "album": {
+    "title": "Photo album",
+    "seeAll": "See all",
+    "add": "Add photos",
+    "addSelected": "Add to the album ({{count}})",
+    "empty": "No photos yet. Share the event's photos!",
+    "open": "Photo by {{pseudo}}",
+    "close": "Close",
+    "counter": "{{index}} / {{total}}",
+    "you": "You",
+    "delete": "Delete the photo",
+    "deleteTitle": "Delete this photo?",
+    "deleteMessage": "It will be removed from the album for everyone.",
+    "deleteConfirm": "Delete",
+    "cancel": "Cancel",
+    "deleteFailed": "Couldn't delete the photo",
+    "added_one": "{{count}} photo added to the album",
+    "added_other": "{{count}} photos added to the album",
+    "addFailed": "The photos couldn't be added",
+    "loadFailed": "Couldn't load the album",
+    "noAccess": "Only the event's members can see its album",
+    "pending": "Waiting for approval",
+    "accept": "Accept",
+    "acceptAll": "Accept all",
+    "refuse": "Refuse",
+    "review": "Review",
+    "toApprove_one": "{{count}} photo to approve",
+    "toApprove_other": "{{count}} photos to approve",
+    "wantsToAdd_one": "{{pseudo}} wants to add a photo",
+    "wantsToAdd_other": "{{pseudo}} wants to add {{count}} photos",
+    "sentForApproval_one": "Photo sent: it's waiting for the organizer's approval",
+    "sentForApproval_other": "{{count}} photos sent: they're waiting for the organizer's approval",
+    "decisionFailed": "The decision couldn't be saved",
+    "settingsFailed": "The setting couldn't be changed",
+    "approvalSetting": "Approve photos",
+    "approvalSettingHint": "Participants' photos wait for your approval before appearing in the album.",
+    "emptyWithApproval": "No photos yet. Yours will appear once the organizer approves them.",
+    "cancelTitle": "Cancel this photo?",
+    "cancelMessage": "It won't be sent to the organizer.",
+    "cancelConfirm": "Cancel the photo"
   }
 }

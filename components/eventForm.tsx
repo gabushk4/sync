@@ -569,7 +569,9 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
                 <ParticipantsListe
                     participantsUrl={eventParticipantsControlUrl}
                     listType='event'
-                    peutGererParticipants={mode === 'details' && event.privilege_membre === 'editeur' || mode === 'create'}
+                    // Managed in the form only, saved with its ✓: the creation, or the edit
+                    // page (editors). The details page is read-only (Philip).
+                    peutGererParticipants={mode === 'create' || (mode === 'edit' && event.privilege_membre === 'editeur')}
                     // Invited member (not an editor): reminder of the status icons.
                     afficherLegende={mode === 'details' && event.privilege_membre !== 'editeur'}
                 />                

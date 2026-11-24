@@ -22,7 +22,6 @@ import { useFriendList } from "@/hooks/useFriendList";
 
 import { ListType } from "@/app/(modals)/listeAmis";
 import { useEventDraft } from "@/contextes/contexteEventDraft";
-import { useModal } from "@/contextes/contexteModals";
 import { paramsPlage } from "@/functions/evenementsMembre";
 import log from "@/functions/log";
 import { Participant } from "@/types/invites";
@@ -47,9 +46,8 @@ function EventListAmiContent() {
     const colorScheme = useColorScheme()
     const { invites } = useInvites()
     const { start, end, friendsSuggestions } = useEventDraft()
-    const {registerDismissButtonAction} = useModal()
 
-    const { type, inviterUrl, hasMoreFriends: hasMoreFriendsParam, excludedFriendIds: excludedFriendIdsParam } = useLocalSearchParams() as { type: ListType; inviterUrl: string; hasMoreFriends: string; excludedFriendIds?: string }
+    const { type, hasMoreFriends: hasMoreFriendsParam, excludedFriendIds: excludedFriendIdsParam } = useLocalSearchParams() as { type: ListType; hasMoreFriends: string; excludedFriendIds?: string }
     const select = type === 'select' || type === 'event'
     const excludedFriendIds = useMemo(() => {
         const raw = Array.isArray(excludedFriendIdsParam) ? excludedFriendIdsParam[0] : excludedFriendIdsParam
@@ -119,22 +117,12 @@ function EventListAmiContent() {
         const dejaInvites = new Set([...invites.map(invite => invite.id), ...excludedFriendIds])
         return [...idsSelec].filter(id => !dejaInvites.has(id as string)).length
     }, [idsSelec, invites, excludedFriendIds])
-    // Existing event: invited right away. Event being created: only added to the draft.
-    const urlInvitation = Array.isArray(inviterUrl) ? inviterUrl[0] : inviterUrl
-    const inviteDirect = !!urlInvitation && urlInvitation !== 'undefined'
-
+    // Only added to the form's pending invitations, created or edited event alike: they
+    // are sent with the form's ✓ (an existing event's used to be invited right away).
+    // Philip.
     const inviteAndDismiss = useCallback(() => {
-        const amisSelec = amis.filter(ami => idsSelec.has(ami.id))
-        // A route param can arrive as the text "undefined": no URL then (event
-        // being created, invitations sent with it). Philip — user story 8.
-        const url = Array.isArray(inviterUrl) ? inviterUrl[0] : inviterUrl
-        onPressSelect(amisSelec, url && url !== 'undefined' ? url : undefined)
-    }, [amis, idsSelec, inviterUrl, onPressSelect])
-
-    useEffect(() => {
-        if (!select) return
-        return registerDismissButtonAction(inviteAndDismiss)
-    }, [select, registerDismissButtonAction, inviteAndDismiss])
+        onPressSelect(amis.filter(ami => idsSelec.has(ami.id)))
+    }, [amis, idsSelec, onPressSelect])
 
     useEffect(() => {
         if (!select) return
@@ -213,8 +201,9 @@ function EventListAmiContent() {
 
 
     return (
-        <ModalBase>
-            <View style={{ flex: 1, width: '100%' }}>
+        // no ✓ in full screen: the Invite button below does its job
+        <ModalBase afficherBoutonPleinEcran={!select}>
+            <View style={{ height: '100%', width: '100%' }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
                     <View style={{ width: '100%', alignItems: 'center' }}>
                         <Text style={{ color: colors.text, fontFamily: fonts.body, fontSize: 20 }}>{t('list.title')}</Text>
@@ -227,7 +216,6 @@ function EventListAmiContent() {
                     colors={[colors.primary, 'transparent']}
                 />
                 {amis.length > 0 && <SectionList
-                    style={{ flex: 1 }}
                     sections={friendSections}
                     keyExtractor={item => item.id}
                     contentContainerStyle={{ paddingTop: 12, paddingBottom: 16 }}
@@ -278,11 +266,12 @@ function EventListAmiContent() {
                         
                         const selectionne = select && idsSelec.has(item.id)
                         return (
-                            <FriendLine friend={item} listType={type} selected={selectionne} selectionnable={select} indisponible={select && idsIndisponibles.has(item.id)} suggestedIntervals={item.suggestedIntervals ?? []} onPress={() => {
+                            <FriendLine friend={item} listType={type} selected={selectionne} indisponible={select && idsIndisponibles.has(item.id)} suggestedIntervals={item.suggestedIntervals ?? []} onPress={() => {
                                 if (select) {
                                     setIdsSelec(prev => {
                                         const next = new Set(prev)
-                                        next.has(item.id) ? next.delete(item.id) : next.add(item.id)
+                                        if (next.has(item.id)) next.delete(item.id)
+                                        else next.add(item.id)
                                         return next
                                     })
                                 } else if (type === 'consult') {
@@ -292,7 +281,7 @@ function EventListAmiContent() {
                         )
                     }}
                 />}
-                {/* Confirm button, always visible (the ✓ only shows when the modal is full screen).
+                {/* Confirm button, always visible: it replaces the ✓ of the full screen modal.
                     Closing the modal another way (tap outside, swipe down) cancels. */}
                 {select && amis.length > 0 && (
                     <View style={{ paddingTop: 8, paddingBottom: 12 }}>
@@ -314,11 +303,11 @@ function EventListAmiContent() {
                                 backgroundColor: nbSelectionnes > 0 ? colors.primary : colors.border,
                             }}
                         >
-                            {nbSelectionnes > 0 && <Ionicons name={inviteDirect ? 'paper-plane' : 'person-add'} size={18} color="white" />}
+                            {nbSelectionnes > 0 && <Ionicons name='person-add' size={18} color="white" />}
                             <Text style={{ color: nbSelectionnes > 0 ? 'white' : colors.muted, fontFamily: fonts.title, fontSize: 16 }}>
                                 {nbSelectionnes === 0
                                     ? t('list.pickFriends')
-                                    : t(inviteDirect ? 'list.inviteCount' : 'list.addCount', { count: nbSelectionnes })}
+                                    : t('list.addCount', { count: nbSelectionnes })}
                             </Text>
                         </TouchableOpacity>
                     </View>

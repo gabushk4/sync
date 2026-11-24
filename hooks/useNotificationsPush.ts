@@ -7,6 +7,7 @@ import ToastAbs from '@/abstractions/toastAbs'
 import { toastTypes } from '@/constants/toastConfig'
 import { useAPI } from '@/contextes/contexteAPI'
 import { useAuth } from '@/contextes/contexteAuth'
+import { conversationOuverteMaintenant } from '@/contextes/contexteConversations'
 import { useNotifications } from '@/contextes/contexteNotifications'
 import categorieNotification from '@/functions/categorieNotification'
 import log from '@/functions/log'
@@ -66,9 +67,13 @@ export default function useNotificationsPush(): void {
 
         const recue = Notifications.addNotificationReceivedListener((notification) => {
             const data = notification.request.content.data ?? {}
+            const estMessage = data.type === 'message'
+            // a message in the conversation on screen: it's already showing there
+            if (estMessage && data.conversationId === conversationOuverteMaintenant()) return
             ToastAbs.show({
                 type: toastTypes.notification,
-                text1: t(cleTitreToast(data.type as string | undefined)),
+                // an event album notification (photos to approve, accepted, refused)
+                text1: t(data.album ? 'push.title.album' : cleTitreToast(data.type as string | undefined)),
                 text2: t('push.tapToOpen'),
                 props: { categorie: categorieNotification(data.type as string | undefined) },
                 visibilityTime: DUREE_TOAST_NOTIFICATION,
@@ -78,7 +83,8 @@ export default function useNotificationsPush(): void {
                     ouvrirNotification(data)
                 },
             })
-            void notifRefreshRef.current?.refresh(true)
+            // messages aren't in the notifications list
+            if (!estMessage) void notifRefreshRef.current?.refresh(true)
         })
 
         // a system notification tapped while the app was in the background
