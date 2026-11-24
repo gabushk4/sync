@@ -1593,3 +1593,7 @@ L'endpoint `GET /admin/os_metrics/points` n'existe pas encore : "je get aucuns p
 - L'accueil conserve le glissement de fenêtre par 3 jours et reprend les rafraîchissements en pause. Le profil conserve le bouton de statut compact, avec transition ressort basée sur `withSpringConfig`; la photo continue d'utiliser `PfpWithAvailability`.
 - `npm ci` n'a pas terminé : accès EACCES au registre npm sur `zxing-wasm`.
 - Verification après synchronisation des dépendances : `npm ci` réussi; `npm run typecheck` passe; ESLint passe sur les deux écrans fusionnés et `components/albumEvenement.tsx`. Le chemin d'album avait un type Expo généré en retard; navigation conservée via Href après vérification que la route existe.
+
+## Animation du libellé de disponibilité (24/11/2026)
+- `app/(tabs)/profile/index.tsx` : le libellé du bouton utilise maintenant `Animated.Text` avec `FadeOut` (150 ms) et `FadeIn` (200 ms). Le conteneur conserve `LinearTransition` configuré avec `withSpringConfig` pour animer sa largeur. Délai et réaffichage au focus inchangés.
+- ESLint et typecheck passent.

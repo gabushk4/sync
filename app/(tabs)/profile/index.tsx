@@ -5,7 +5,7 @@ import { useFocusEffect, useIsFocused } from "expo-router/react-navigation";
 import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Alert, Dimensions, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
-import Animated, { createAnimatedComponent, interpolate, LinearTransition, ReduceMotion, useAnimatedProps, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { createAnimatedComponent, FadeIn, FadeOut, interpolate, LinearTransition, ReduceMotion, useAnimatedProps, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
 import { interpolatePath, parse } from 'react-native-redash';
 import Svg, { Path } from 'react-native-svg';
 
@@ -421,7 +421,7 @@ export default function ProfilEcran(){
                                     style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: membre.statutDisponibilite === 'disponible' ? '#35B86B' : membre.statutDisponibilite === 'silencieux' ? '#E6B422' : '#E05252', backgroundColor: colors.card }}
                                 >
                                     <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: membre.statutDisponibilite === 'disponible' ? '#35B86B' : membre.statutDisponibilite === 'silencieux' ? '#E6B422' : '#E05252' }} />
-                                    {texteStatutVisible && <Text style={{ color: colors.text, fontFamily: fonts.body, fontSize: 13 }}>{t(`availability.${membre.statutDisponibilite}`)}</Text>}
+                                    {texteStatutVisible && <Animated.Text entering={FadeIn.duration(200)} exiting={FadeOut.duration(150)} style={{ color: colors.text, fontFamily: fonts.body, fontSize: 13 }}>{t(`availability.${membre.statutDisponibilite}`)}</Animated.Text>}
                                     <Icon name="chevron-down" size={16} color={colors.muted} />
                                 </TouchableOpacity>
                             </Animated.View>
