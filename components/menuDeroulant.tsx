@@ -17,6 +17,9 @@ type Props = {
   style?: ViewProps['style']
 }
 
+// Created once, outside the component (inside, it was a new component on every render)
+const AnimatedPressable = createAnimatedComponent(Pressable)
+
 const CHEVRON_SIZE = 20
 const ITEM_HEIGHT = 40
 const ITEM_NUMBER = 4
@@ -42,14 +45,14 @@ export default function MenuDeroulant({ values, selected, onSelection, disabled,
 
   const androidItemsListAnimated = useAnimatedStyle(() => {
     return {
-      height: androidItemsListHeight.value,
-      opacity: androidItemsListOpacity.value
+      height: androidItemsListHeight.get(),
+      opacity: androidItemsListOpacity.get()
     }
   })
 
   const androidOverlayAnimated = useAnimatedStyle(() => {
     return {
-      opacity: androidItemsListOpacity.value
+      opacity: androidItemsListOpacity.get()
     }
   })
   //log('menu deroulant values', values)
@@ -184,15 +187,14 @@ export default function MenuDeroulant({ values, selected, onSelection, disabled,
   }
 
   const closeAndroidDropDown = () => {
-    androidItemsListHeight.value = withTiming(0, { duration: 300, easing: Easing.out(Easing.ease) })
-    androidItemsListOpacity.value = withTiming(0, {duration:300, easing:Easing.out(Easing.ease)})
+    androidItemsListHeight.set(withTiming(0, { duration: 300, easing: Easing.out(Easing.ease) }))
+    androidItemsListOpacity.set(withTiming(0, {duration:300, easing:Easing.out(Easing.ease)}))
     setTimeout(() => {
       setAndroidDropDownVisible(false)  
     }, 180)
     
   }
 
-  const AnimatedPressable = createAnimatedComponent(Pressable)
 
   return (
     <View
@@ -210,8 +212,8 @@ export default function MenuDeroulant({ values, selected, onSelection, disabled,
             setAndroidDropDownTop(pY - (androidTriggerHeight ?? 0) - s.trigger.padding - s.trigger.borderWidth)           
 
             androidDropDownRef.current?.scrollToIndex({index: values.findIndex(v => v.value === selectedValue), animated:false})
-            androidItemsListHeight.value = withTiming(s.androidItemList.maxHeight, { duration: 300, easing: Easing.in(Easing.ease) })
-            androidItemsListOpacity.value = withTiming(1, {duration:300, easing:Easing.in(Easing.ease)})
+            androidItemsListHeight.set(withTiming(s.androidItemList.maxHeight, { duration: 300, easing: Easing.in(Easing.ease) }))
+            androidItemsListOpacity.set(withTiming(1, {duration:300, easing:Easing.in(Easing.ease)}))
             setAndroidDropDownVisible(true)
           })
         }}

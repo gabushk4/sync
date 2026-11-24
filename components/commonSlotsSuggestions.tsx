@@ -73,7 +73,8 @@ export default function CommonSlotsSuggestions() {
         }
     ))
 
-    const Line = useMemo(() => ({ sugg, index } : {sugg: Interval, index: number}) => {
+    // a named function: the component has a name in React's tools (react/display-name)
+    const Line = useMemo(() => function LigneSuggestion({ sugg } : {sugg: Interval, index: number}) {
         if (sugg) {
             const isPast = sugg.debut.toMillis() < DateTime.now().toMillis()
             const sameDay = sugg.fin.startOf('day').diff(sugg.debut.startOf('day'), 'days').days < 1                        
@@ -145,17 +146,13 @@ export default function CommonSlotsSuggestions() {
     }, [])
 
 
-    useEffect(() => {
-        const currentSugg = slotSuggestions.find(s => s.id === suggSelected)
-        if (currentSugg) {
-            const startOutOfBound = start.toMillis() < currentSugg?.debut.toMillis()
-            const endOutOfBound = end.toMillis() > currentSugg.fin.toMillis()
-            //log(`outofbound start ${start}: ${startOutOfBound} end ${end}: ${endOutOfBound} currentSugg:`, {currentSugg})
-            if (currentSugg && (startOutOfBound || endOutOfBound)) {
-                setSuggSelected(undefined)
-            }
-        }
-    }, [start, end, suggSelected])
+    // The start / end were moved outside the picked suggestion: it's no longer picked.
+    // Done during the render (not in an effect, which drew the old selection once more
+    // before clearing it); the condition stops it once cleared.
+    const suggCourante = suggSelected ? slotSuggestions.find(s => s.id === suggSelected) : undefined
+    if (suggCourante && (start.toMillis() < suggCourante.debut.toMillis() || end.toMillis() > suggCourante.fin.toMillis())) {
+        setSuggSelected(undefined)
+    }
         
     return (
         <Animated.View style={[s.suggestionsContainer, {borderTopWidth: suggestionsCount > 0 ? 1 : 0}, animatedSuggestions]}>

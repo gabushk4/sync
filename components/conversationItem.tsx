@@ -1,4 +1,7 @@
+import { useRef } from 'react'
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { useTranslation } from 'react-i18next'
+import ReanimatedSwipeable, { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable'
 
 import { usePalette } from '@/contextes/contextePalette'
 import { useFont } from '@/contextes/contexteFont'
@@ -12,20 +15,57 @@ import Icon from "@react-native-vector-icons/ionicons"
 type Props = {
     conversation: Conversation
     onPress: (conversation: Conversation) => void
+    /** swipe left → "Supprimer": erases it on my side (asked by the list) */
+    onSupprimer?: (conversation: Conversation) => void
 }
 
-export default function ConversationItem({ conversation, onPress }: Props) {
+const LARGEUR_ACTION = 92
+
+export default function ConversationItem({ conversation, onPress, onSupprimer }: Props) {
     const { colors } = usePalette()
     const { fonts } = useFont()
+    const { t } = useTranslation('inbox')
+    const swipeRef = useRef<SwipeableMethods>(null)
 
     const { ami, dernierMessage, nonLus, evenementId } = conversation
 
     const apercu = dernierMessage
         ? dernierMessage.type === 'vocal'
-            ? 'message vocal'
+            ? t('preview.voice')
+            : dernierMessage.type === 'image'
+            ? t('preview.photo')
+            : dernierMessage.type === 'album'
+            ? t('preview.photos')
             : dernierMessage.contenu
         : 'aucun message pour le moment'
+    // Swiped left: a red "Supprimer" button behind the row
+    const actionSupprimer = () => (
+        <TouchableOpacity
+            onPress={() => {
+                swipeRef.current?.close()
+                onSupprimer?.(conversation)
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('delete.button')}
+            style={[styles.supprimer, { backgroundColor: colors.error }]}
+        >
+            <Icon name="trash-outline" size={22} color="white" />
+            <Text style={[styles.texteSupprimer, { fontFamily: fonts.body }]}>{t('delete.button')}</Text>
+        </TouchableOpacity>
+    )
+
     return (
+       <ReanimatedSwipeable
+            ref={swipeRef}
+            enabled={!!onSupprimer}
+            friction={2}
+            rightThreshold={LARGEUR_ACTION / 2}
+            overshootRight={false}
+            renderRightActions={actionSupprimer}
+        >
+       {/* An opaque layer under the row: a tap fades the row (TouchableOpacity), which let
+           the red button behind it show through */}
+       <View style={{ backgroundColor: colors.background }}>
        <TouchableOpacity
             onPress={() => onPress(conversation)}
             style={[styles.conteneur, { borderBottomColor: colors.border }]}
@@ -71,10 +111,19 @@ export default function ConversationItem({ conversation, onPress }: Props) {
             </View>
 
         </TouchableOpacity>
+        </View>
+        </ReanimatedSwipeable>
     )
 }
 
 const styles = StyleSheet.create({
+    supprimer: {
+        width: LARGEUR_ACTION,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+    },
+    texteSupprimer: { color: 'white', fontSize: 13 },
     conteneur: {
         flexDirection: 'row',
         alignItems: 'center',

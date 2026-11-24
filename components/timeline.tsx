@@ -104,7 +104,21 @@ export default function Timeline({ horizontal, windowStart, selectedDate, timeli
                     ...(horizontal ? { marginRight: pxHeures, width: L_HEURES, height:'100%', borderLeftWidth: minuit ? 1 : 0, borderColor: colors.muted } : { marginBottom: pxHeures, height: H_HEURES, width:'100%' })
                 }}
                 >
-                    <Text style={{color: colors.text, fontSize:minuit ? 12 : 16, fontFamily:fonts.number}}>{minuit ? now.toFormat('ccc d') : item.heure}</Text>
+                    <Text
+                        style={{
+                            color: colors.text,
+                            fontSize: minuit ? 12 : 16,
+                            fontFamily: fonts.number,
+                            // Horizontal: an hour's label is centered ON its hour, where the
+                            // blocks and the current time line put that hour (positionHeures),
+                            // so 2:30 is exactly halfway between "2:00" and "3:00". It used to
+                            // be centered in its box, half a label (~12 min) after the hour.
+                            // The day's label stays right of its midnight line.
+                            ...(horizontal && !minuit ? { transform: [{ translateX: -L_HEURES / 2 }] } : {}),
+                        }}
+                    >
+                        {minuit ? now.toFormat('ccc d') : item.heure}
+                    </Text>
                 </View>
             )})}
             {premierPlan}

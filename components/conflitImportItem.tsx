@@ -21,24 +21,36 @@ type Props = {
  * création d'un évènement), afin de pouvoir réutiliser ce composant plus tard.
  */
 
+type PropsChoix = {
+    valeur: ResolutionConflit
+    label: string
+    resolution: ResolutionConflit | undefined
+    onChoisir: (resolution: ResolutionConflit) => void
+}
+
+/** One of the 3 choices. Declared outside ConflitImportItem: created inside it, it was
+ * a new component on every render (React threw its state away each time). */
+function Choix({ valeur, label, resolution, onChoisir }: PropsChoix) {
+    const {colors} = usePalette()
+    const {fonts} = useFont()
+    const actif = resolution === valeur
+    return(
+        <TouchableOpacity
+            onPress={() => onChoisir(valeur)}
+            style={[
+                styles.choix,
+                { borderColor: actif ? colors.secondary : colors.border, backgroundColor: actif ? colors.secondary : 'transparent' },
+            ]}
+        >
+            <Text style={{ color: actif ? 'white' : colors.text, fontFamily: fonts.body, fontSize: 13 }}>{label}</Text>
+        </TouchableOpacity>
+    )
+}
+
 export default function ConflitImportItem({importe,existant,resolution,onChoisir}: Props){
     const {colors} = usePalette()
     const {fonts} = useFont()
 
-    const Choix = ({valeur,label}:{valeur: ResolutionConflit; label: string}) =>{
-        const actif = resolution === valeur
-        return(
-            <TouchableOpacity
-                onPress={() => onChoisir(valeur)}
-                style={[
-                    styles.choix,
-                    { borderColor: actif ? colors.secondary : colors.border, backgroundColor: actif ? colors.secondary : 'transparent' },
-                ]}
-            >
-                <Text style={{ color: actif ? 'white' : colors.text, fontFamily: fonts.body, fontSize: 13 }}>{label}</Text>
-            </TouchableOpacity>
-        )
-    }
     return (
         <View style={[styles.carte, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={{ color: colors.muted, fontFamily: fonts.body, fontSize: 12, marginBottom: 6 }}>
@@ -62,9 +74,9 @@ export default function ConflitImportItem({importe,existant,resolution,onChoisir
             </View>
 
             <View style={styles.choixConteneur}>
-                <Choix valeur="garder_existant" label="garder celui de sync" />
-                <Choix valeur="garder_importe" label="garder celui importé" />
-                <Choix valeur="garder_les_deux" label="garder les deux" />
+                <Choix valeur="garder_existant" label="garder celui de sync" resolution={resolution} onChoisir={onChoisir} />
+                <Choix valeur="garder_importe" label="garder celui importé" resolution={resolution} onChoisir={onChoisir} />
+                <Choix valeur="garder_les_deux" label="garder les deux" resolution={resolution} onChoisir={onChoisir} />
             </View>
         </View>
     )

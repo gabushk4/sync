@@ -10,7 +10,9 @@
 		"loadMore": "load more available friends",
 		"friendSince": "friend since {{date}}",
 		"emptyState": "add friends using the option:",
-		"unavailable": "unavailable then"
+		"unavailable": "unavailable then",
+		"pickFriends": "Pick friends",
+		"addCount": "Add ({{count}})"
 	},
 	"add": {
 		"codeLabel": "Friend code",
@@ -46,5 +48,15 @@
 		"errors": {
 			"responseFailed": "Unable to respond to this friend request"
 		}
+	},
+	"relation": {
+		"add": "Add friend",
+		"addShort": "Add",
+		"sent": "Friend request sent",
+		"sentShort": "Sent",
+		"sentToast": "Friend request sent",
+		"accept": "Accept friend request",
+		"acceptShort": "Accept",
+		"accepted": "You're now friends"
 	}
 }

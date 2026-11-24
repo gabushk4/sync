@@ -913,6 +913,606 @@ Les deux clients acceptent `com.alkemist.sync:/oauth2redirect` (vérifié via
 
 ---
 
+# HANDOFF — Dispos communes exactes (revue d'invitation) + « Proposer un report » dans la gestion (13/11/2026)
+
+## Fait (lint 0 sur les fichiers touchés, `tsc --noEmit` OK, `jest` 17/17)
+- `functions/disponibilitesCommunes.ts` (nouveau) : intervalles où ≥ 2 participants
+  sont libres, par participant (bloc seulement chez les personnes libres), coupés
+  uniquement partiel ↔ tout le monde ; `segments` = qui est libre, morceau par morceau.
+  Tests : `tests/disponibilitesCommunes.test.js` (4 cas).
+- `functions/availability.js` : `applyBusyTimes` exporté (réutilisé), JSDoc `Uint8Array`.
+- `components/blocDispoCommune.tsx` (nouveau) : bloc positionné exactement (positionHeures,
+  sans taille min), orange/vert (`colors.dispoPartielle` / `colors.dispoTous`, ajoutés à
+  `themes/generateTheme.ts`), « 3/4 » + noms, icône d'envoi si créneau proposable.
+- `components/detailDispoCommune.tsx` (nouveau) : détails au toucher (pas de survol sur mobile).
+- `app/(tabs)/home/revueInvitation.tsx` : blocs dorés à taille fixe et FreeSlotItem
+  (dispos membre ↔ ami) remplacés par les nouveaux blocs (via `arrierePlan` d'EventsList),
+  légende 2 couleurs. Proposer depuis la revue : toucher un bloc de MA rangée qui contient
+  un créneau de GET /postpone → même ConfirmationEnvoi + `envoyerCreneau` qu'avant.
+- `components/selecteurReport.tsx` (nouveau) + `components/panneauReport.tsx` (prop
+  `plageActuelle`) + `components/panneauGestionEvenement.tsx` : « Proposer un report »
+  (date + heure, durée conservée) dans la gestion d'évènement ; envoi via `envoyerCreneau`
+  (invité → POST /postpone/evenements/:id, créateur → /deplacer). Sans `plageActuelle`
+  (page détails), PanneauReport est inchangé.
+- Locales fr/en `events.json` : clés `invitationReview.*` et `postpone.*` ajoutées ;
+  `invitationReview.commonSlot` retirée (plus utilisée).
+
+## Non testé
+- Pas lancé sur appareil/simulateur (pickers natifs iOS/Android, rendu des blocs) : à
+  vérifier à la main.
+
+## À savoir
+- L'API ferme une proposition dès qu'un participant n'est pas libre à ce moment
+  (GET /postpone/evenements/:id → personnesOccupees) : une plage choisie librement au
+  sélecteur où quelqu'un est occupé disparaît de la liste au rechargement suivant.
+
+## Bugs hors sujet (non corrigés)
+- `components/datetimeSelecteurs.tsx:334,356,381,403` : `onChange` déprécié dans
+  @react-native-community/datetimepicker 9.2.1 (warning en dev) ; sur Android, une
+  annulation (date undefined) ne remet pas le flag `show*` à false.
+- `components/freeSlotItem.tsx:123-124` : texte du toast « dans le passé » codé en dur
+  en français (pas i18n).
+
+## Ajout (13/11/2026) — corbeille retirée des détails d'une invitation
+- `components/notificationItem.tsx:533` : la corbeille (poubelle avec x, fond rouge) n'est
+  plus affichée dans la carte dépliée d'une invitation (`!invitation && corbeille(...)`).
+  Toujours là pour les autres notifications d'évènement.
+- Bug hors sujet (non corrigé) : `components/notificationItem.tsx:180-198` `supprNotif`
+  supprime avec `axios.delete` brut (sans jeton → refusé par l'API) et sans attendre les
+  requêtes ; la corbeille des autres notifications d'évènement ne marche donc pas non plus.
+  La suppression en sélection (`app/(tabs)/feed/notifications/list.tsx:115`, via `api`) marche.
+
+## Ajout (13/11/2026) — noms affichés dans les blocs de dispo
+- `components/blocDispoCommune.tsx` : les noms s'affichent toujours dans le bloc (orange et
+  vert), plus seulement au toucher ; bloc partiel où les personnes changent = toutes les
+  personnes libres pendant le bloc (le détail au toucher garde le morceau par morceau).
+  Plus de seuil de largeur pour les noms (texte réduit jusqu'à 70 %, 4 lignes max).
+
+---
+
+# HANDOFF — Hold & drag réutilisable + plage précise dans une dispo commune (13/11/2026)
+
+## Décisions du user
+- Durée : l'API accepte maintenant n'importe quelle durée de proposition (avant : durée
+  de l'évènement obligatoire, sinon 400).
+- Sélection seulement dans la rangée « Moi » de la revue d'invitation (seule vue avec
+  des blocs de dispo commune ; la vue de gestion n'a pas de ligne du temps).
+
+## Fait (lint 0, `tsc --noEmit` OK, `jest` 17/17)
+- `hooks/useSelectionGlissee.ts` (nouveau) : logique hold & drag extraite de TrousHoraire,
+  à l'identique (appui 200 ms, défilement auto aux bords, ancre, aimantation, tap pour
+  effacer) ; paramètres : `pasMinutes`, `zones` (+ `refusee`), `obstacles`, `clampOffset`,
+  `effacerAuToucher`, callbacks de refus / début.
+- `components/selectionGlissee.tsx` (nouveau) : GestureDetector + blocs (children) +
+  surbrillance avec heures ; l'état du glissement vit ici (un pas ne re-rend pas l'écran).
+- `components/trousHoraire.tsx` : utilise SelectionGlissee (pas 15 min, passé / relâcher
+  sur un évènement refusés) — comportement inchangé ; `PlageChoisie` ré-exporté.
+- `app/(tabs)/home/revueInvitation.tsx` : SelectionGlissee dans la rangée « Moi » (pas
+  5 min, zones = mes blocs de dispo, partie passée refusée avec toast) ; bouton
+  « Proposer {plage} » sous la ligne du temps (hors détecteur des rangées) →
+  `envoyerCreneau` ; tap ailleurs (rangées, en-tête) efface ; le début d'un glissement
+  ferme la carte de détails.
+- `hooks/useReportEvenement.ts` : `creneauDepuisPlage` (plage locale → format API),
+  réutilisé par `components/selecteurReport.tsx`.
+- Locales fr/en : `invitationReview.proposeHint`, `invitationReview.proposeRange`.
+- API `../sync_api/src/routes/postpone.js` : POST /postpone/evenements/:id accepte toute
+  plage future non vide ; doublon = même début ET même fin ; `deja_propose` des créneaux
+  du GET comparé sur début + fin.
+
+## À faire / à vérifier
+- Déployer sync_api (sinon une plage d'une autre durée que l'évènement reste refusée 400).
+- Test manuel sur appareil : hold & drag de l'accueil (rien ne doit changer), sélection
+  dans la revue (pas 5 min, bornée au bloc), « Proposer », tap ailleurs.
+- Appliquer une telle proposition change aussi la durée de l'évènement (voulu).
+
+## Ajout (13/11/2026) — évènement invité dans toutes les rangées, couleur du statut
+- `app/(tabs)/home/revueInvitation.tsx` : l'évènement invité est ajouté côté app dans les
+  rangées où l'API l'omet (invité en attente / refus), depuis `horaires.evenement`, avec
+  `statut_invitation` = statut de la personne ; ne rend toujours pas occupé (occupes).
+- `functions/couleurStatutInvitation.ts` + `themes/generateTheme.ts` (`enAttente`) : en
+  attente = orange (au lieu de jaune) ; aussi dans la liste des participants de la page
+  de décision (même fonction).
+- `components/listItem.tsx` : bug corrigé (dans le sujet) — depuis 3f5a664 (Outlook),
+  `event.couleur` passait toujours par RenderCalendarColor (teinte numérique) : les
+  couleurs prêtes de la revue (`hsl(...)` : statuts, gris « privé ») devenaient
+  `hsl(hsl(...), …)`, invalides. Une couleur chaîne est maintenant utilisée telle quelle.
+- Non corrigé, hors sujet : `components/notificationItem.tsx:426` colore « en attente »
+  avec `colors.warning` (jaune) en dur, pas via couleurStatutInvitation.
+
+## Ajout (13/11/2026) — noms toujours visibles dans les blocs de dispo (2e passe)
+- User : les blocs partiels n'affichent encore que « 12/14 » sans toucher. Le code rendait
+  bien les noms ; cause probable : `adjustsFontSizeToFit` sur un Text multi-ligne sans
+  hauteur fixe. `components/blocDispoCommune.tsx` : retiré sur les noms, taille / interligne
+  fixes (11 / 13, `includeFontPadding: false`), 4 lignes, étiquette jusqu'à 150 px.
+- À confirmer sur appareil (plateforme non connue) ; si toujours seulement le compte :
+  demander iOS / Android et une capture.
+
+## Ajout (13/11/2026) — « tout le monde dispo » seulement si assez long pour l'évènement
+- `functions/disponibilitesCommunes.ts` : option `dureeMinTous` (minutes) ; un passage où
+  tout le monde est libre moins longtemps est partiel (orange) et se fond dans les blocs
+  partiels voisins (segments exacts conservés). Borné à la journée affichée.
+- `app/(tabs)/home/revueInvitation.tsx` : durée = `horaires.evenement` (fin − début), à
+  défaut les bornes de l'invitation.
+- `components/detailDispoCommune.tsx` : note `invitationReview.allTooShort` quand un bloc
+  orange contient un moment où tout le monde est libre.
+- Test ajouté (jest 18/18).
+
+## Ajout (13/11/2026) — compte seul dans le bloc, détails + proposition dans une modale
+- J'avais mal compris 2 fois : le user veut SEULEMENT le compte (« 14/16 ») dans le bloc
+  (orange et vert), les noms seulement au toucher.
+- `components/blocDispoCommune.tsx` : compte seul (noms seulement dans l'accessibilityLabel).
+- `components/detailDispoCommune.tsx` : contenu de modale ; plages exactes (segments) avec
+  compte et noms, chacune touchable (état interne) → `ConfirmationEnvoi` « Proposer {plage} »
+  ; sans plage choisie : le créneau GET /postpone du bloc (rangée « Moi ») comme avant.
+- `app/(tabs)/home/revueInvitation.tsx` : toucher un bloc (toute rangée) ouvre la modale
+  générique `/(modals)/dataRenderer` (contenu via `setDataRendererContent`, clé
+  `revueInvitation-dispo`, tenu à jour pendant qu'elle est ouverte) ; envoyé →
+  `modalEvents.emitClosing()` ; retour → bloc dé-sélectionné. Carte entre les rangées retirée.
+- Retour sur l'écran : le défilement vers l'heure de l'évènement ne se fait plus qu'une
+  fois par invitation (avant : à chaque focus, donc après chaque modale / page poussée).
+- Plage déjà proposée (même début et fin) : marquée et non touchable ; plage commencée :
+  proposée à partir de maintenant (pas de 5 min).
+
+## Ajout (13/11/2026) — plus d'espace, pas de « x », jamais un bloc dans un bloc
+- `components/modalBase.js` : prop `afficherBoutonFermer` (défaut true, JSDoc de toutes
+  les props — sinon tsc restreint les props aux seules documentées) ;
+  `app/(modals)/dataRenderer.tsx` : param `sansBoutonFermer: '1'` ; la modale des dispos
+  de la revue l'utilise (fermeture : glisser vers le bas / toucher dehors).
+- `app/(tabs)/home/revueInvitation.tsx` : textes d'aide retirés de l'en-tête (hint
+  « Touche l'évènement de… », availabilityHint, proposeHint) ; légendes gardées.
+  `components/detailDispoCommune.tsx` : « Touche une plage pour la proposer » retiré.
+  Clés supprimées des locales fr/en : hint, availabilityHint, proposeHint,
+  tapRangeToPropose, closeDetails.
+- Dispos communes : la plage de l'évènement invité est occupée pour tout le monde dans
+  le calcul (son bloc est dans toutes les rangées) → une dispo 3-7 avec l'évènement 4-5
+  donne 3-4 et 5-7. Test ajouté (jest 19/19).
+
+## Révision complète de la session (13/11/2026)
+- Relu tous les fichiers touchés (app + `sync_api/src/routes/postpone.js`) ; aucun bug
+  bloquant trouvé. Vérifs : eslint 0 erreur sur les 19 fichiers touchés (3 warnings
+  préexistants dans notificationItem.tsx, lignes non touchées), `tsc --noEmit` OK,
+  jest 19/19, `node --check` de la route API OK.
+- Optimisations `app/(tabs)/home/revueInvitation.tsx` :
+  - bornes de l'invitation calculées une fois, jour mémorisé (dépendance stable pour
+    les calculs et le hold & drag) ;
+  - `lignes` + `evenementsParPersonne` mémorisés : les évènements de chaque rangée sont
+    convertis une fois par chargement (avant : 2× par rangée à chaque rendu) ;
+  - `plageInitiale` mémorisée ; `blocsParPersonne` sans eslint-disable (dépendances
+    exactes) ; `occupes` sortie du composant (fonction pure) ; type `Role` ;
+  - `creneauxLocaux` : créneaux GET /postpone convertis une fois ; `prochainPas()`
+    partagé (était dupliqué) ; constante `PAS_PROPOSITION_MINUTES` ;
+  - retiré `onDebutGlissement` (inutile depuis la modale) ici et dans
+    `hooks/useSelectionGlissee.ts` ; `LARGEUR_TEXTE_SELECTION` plus exportée.
+- Commentaires mis à jour : en-tête de RevueInvitation (modale, compte seul, split
+  autour de l'évènement, défilement une fois), commentaire faux de `rangee` (le bloc
+  de l'évènement ne chevauche plus de dispo), callbacks documentés dans le hook,
+  en-tête de `postpone.js` (toute durée).
+- Toujours à faire : tester sur appareil ; déployer sync_api ; `package-lock.json`
+  modifié hors de nos changements (drapeaux `peer` seulement) — à garder ou annuler.
+
+## Ajout (13/11/2026) — propositions partielles visibles + anciennes notifs désactivées
+- Bug : une proposition faite depuis une dispo partielle n'apparaissait jamais dans les
+  détails. Cause API : GET /postpone/evenements/:id fermait toute suggestion où un
+  participant était occupé (règle US23 « vit tant que tout le monde est libre »).
+- Décision user : « toujours ouverte ». `sync_api/src/routes/postpone.js` : plus de
+  fermeture à la lecture, au vote, ni à l'application (le créateur applique quand même :
+  non → absent, sans vote → redemandé) ; `fermerSuggestion` retirée ;
+  `personnesOccupees` ne sert plus qu'à `/deplacer` (déplacement direct, inchangé).
+- Demande user : après application d'un vote, les anciennes notifs ne marchent plus et
+  de nouvelles partent. `deplacerEvenement` marque `remplacee: true` (payload JSON) les
+  notifs `invitation_evenement` de l'évènement AVANT d'envoyer les nouvelles ;
+  `src/routes/notifications.js` ne les résout plus (pas de statut / actions) et renvoie
+  `remplacee`. `id_metier` gardé (les suppressions par id_metier marchent encore). Les
+  notifs de vote s'éteignent seules (suggestion fermée / appliquée).
+- App : `Notification.remplacee` (contexteNotifications), `notificationItem.tsx` affiche
+  `expiration.replaced` au lieu du panneau, pas de corbeille sur une invitation
+  (condition sur `item.type`) ; commentaires PanneauReport / useReportEvenement à jour.
+- Vérifs : node --check des 2 routes, eslint 0 erreur (4 warnings préexistants), tsc OK,
+  jest 19/19. À DÉPLOYER (sync_api) + tester : proposer depuis une dispo partielle → visible
+  dans les détails ; voter ; appliquer → ancienne invitation « remplacée », nouvelle active.
+
+## Ajout (13/11/2026) — évènement déplacé : même carte qu'avant pour tout le monde
+- User : après application d'un vote, l'évènement changé avait une autre carte (avec la
+  poubelle) et le proposeur ne pouvait plus le gérer / le quitter (son ancienne
+  invitation est « remplacée », et il ne recevait qu'un avis « plage changée »).
+- `sync_api/src/routes/postpone.js` (`deplacerEvenement`) : TOUS les invités reçoivent une
+  notif `invitation_evenement` (id_metier = leur invitation) pour la nouvelle plage, avec
+  leur statut (oui → acceptée : panneau de l'évènement, « Quitter » ; non → refusée :
+  page des refusées ; sans vote → en attente : accepter / refuser). Avant : avis
+  informatif `evenements` pour ceux qui avaient voté. Repli informatif si aucune ligne
+  d'invitation.
+- `components/notificationItem.tsx` : plus de corbeille sur aucune carte d'évènement
+  dépliée (même format partout ; la suppression de la carte ne marchait pas). Sélection
+  par appui long toujours possible pour supprimer.
+- Vérifs : node --check OK, eslint 0 erreur, tsc OK. À déployer (sync_api) et tester.
+
+## Ajout (13/11/2026) — plus de proposition une fois dans l'évènement ; participants visibles
+- Décision user : un participant qui a accepté ne propose plus de report, mais vote
+  toujours, et voit la liste des participants avec leur statut.
+- `sync_api/src/routes/postpone.js` : GET `peut_proposer` = reportable && pas créateur &&
+  statut ≠ 'acceptee' ; POST /evenements/:id → 403 si déjà accepté. Le vote est inchangé.
+  L'app suit `peut_proposer` partout (SelecteurReport, maintenir-glisser et modale de la
+  revue) : rien d'autre à brancher.
+- `components/listeParticipantsStatut.tsx` (nouveau) : liste déroulante des participants
+  et de leur statut, extraite de PanneauDecisionInvitation (qui l'utilise, même rendu) ;
+  ajoutée dans PanneauGestionEvenement hors invitation (participant accepté ET créateur).
+- Commentaires « un invité propose » précisés (« qui n'a pas encore accepté »).
+- Vérifs : node --check OK, eslint propre, tsc OK, jest 19/19. À déployer (sync_api).
+
+## Ajout (13/11/2026) — carte d'évènement compacte + CI propre
+- Carte d'un évènement accepté : l'écart message → date venait de la rangée du statut
+  (hauteur fixe 36 px, vide sans boutons depuis le retrait de la corbeille) + marge du
+  panneau. `notificationItem.tsx` : cette rangée n'existe plus que s'il y a des boutons
+  (vote oui / non) ; sinon le statut est passé à `PanneauGestionEvenement` (`statut`),
+  affiché à droite de la date. Panneau : gap 12 → 8, paddingTop 12 → 8.
+- CI (`.github/workflows/ci.yml`) rejouée en local : `npx eslint` sur les 22 fichiers
+  JS/TS modifiés / nouveaux → 0 erreur, 0 warning ; tsc OK ; jest (commande CI) 19/19.
+  Warnings préexistants traités dans les fichiers touchés : `Array<string>` → `string[]`
+  (notificationItem ×2) ; exhaustive-deps (notificationItem, contexteNotifications) gardés
+  tels quels avec eslint-disable justifié (les ajouter bouclerait / relancerait les anims).
+- Non vérifié : `npm ci` (CI) avec le `package-lock.json` modifié hors de nos changements.
+
+---
+
+# HANDOFF — Composant panneauOsMetriques (13/11/2026)
+
+## Fait
+- Lu l'existant : `components/panneauMetriques.tsx` (398 l, entier), `app/(tabs)/profile/admin.tsx` (entier), `components/PanneauCollapsable.tsx` (entier), `components/datetimeSelecteurs.tsx` (entier), `contextes/contexteAPI.tsx`, `locales/{fr,en}/profile.json`, `package.json`, `.agents/AGENTS.md` (entier).
+- `components/PanneauCollapsable.tsx` : ajout de la prop optionnelle `onOuvert?: () => void`, appelée quand le panneau passe à l'état ouvert (chargement paresseux). Impact nul sur les appelants existants.
+- Créé `components/panneauOsMetriques.tsx` :
+  - Appelle `GET /os_metrics` (pas de préfixe `/admin`, confirmé par l'user) via `useAPI()`.
+  - Sélecteur de période : `historique` (aucune query), `24h`, `7j`, `30j`, `90j`, `personnalise`.
+  - En mode `personnalise` : date pickers natifs (`@react-native-community/datetimepicker`) pour `start` et `end`, envoyés en query à l'API.
+  - Chargement paresseux : chaque `PanneauCollapsable` (Système, Disque, Échantillons) déclenche le fetch à son ouverture (`onOuvert`), résultat mis en cache par période pour éviter les refetchs à l'ouverture/fermeture.
+  - États : idle / chargement / pret / erreur, avec gestion 401/403 via `onAccesRefuse`.
+  - Traductions attendues sous `admin.os_metrics.*` (à ajouter dans locales).
+
+## Reste à faire
+1. Intégrer l'onglet dans `app/(tabs)/profile/admin.tsx` : ajouter une page `os_metrics` (ou renommée) dans `PagesGlissables`, avec `titre: t('admin.os_metrics.tab')` et contenu `<PanneauOsMetriques onAccesRefuse={sortirAccesRefuse} />`.
+2. Ajouter les clés traductions `fr` et `en` dans `locales/{fr,en}/profile.json` sous `admin.os_metrics` (title, periode, historique, periode24h/7j/30j/90j, personnalise, debut, fin, systeme, disque, echantillons, cpu, memoireRss, heapUtilise, octetsExternes, disqueTotal, disqueUtilise, disqueDisponible, utilisationDisque, nbEchantillons, periodeSousTitre, loadFailed, empty).
+3. (Optionnel, demandé par l'user) renommer l'onglet `metriques` existant et/ou son libellé pour mieux refléter "membres métriques".
+4. Faire passer `eslint` + `tsc --noEmit` sur les fichiers touchés (règle AGENTS.md) et corriger les erreurs lint.
+5. Mettre à jour ce HANDOFF à la fin.
+
+## Non fait / blocants
+- Rien de bloquant. L'user se déconnecte d'internet ; le code est écrit localement, pas de besoin réseau.
+
+## Règles respectées
+- AGENTS.md : pas de devinette sur l'endpoint (confirmé `/os_metrics`), append au HANDOFF (pas de réécriture), eslint/tsc à venir sur fichiers modifiés.
+
+---
+
+# HANDOFF — Composant panneauOsMetriques (13/11/2026) — TERMINÉ
+
+## Fait
+- `components/panneauOsMetriques.tsx` créé :
+  - Appelle `GET /os_metrics` (pas de préfixe `/admin`, confirmé par l'user) via `useAPI()`.
+  - Sélecteur de période : `historique` (aucune query), `24h`, `7j`, `30j`, `90j`, `personnalise`.
+  - En mode `personnalise` : date pickers natifs (`@react-native-community/datetimepicker`) pour `start` et `end`, envoyés en query à l'API.
+  - Chargement paresseux : chaque `PanneauCollapsable` (Système, Disque, Échantillons) déclenche le fetch à son ouverture (`onOuvert`), résultat mis en cache par clé de période (période + bornes) pour éviter les refetchs.
+  - États : idle / chargement / pret / erreur, avec gestion 401/403 via `onAccesRefuse`.
+  - Traductions : clés sous `admin.os_metrics.*` ajoutées dans `locales/{fr,en}/profile.json`.
+- `components/PanneauCollapsable.tsx` : ajout de la prop optionnelle `onOuvert?: () => void`, appelée quand le panneau passe à l'état ouvert. Aucun impact sur les appelants existants.
+- `app/(tabs)/profile/admin.tsx` : nouvel onglet `os_metrics` (titre `admin.osMetricsTab` = "OS") ajouté dans `PagesGlissables`, avec `<PanneauOsMetriques onAccesRefuse={sortirAccesRefuse} />`.
+- `locales/fr/profile.json` et `locales/en/profile.json` : clé `osMetricsTab` + bloc `os_metrics` ajoutés.
+- Vérifications : `tsc --noEmit` → 0 erreur sur les fichiers touchés ; `eslint` sur les 3 fichiers → 0 erreur, 0 warning.
+
+## Optionnel (non fait, à la discrétion de l'user)
+- Renommer l'onglet `metriques` existant (libellé `admin.metricsTab`) pour mieux refléter "membres métriques". L'user a dit "si tu veux" — non bloquant, laissé en l'état.
+
+## Règles respectées (AGENTS.md)
+- Pas de devinette sur l'endpoint (confirmé `/os_metrics`).
+- Append au HANDOFF (jamais de réécriture).
+- eslint + tsc passés sur chaque fichier modifié avant de considérer terminé.
+
+## État final
+Tâche terminée. Le composant est intégré comme nouvel onglet "OS" du dashboard admin, cohérent avec l'organisation de `panneauMetriques` (entête, panneaux repliables, styles palette/font) mais avec sa propre logique et ses propres endpoints.
+
+---
+
+# HANDOFF — Correctif : rechargement auto sur changement de période (13/11/2026)
+
+## Problème
+Quand l'utilisateur changeait de période dans `panneauOsMetriques.tsx`, la clé de cache changeait et l'état passait à `'idle'`, mais **aucun fetch n'était déclenché automatiquement**. Le chargement ne se lançait que si l'utilisateur ouvrait un panneau repliable (`onOuvert`) ou cliquait sur « Actualiser ».
+
+## Correctif
+Ajout d'un `useEffect` dans `panneauOsMetriques.tsx` qui appelle `charger(false)` dès que `cleCache` (période + bornes de dates) change. Le rechargement est donc automatique à chaque changement de période ou de date personnalisée.
+
+Pour respecter la règle ESLint `react-hooks/set-state-in-effect`, l'appel à `charger` passe par une `useRef` (`chargerRef`) plutôt qu'un `setState` direct dans le corps de l'effet.
+
+## Vérifications
+- `tsc --noEmit` → 0 erreur sur `panneauOsMetriques.tsx`
+- `eslint` sur `panneauOsMetriques.tsx` → 0 erreur, 0 warning
+
+---
+
+# HANDOFF — Voile de chargement (13/11/2026)
+
+## Fait
+- `components/panneauOsMetriques.tsx` : import de `VoileEnvoi` depuis `@/components/voileEnvoi` et affichage en overlay `{enChargement && <VoileEnvoi />}` pendant le chargement de la période courante.
+- Retrait des `ActivityIndicator` individuels dans chaque panneau collapsable (ils étaient redondants avec le voile global).
+- `ActivityIndicator` retiré des imports (plus utilisé).
+
+## Vérifications
+- `tsc --noEmit` → 0 erreur sur `panneauOsMetriques.tsx`
+- `eslint` sur `panneauOsMetriques.tsx` → 0 erreur, 0 warning
+
+L'utilisation du voile est cohérente avec `creationEvenement.tsx` et `creationIndisponibilite.tsx`.
+
+---
+
+# HANDOFF — Graphique de tendance OS (13/11/2026)
+
+## Fait
+- `components/panneauOsMetriques.tsx` :
+  - Ajout d'un graphique `LineChart` (via `react-native-chart-kit`, customisable, basé sur `react-native-svg` déjà présent) affichant la tendance CPU sur la période sélectionnée.
+  - Nouvel appel API `GET /admin/os_metrics/points` (fetch automatique au changement de période, cache dédié).
+  - Le panneau "historique" n'a pas de série temporelle (graphique vide).
+  - Nouveau panneau collapsable pour le graphique n'est pas ajouté : le graphique est toujours visible au-dessus des panneaux Système/Disque/Échantillons.
+  - Traduction `admin.os_metrics.tendanceCpu` ajoutée (fr/en).
+- `types/react-native-chart-kit.d.ts` (nouveau) : déclaration de types pour `react-native-chart-kit`.
+- `package.json` : ajout de `react-native-chart-kit`.
+- Vérifications : `tsc --noEmit` → 0 erreur ; `eslint` → 0 erreur, 0 warning.
+
+## À faire côté serveur (par l'user)
+- Ajouter `getPointsAverageBetween` au `metricsModel` (SQL fourni dans la discussion).
+- Ajouter la route `GET /os_metrics/points` (préfixée `/admin` par Express Router) qui appelle ce modèle.
+
+## Règles respectées (AGENTS.md)
+- Pas de devinette : l'URL `/admin/os_metrics` est confirmée (déjà corrigée par l'user).
+- Append au HANDOFF (jamais de réécriture).
+- eslint + tsc passés sur les fichiers modifiés.
+
+---
+
+# HANDOFF — Remplacement react-native-chart-kit par react-native-svg (13/11/2026)
+
+## Problème
+`react-native-chart-kit` provoque une erreur au runtime : `Cannot read property 'reduce' of undefined` dans `LineChart.js` dès qu'on change de période. La librairie est buggée et sans types TypeScript.
+
+## Correctif
+- Retiré `react-native-chart-kit` (plus d'import `LineChart`).
+- Le graphique de tendance CPU est maintenant dessiné manuellement avec `react-native-svg` (déjà installé en v15.16.0 dans le projet) : composant `GraphiqueCpu` qui trace la ligne, les points, les axes X/Y et les labels.
+- Supprimé `types/react-native-chart-kit.d.ts` (plus nécessaire).
+- `package.json` : `react-native-chart-kit` toujours présent (installé précédemment) mais plus importé.
+
+## Vérifications
+- `tsc --noEmit` → 0 erreur
+- `eslint` sur `panneauOsMetriques.tsx` → 0 erreur, 0 warning
+
+## À faire côté serveur (par l'user)
+L'endpoint `GET /admin/os_metrics/points` n'existe pas encore : "je get aucuns points". Il faut ajouter `getPointsAverageBetween` dans `metricsModel` et la route correspondante (SQL fourni dans les messages précédents).
+
+---
+
+## Ajout (21/11/2026) — US 49 : thème choisi avec une roue de couleurs (branche `philip-us49-theme-colorwheel`, depuis main)
+- US : la couleur courante dans un cercle ; toucher le cercle → modale avec la roue ; bouger
+  la roue → aperçu ; quitter la modale → la couleur s'applique à toute l'app.
+- Le thème reste une teinte (0-359) : generateTheme en dérive toutes les couleurs (rôles à
+  saturation / luminosité fixes). La roue choisit donc une teinte (anneau), pas une couleur
+  libre. User : « vas-y avec la wheel » (pas de couleurs suggérées).
+- `functions/couleurTeinte.ts` (nouveau) : `hsl(h, 65%, 55%)`, la couleur qui représente une
+  teinte (anneau, curseur, cercle des paramètres).
+- `components/roueTeinte.tsx` (nouveau) : anneau SVG de 120 morceaux (mémorisés), curseur
+  Reanimated déplacé sur le fil UI, `Gesture.Pan().minDistance(0)` (un tap choisit aussi),
+  angle 0° en haut, sens horaire ; `onChange` (scheduleOnRN) seulement quand le degré entier
+  change ; centre = couleur choisie ; accessible (adjustable, ± 10°).
+- `components/apercuTheme.tsx` (nouveau) : faux écran (fond, carte d'évènement, statut,
+  bouton) avec generateTheme(teinte, mode clair/sombre de l'appareil).
+- `components/selecteurTheme.tsx` (nouveau) : <Modal> transparent (fond flouté), roue +
+  « rétablir la valeur par défaut » (DEFAULT_HUE) + aperçu + Annuler / Terminé. Quitter
+  (Terminé, toucher dehors, retour Android) applique ; Annuler ne change rien. Son propre
+  GestureHandlerRootView (un Modal est hors de celui de l'app : le geste ne marcherait pas
+  sur Android). Pas la modale générique (ModalBase) : son geste de glissement couvre toute
+  la feuille et entrerait en conflit avec celui de la roue.
+- `types/settings.ts` : type de réglage `color` (value = couleur CSS, onPress) ;
+  `components/settingsRow.tsx` : le cercle (36 px). `app/(tabs)/profile/settings/index.tsx` :
+  le champ numérique de la teinte (et son TODO « color picker ») remplacé par le cercle ;
+  appliquer = `setHue` + `setSetting('theme')` comme avant. Le type `input` n'est plus
+  utilisé nulle part (laissé).
+- Locales fr/en `settings.themePicker.*`.
+- Vérifs : tsc OK, eslint 0 erreur (5 warnings préexistants dans index.tsx / settingsRow /
+  types, lignes non touchées), jest 13/13 (main).
+- Non testé sur appareil : glisser / toucher la roue (iOS et Android), aperçu qui suit,
+  Terminé / toucher dehors / retour Android appliquent, Annuler, valeur par défaut, cercle
+  mis à jour, mode sombre.
+- Bug hors sujet (non corrigé) : `types/settings.ts:13` `DEFAULT_SETTINGS.theme = 260` mais
+  `constants/Colors.ts:4` `DEFAULT_HUE = 274` ; tant que l'user n'a jamais choisi de teinte,
+  `contextes/contextePalette.tsx:37` part de `settings.theme` (260), alors que « valeur par
+  défaut » remet 274.
+- Corrigé ensuite à la demande de l'user (choix : 260, ce que voyait un nouvel user) :
+  `constants/Colors.ts` `DEFAULT_HUE = 260` (était 274) et `types/settings.ts`
+  `DEFAULT_SETTINGS.theme = DEFAULT_HUE` (une seule valeur). tsc OK, jest 13/13.
+
+---
+
+## Ajout (21/11/2026) — US 50 : changer son mot de passe (app : même branche que la US 49 ; API : `philip/us50-mot-de-passe` depuis main)
+- Choix de l'user : app sur la même branche que la US 49 ; signalement d'abus = courriel aux
+  admins seulement (pas de déconnexion), lien valide 7 jours, une seule fois.
+- **API (`sync_api`, MIGRATION REQUISE)** :
+  - `migrations/20261121000000_CREATE_changements_mot_de_passe.js` : (id, id_membre FK
+    membres CASCADE, temps_changement, signale, temps_signalement).
+  - `PATCH /membres/mot_de_passe` (authentifierToken + `limiteMotDePasse` 10 / 15 min) :
+    { ancien, nouveau } → 400 champ manquant ; 403 ancien faux ; nouveau === ancien → 200
+    `modifie: false` sans rien faire (ni hash, ni courriel) ; règles (`reglesMotDePasse.js`,
+    mêmes que register.tsx : 12 car., spécial, maj + min) → 400 ; sinon hash + UPDATE +
+    INSERT changements_mot_de_passe + courriel au membre AVANT le commit (courriel en échec →
+    rollback, mot de passe inchangé, 500 explicite) → 200 `modifie: true`.
+  - `src/functions/courrielsMotDePasse.js` : courriel au membre (date dans son fuseau, lien
+    « signale-le », pseudo échappé) ; courriel aux admins (`membres.role = 'admin'`), objet
+    « Abus de Mot de Passe ».
+  - `GET /confirmation/abus_mot_de_passe?token` : page de confirmation (confirmation.ejs) —
+    un GET seul ne signale rien (scanners de courriels) ; `POST` : signale = 1 (une fois),
+    courriel à chaque admin avant le commit (échec → rollback, on peut réessayer).
+  - `genConfirmationToken.js` : options `extra` (id_changement) et `expiresIn` (7d) ; défaut
+    inchangé (1 h, anonymisation). `authenticate.js` : message d'expiration « 7 jours » pour
+    ce lien.
+  - **Faille corrigée (dans le sujet)** : `CHAMPS_MODIFIABLES` de `PATCH /membres/profil`
+    contenait `mot_de_passe` → n'importe quelle session pouvait changer le mot de passe sans
+    l'ancien, et il était enregistré EN CLAIR (pas de hash). Retiré ; l'app ne l'envoyait pas.
+  - Vérifs : `node --check` des 8 fichiers ; règles et jetons testés en node (pas de lint
+    dans l'API). Pas lancé contre une BD.
+- **App** :
+  - `app/(modals)/motDePasse.tsx` (nouveau, ModalBase) : actuel / nouveau (règles cochées en
+    direct) / confirmation, afficher-masquer ; 403 → toast « mot de passe actuel incorrect » ;
+    résultat dans la modale (changé + courriel, ou « tout est beau, rien n'a changé »).
+  - `app/(tabs)/profile/edit.tsx` : bouton « changer mon mot de passe » sous la bio ; import
+    `useAPI` inutilisé retiré (lint).
+  - `functions/reglesMotDePasse.ts` + `tests/reglesMotDePasse.test.js` (5 tests). register.tsx
+    garde ses propres règles (non touché).
+  - Locales fr/en `profile.password.*`.
+  - Vérifs : tsc OK, eslint 0, jest 18/18.
+- À faire / tester : lancer la migration ; ancien faux → erreur ; même mot de passe → « rien
+  n'a changé » et aucun courriel ; vrai changement → courriel reçu, connexion avec le nouveau ;
+  lien « signale-le » → page → bouton → courriel « Abus de Mot de Passe » aux admins ; 2e clic
+  → « déjà signalé ». `bd/schema.sql` pas mis à jour (la migration suffit).
+## Ajout (18/11/2026) — après une création, retour sur la plage créée
+- User : après avoir créé un évènement, l'accueil revenait où il était avant la création
+  (il restaure sa position au focus) au lieu de la plage de l'évènement créé.
+- `events/creationEvents.ts` (nouveau) : canal « plage créée », même modèle que
+  calendrierEvents.
+- `components/creationEvenement.tsx` / `creationIndisponibilite.tsx` : la plage envoyée
+  est gardée (ref) et annoncée au moment de quitter après une création réussie (201 ou
+  écran de conflit « créé ») ; rien si « ajuster mon horaire ».
+- `app/(tabs)/home/index.tsx` : `allerALaPlageCreee` — bascule sur le jour créé (fenêtre
+  = jour − 3, comme les flèches), centre la plage dans les rangées (son début près de la
+  gauche si plus longue que l'écran), et l'enregistre comme position de l'accueil
+  (offsetAccueilRef) pour que le focus la remette. Abonnement unique via une ref sur le
+  dernier gestionnaire (zoom). Warnings lint préexistants du fichier nettoyés
+  (variables inutilisées, `Array<any>`, dépendance `maxY` ; exception justifiée pour
+  l'effet de focus).
+- Vérifs : eslint 0 erreur / 0 warning sur les 4 fichiers, tsc OK, jest 19/19.
+- À savoir : la PR #57 (sync) a été fermée sans fusion le 14/11 avec le commentaire
+  « Au refus, une proposition de postpone n'est pas proposé comme mentionné dans la
+  US. » ; `main` a avancé depuis (fichiers de création identiques, `timeline.tsx` diffère).
+
+---
+
+## Ajout (18/11/2026) — 2e pull de main (PR #60 à #72 d'Ismail)
+- Le 1er pull (d33ee0a) s'est fait sur `main` à d318063 (11 h 20) ; les PR #60–#72 + le
+  « temporary fix » ont été fusionnées dans `main` juste après. Fusionnées dans
+  `philip-dev-s1` au commit 1d4e31f.
+- Conflits résolus :
+  - `components/modalBase.js` : main a ajouté `afficherBoutonPleinEcran` (+ `boutonADroite`),
+    le même bouton que notre `afficherBoutonFermer` → on garde le nom de main, JSDoc de
+    toutes les props ; `app/(modals)/dataRenderer.tsx` passe `afficherBoutonPleinEcran`
+    (param `sansBoutonFermer: '1'` inchangé). `afficherBoutonFermer` n'existe plus.
+  - `locales/{fr,en}/events.json` : nos clés `postpone.*` + la section `album` de main.
+  - `app/(tabs)/home/index.tsx` (travail non commité) : l'effet de focus de main
+    (`pauseALaSortie`, `reprendre`) est gardé ; `allerALaPlageCreee` reste compatible
+    (chargerFenetre → setParams pendant la pause, le focus relit windowStartRef /
+    offsetAccueilRef). `HAUTEUR_RETOUR` (inutilisée) retirée, `AMIS_PAR_PAGE` de main gardé.
+- `npm ci` lancé (nouvelles dépendances de main : expo-image, expo-image-manipulator,
+  expo-media-library, babel-plugin-react-compiler).
+- Vérifs : tsc OK, jest 19/19, eslint 0 sur les 22 fichiers que la branche change vs main
+  et sur les fichiers non commités.
+
+---
+
+## Ajout (18/11/2026) — participants : rien n'est envoyé avant le ✓ du formulaire
+- Signalé : réinviter un participant qui a quitté « ne fonctionne pas ». Diagnostic (BD de dev) :
+  la réinvitation partait bien (invitation 143, participation, notification) — le vrai
+  problème était le comportement : « Inviter » envoyait tout de suite, même si la
+  modification était ensuite annulée. Nouvelle spécification de l'user (critères) :
+  - « Inviter » (modale d'amis) ajoute seulement à une liste en attente du formulaire ;
+    les invitations partent au ✓ ; quitter / annuler sans ✓ n'envoie rien.
+  - Dans Modifier, le créateur (éditeur) peut retirer n'importe quel participant ; X sur un
+    participant existant → confirmation « Êtes-vous sûr ? … fait déjà partie de
+    l'évènement. » ; X sur un ajout en attente → retiré tout de suite.
+  - Au ✓ : retraits + invitations d'un coup ; un changement de participants seul ne PATCH
+    pas l'évènement (pas de notification / réinvitation des autres).
+  - Choix de l'user : l'écran Détails devient en lecture seule (ni + ni X). Conséquence
+    assumée : un participant non éditeur qui a accepté ne peut plus inviter d'amis (US 8).
+- `functions/brouillonInvites.ts` (nouveau, testé par `tests/brouillonInvites.test.js`) :
+  règles pures du brouillon { invites, retraits } ; réajouter un participant retiré annule
+  le retrait (pas de nouvelle invitation).
+- `contextes/contexteInvites.tsx` : n'appelle plus l'API ; `ajouterInvite(amis)`,
+  `supprimerInvite(p)` (ajout en attente), `retirerParticipant(p)` (existant),
+  `retraits`, `resetInvites` vide les deux.
+- `hooks/useFriendList.tsx` / `components/eventListAmi.tsx` : plus de param `inviterUrl` ;
+  le bouton de la modale est toujours « Ajouter (n) ».
+- `components/participantsListe.tsx` : `peutGererParticipants` = formulaire (création, ou
+  Modifier par un éditeur) → + et X ; sinon lecture seule (liste du serveur seulement,
+  sans les brouillons). Affiche serveur + ajouts − retraits ; hauteur sans la ligne du +
+  en lecture seule.
+- `components/participantLigne.tsx` : props `existant` / `onRetirer` (plus d'appel API).
+- `components/eventForm.tsx` : `peutGererParticipants = create || (edit && éditeur)`.
+- `app/(tabs)/home/edit/[event].tsx` : brouillon vidé à l'ouverture et à la sortie
+  ('removed') ; `enregistrer` au ✓ : DELETE des retraits → PATCH si des champs ont changé
+  → POST des invitations (avec la nouvelle heure) ; reprise sans risque après un échec
+  (DELETE idempotent, l'API ignore les déjà-participants, champs marqués sauvés).
+- Locales : `participantRemoval.confirmMessage` (fr/en).
+- Limites connues (hors portée) : un participant qui a REFUSÉ reste dans la liste, donc
+  absent de la modale — le retirer puis le réajouter annule le retrait au lieu de le
+  réinviter. Le brouillon est global (contexte) : ouvrir Modifier vide un brouillon de
+  création laissé ouvert dans un autre onglet.
+- Vérifs : tsc OK, eslint 0 erreur sur les fichiers modifiés, jest 23/23.
+
+---
+
+## Ajout (18/11/2026) — participants : les ajouts du formulaire listés à part (« à inviter (au ✓) »)
+- User : « dès que t'appuies sur Ajouter dans le modal ça ajoute, ça doit être ajouté seulement
+  au ✓ ». Vérifié en BD : aucune invitation ni notification créée depuis 19:20 UTC — rien
+  n'était envoyé. Mais l'ami choisi apparaissait DANS la liste des participants, avec la même
+  icône « en attente » qu'une invitation envoyée : il avait l'air invité.
+- `components/participantsListe.tsx` : la liste des participants = celle du serveur (moins les
+  retraits) ; les amis choisis sont dans une section à part « à inviter (au ✓) - n » (X =
+  retiré tout de suite) ; une note « n participant(s) retiré(s) au ✓ » pour les retraits.
+  Même chose en création. Hauteur animée : + titre et lignes de la section, + la note.
+- `components/participantLigne.tsx` : prop `aInviter` → pas d'icône de statut (pas encore
+  d'invitation).
+- Locales `form.toInvite`, `form.removedOnConfirm_one/_other` (fr/en).
+- Vérifs : tsc OK, eslint 0 erreur, jest 23/23.
+
+---
+
+## Ajout (18/11/2026) — retouche + nettoyage
+- User : enlever le titre « à inviter (au ✓) - n » → les amis choisis restent listés sous les
+  participants, au-dessus du +, sans icône de statut (X = retiré tout de suite). La note
+  « n participant(s) retiré(s) au ✓ » est gardée. Clé `form.toInvite` retirée (fr/en).
+- Nettoyage du code non commité : commentaires à jour (`participantsListe`, `creationEvents`
+  — doc déplacée sur `creationEvents`, `creationIndisponibilite`, étapes 1-2-3 de
+  `enregistrer` dans Modifier) ; retirés car devenus inutilisés : clé `list.inviteCount`
+  (friends fr/en), type `InviterUrl` (`types/invites.ts`). `SupprimerUrl` était déjà
+  inutilisé avant : laissé.
+- Vérifs : tsc OK, eslint 0 erreur (16 warnings préexistants), jest 23/23.
+
+---
+
+## Ajout (21/11/2026) — au refus d'une invitation : « Aimerais-tu proposer une autre date? »
+- Règle la remarque qui a fait fermer la PR #57 (« Au refus, une proposition de postpone
+  n'est pas proposée comme mentionné dans la US »).
+- Choix de l'user : on refuse d'abord, puis on demande ; choix de la date = seulement date +
+  heure (SelecteurReport, durée conservée).
+- API : rien à changer. Un invité qui a refusé a déjà `peut_proposer` (statut ≠ acceptee) ;
+  si le créateur applique sa proposition, notifierModificationEvenement réinvite tout le
+  monde (en attente), lui compris.
+- `hooks/useDecisionInvitation.tsx` : après un refus réussi, GET /postpone/evenements/:id ;
+  si `peut_proposer` (pas récurrent, pas passé) et l'invitation a ses dates → ouvre la
+  modale générique `/(modals)/dataRenderer` (clé `propositionApresRefus`, titre
+  « Invitation refusée », sans bouton rond) ; sinon toast du refus comme avant. Le GET se
+  fait AVANT `onRepondu` (fil rafraîchi / POP_TO_TOP) : l'écran dessous et la modale
+  changent ensemble. Pas de toast de refus quand la modale s'ouvre (son titre le dit).
+  - Pourquoi une route et pas un <Modal> dans la carte : le fil se recharge toutes les 5 s
+    et retire les invitations refusées (list.tsx `estInvitationRefusee`) → la carte (et un
+    Modal rendu dedans) disparaît ; la page de décision, elle, revient à l'accueil.
+- `components/propositionApresRefus.tsx` (nouveau) : étapes question (Proposer une autre
+  date / Non merci) → choix (SelecteurReport `toujoursOuvert`, Annuler) → envoyée (✓ +
+  OK). Fermeture : `modalEvents.emitClosing()` ; glisser vers le bas / toucher dehors = non.
+- `hooks/useReportEvenement.ts` : `envoyerCreneau(creneau, { annoncer: false })` = pas de
+  toast de succès (le toast de la modale disparaîtrait avec sa route ; l'étape « envoyée »
+  le dit). Défaut inchangé pour les autres appels.
+- `components/selecteurReport.tsx` : prop `toujoursOuvert` (pas de rangée titre/chevron).
+- Locales fr/en `invitationDecision.*` : refusedTitle, proposeQuestion, proposeHint,
+  proposeYes, proposeNo, done.
+- Vérifs : eslint 0 sur les 4 fichiers, tsc OK, jest 23/23.
+- Non testé sur appareil : refuser depuis la carte du fil ET depuis la page de décision
+  (la modale doit rester ouverte quand la carte disparaît / quand la page revient à
+  l'accueil), sélecteurs natifs dans la feuille (iOS compact, dialogues Android), envoi →
+  étape « envoyée », Non merci, évènement récurrent (pas de question, toast du refus).
+
+---
+
 # HANDOFF — Tutoriel interactif Sync (18/11/2026)
 
 ## Contexte

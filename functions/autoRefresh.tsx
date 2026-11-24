@@ -86,7 +86,8 @@ class AutoRefresh {
     }
 
     private extractLastChecked(data: any): string | undefined{
-        console.log(this.url, {data}, "last checked", data?.last_checked)
+        // only the version: the data can hold message text (never in the logs)
+        log(this.url, "last checked", data?.last_checked)
         if (data?.last_checked) {
             
             return data.last_checked
@@ -238,6 +239,31 @@ class AutoRefresh {
             this.setOptions(options)
         this.refresh(true)
         this.start()
+    }
+
+    /**
+     * Back on a screen that paused it with stop() when it lost the focus: catches up,
+     * then polls again. Same query: a normal poll (with last_checked), so onData only
+     * runs if something changed, and the screen doesn't redraw for nothing. Another
+     * query (e.g. another day picked meanwhile): full reload, like setParams.
+     *
+     * @param {Record<string, any>} [extraParams] - The query the screen wants now.
+     * @returns {void}
+     */
+    reprendre(extraParams?: Record<string, any>): void {
+        if (extraParams && JSON.stringify(extraParams) !== JSON.stringify(this.extraParams)) {
+            this.setParams(extraParams)
+        } else {
+            this.refresh()
+        }
+        this.start()
+    }
+
+    /**
+     * @returns {boolean} Stopped for good (destroy(), or a 401/403/404): make a new one.
+     */
+    estArrete(): boolean {
+        return this.dead
     }
 
     /**

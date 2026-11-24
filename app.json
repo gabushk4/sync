@@ -10,6 +10,10 @@
       "sync",
       "com.alkemist.sync"
     ],
+    "scheme": [
+      "sync",
+      "com.alkemist.sync"
+    ],
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
@@ -73,10 +77,20 @@
         }
       ],
       "expo-asset",
-      "expo-sqlite"
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Sync accède à tes photos pour que tu puisses les envoyer dans tes conversations.",
+          "granularPermissions": [
+            "photo"
+          ]
+        }
+      ],
+      "expo-image"
     ],
     "experiments": {
-      "typedRoutes": true
+      "typedRoutes": true,
+      "reactCompiler": true
     },
     "extra": {
       "eas": {

@@ -105,6 +105,12 @@ export default function ListItem({ event, horizontal, displayedDate, listOffset,
 
     const couleurTexte = textColor ?? colors.text
     const titre = titreEvenement(event)
+    // A calendar's hue (number), or a ready color (string): the invitation review's
+    // answers (green / orange / red) and private grey blocks — read as a hue since the
+    // calendars' colors, they came out as `hsl(hsl(...), …)`, an invalid color.
+    // Rectification (Philip).
+    const couleur = event.couleur as number | string | undefined
+    const couleurBloc = typeof couleur === 'string' ? couleur : couleur ? RenderCalendarColor(couleur, scheme) : eventsColor
 
     const s = StyleSheet.create({
         bloc: {
@@ -146,7 +152,7 @@ export default function ListItem({ event, horizontal, displayedDate, listOffset,
             disabled={event.cliquable === false}
             onPress={() => onPress ? onPress(event) : ouvrirDetailsEvenement({ id: event.id, debut, fin })}
         >
-            <EventBloc event={event} blockColor={event.couleur ? RenderCalendarColor(event.couleur, scheme) : eventsColor} horizontal={horizontal} displayDate={displayedDate} size={taille} />
+            <EventBloc event={event} blockColor={couleurBloc} horizontal={horizontal} displayDate={displayedDate} size={taille} />
             <Animated.View style={[s.texte, texteAnime]}>
                 <Text style={s.heure} numberOfLines={1}>{startText}</Text>
                 {/* An unavailability without a (shared) reason reads "Unavailable" (Philip — user story 20). */}

@@ -114,6 +114,7 @@ function idDansLiens(data: DonneesPush, ressource: 'evenements' | 'membres'): st
  *  - invitation or postponement vote: the notifications tab, where it is answered;
  *  - other event notification (accepted, moved, new slot): the event's page;
  *  - new friendship: the friend's profile;
+ *  - new message: its conversation;
  *  - anything else: the notifications tab.
  *
  * @param {DonneesPush} data
@@ -121,6 +122,10 @@ function idDansLiens(data: DonneesPush, ressource: 'evenements' | 'membres'): st
  */
 export function destinationNotification(data: DonneesPush): { pathname: string, params?: Record<string, string> } {
     const type = data?.type
+    // a new chat message (sync_api conversations.js notifierParticipants): its conversation
+    if (type === 'message' && typeof data?.conversationId === 'string') {
+        return { pathname: '/(tabs)/inbox/[conversationId]', params: { conversationId: data.conversationId } }
+    }
     if (type === 'invitation_evenement' || type === 'postpone_vote') {
         return { pathname: '/(tabs)/feed' }
     }
@@ -162,6 +167,7 @@ export function cleTitreToast(type: string | null | undefined): string {
         case 'evenements': return 'push.title.event'
         case 'amis': return 'push.title.friendship'
         case 'demande_ami': return 'push.title.friendRequest'
+        case 'message': return 'push.title.message'
         default: return 'push.title.other'
     }
 }

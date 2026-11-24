@@ -1,4 +1,9 @@
 {
+	"title": "Messages",
+	"newMessage": "Nouveau message",
+	"list": {
+		"empty": "Aucune conversation pour l'instant. Touche + pour écrire à un ami."
+	},
 	"requests": {
 		"title": "Demandes d'ami",
 		"empty": "Aucune demande d'ami en attente."
@@ -13,6 +18,9 @@
 		"admin": "Organisateur",
 		"you": "toi",
 		"openProfile": "Voir le profil de {{pseudo}}",
+		"profile": "Profil",
+		"viewProfile": "Voir le profil",
+		"deleteForMe": "Supprimer la conversation",
 		"createdOn": "Conversation créée le {{date}}",
 		"eventGroup": "Groupe de discussion de « {{titre}} »",
 		"open": "Infos de la conversation {{nom}}",
@@ -24,5 +32,46 @@
 		"cancel": "Annuler",
 		"deleted": "Conversation supprimée",
 		"deleteFailed": "Impossible de supprimer la conversation"
+	},
+	"photo": {
+		"send": "Choisir des photos",
+		"open": "Voir la photo",
+		"close": "Fermer la photo",
+		"sendFailed": "La photo n'a pas pu être envoyée",
+		"remove": "Retirer la photo",
+		"add": "Ajouter des photos",
+		"counter": "{{index}} / {{total}}"
+	},
+	"gallery": {
+		"title": "Photos",
+		"count": "{{count}} / {{max}}",
+		"cancel": "Annuler",
+		"done": "OK",
+		"limited": "Sync voit seulement les photos que tu as choisies.",
+		"manage": "Modifier",
+		"empty": "Aucune photo",
+		"prepareFailed": "Impossible de préparer les photos"
+	},
+	"seenBy": "Vu par {{noms}}",
+	"preview": {
+		"photo": "📷 Photo",
+		"voice": "🎤 Message vocal",
+		"photos": "📷 Photos"
+	},
+	"delete": {
+		"button": "Supprimer",
+		"title": "Supprimer la conversation ?",
+		"message": "Elle sera effacée de ton côté seulement : {{nom}} la garde. Si vous vous réécrivez, tu repartiras d'une conversation vide.",
+		"confirm": "Supprimer",
+		"cancel": "Annuler",
+		"failed": "Impossible de supprimer la conversation"
+	},
+	"photos": {
+		"title": "Photos",
+		"section": "Photos ({{count}})",
+		"seeAll": "Tout voir",
+		"open": "Photo de {{pseudo}}",
+		"empty": "Aucune photo envoyée dans cette conversation.",
+		"loadFailed": "Impossible de charger les photos"
 	}
 }

@@ -41,10 +41,18 @@ export default function SettingRow({ setting }: SettingRowProps) {
             fontSize: 16,
         },
         input: {
-            gap: 4, 
+            gap: 4,
             flexDirection: 'column',
             alignItems:'center'
-        }
+        },
+        cercle: {
+            alignSelf: 'flex-end',
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            borderWidth: 2,
+            borderColor: c.border,
+        },
     })
     return (
         <View style={setting.type == 'link' ? s.linkContainer : s.container}>
@@ -104,6 +112,16 @@ export default function SettingRow({ setting }: SettingRowProps) {
                         onPress={setting.setDefault}
                     ><Text style={linkStyle(c, f)}>{t('setDefault') }</Text></TouchableOpacity>
                 </View>
+            )}
+            {/* The current color in a circle, opening its picker (Philip — user story 49). */}
+            {setting.type === 'color' && (
+                <TouchableOpacity
+                    style={[s.cercle, { backgroundColor: setting.value }]}
+                    onPress={setting.onPress}
+                    disabled={setting.disabled ?? false}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('themePicker.open')}
+                />
             )}
         </View>
     )

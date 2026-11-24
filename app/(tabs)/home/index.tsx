@@ -62,6 +62,7 @@ import { homeIds } from '@/constants/tutorial';
 //import {seedData} from '@/seed'
 
 import { calendrierEvents } from '@/events/calendrierEvents';
+import { creationEvents, PlageCreee } from '@/events/creationEvents';
 import { rechercheAmiEvents } from '@/events/rechercheAmiEvents';
 
 import { Friend } from '@/types/calendar';
@@ -75,8 +76,8 @@ const HEIGHT_TIMELINE = 32;
 const LARGEUR_HEURE_MAINTENANT = 44;
 const AnimatedStyleMinVal = 0.1
 const LIST_HEIGHT = 104
-// Height of the floating back-to-now button.
-const HAUTEUR_RETOUR = 34
+/** Friends' rows loaded at a time: 10 more each time the rows are scrolled to the bottom */
+const AMIS_PAR_PAGE = 10
 // Max events per request in the month view (the API defaults to 20, too few for a month).
 
 
@@ -89,7 +90,7 @@ const RAYON_ONGLET = 10
 // consulte le 16; sa borne API exclusive est le 21 à 00:00. On ne charge donc
 // pas une nouvelle semaine depuis chaque jour affiché.
 const JOURS_FENETRE = 7
-const { width: WIN_W, height: WIN_H } = Dimensions.get('window')
+const { width: WIN_W } = Dimensions.get('window')
 
 /**
  * Short month name of `dt` for the "back to today" tab ("oct", "janv"), without
@@ -159,7 +160,7 @@ export default function Home() {
 
   //Sates
   const [tempsClassement, setTempsClassement] = useState(() => DateTime.now())
-  const [friends, setFriends] = useState<Array<any>>([])
+  const [friends, setFriends] = useState<any[]>([])
 
   // ── Friend search (user story 22, Philip) ──
   // The magnifier left of the hours opens a search bar over the timeline; the
@@ -171,6 +172,15 @@ export default function Home() {
   const [texteRecherche, setTexteRecherche] = useState('')
   // The search the friends' requests use (the text, trimmed).
   const rechercheRef = useRef('')
+  // Friends asked for (10, 20, 30...): the API sends that many rows and whether there are
+  // more (plus_amis). The whole list is asked again each time, so the regular refresh
+  // keeps every loaded row up to date.
+  const nbAmisDemandesRef = useRef(AMIS_PAR_PAGE)
+  const plusAmisRef = useRef(false)
+  const chargementPlusRef = useRef(false)
+  const [chargementPlusAmis, setChargementPlusAmis] = useState(false)
+  // rows loaded, read on the UI thread (see the reaction on offsetY)
+  const nbAmisCharges = useSharedValue(0)
   // The search the last friends' answer was for: "no result" waits for it.
   const [rechercheRepondue, setRechercheRepondue] = useState('')
   // Every friend (last answer without a search): shown again at once on closing.
@@ -188,6 +198,7 @@ export default function Home() {
    */
   const paramsAmis = (debut: DateTime) => ({
     ...paramsPlage(debut, debut.plus({ days: JOURS_FENETRE })),
+    limiteAmi: nbAmisDemandesRef.current,
     ...(rechercheRef.current ? { recherche: rechercheRef.current } : {}),
   })
 
@@ -209,6 +220,8 @@ export default function Home() {
     const recherche = texte.trim()
     if (recherche === rechercheRef.current) return
     rechercheRef.current = recherche
+    // a new search starts from its first 10 friends again
+    nbAmisDemandesRef.current = AMIS_PAR_PAGE
     friendsEventsRefresh.current?.setParams(paramsAmis(windowStartRef.current))
   }
 
@@ -244,7 +257,7 @@ export default function Home() {
     if (rechercheRef.current && amisSansRechercheRef.current) setFriends(amisSansRechercheRef.current)
     appliquerRecherche('')
   }
-  const [userEvents, setUserEvents] = useState<Array<any>>([])
+  const [userEvents, setUserEvents] = useState<any[]>([])
   const [todayDateTime, setTodayDateTime] = useState<DateTime>()
   // Forward scroll changes to JS only when the visible calendar day changes or
   // the window itself is rebased, never on every animation frame.
@@ -420,8 +433,8 @@ export default function Home() {
   }, [amisAvecDisponibilites, rechercheOuverte, motifRecherche])
   const aucunResultat = rechercheOuverte && !!motifRecherche && amisAffiches.length === 0
     && rechercheRepondue === texteRecherche.trim()
-  const [chargementEchec, setChargementEchec] = useState(false)
-  const [chargementEvenements, setChargementEvenements] = useState(false)
+  const [, setChargementEchec] = useState(false)
+  const [chargementEvenements] = useState(false)
   // Pre-fills the create screen with the day currently displayed, at the suggested
   // hour (see debutCreationPourJour).
   const debutCreation = todayDateTime && debutCreationPourJour(todayDateTime)
@@ -605,6 +618,10 @@ export default function Home() {
 
       setJourAmis(windowStartRef.current)
       setFriends(amisFinal)
+      nbAmisCharges.set(amisFinal.length)
+      plusAmisRef.current = !!data.plus_amis
+      chargementPlusRef.current = false
+      setChargementPlusAmis(false)
       // User story 22: which search this answer is for (see aucunResultat), and every
       // friend kept when there was none.
       setRechercheRepondue(rechercheRef.current)
@@ -613,6 +630,20 @@ export default function Home() {
       setChargementEchec(true)
       catcher(error, t('errors.formatFriendEvents'))
     }
+  }
+
+  /**
+   * The rows were scrolled near the bottom: asks for 10 more friends (if there are more,
+   * and not already asking). The answer replaces the rows with the longer list.
+   *
+   * @returns {void}
+   */
+  const chargerPlusAmis = () => {
+    if (!plusAmisRef.current || chargementPlusRef.current) return
+    chargementPlusRef.current = true
+    setChargementPlusAmis(true)
+    nbAmisDemandesRef.current += AMIS_PAR_PAGE
+    friendsEventsRefresh.current?.setParams(paramsAmis(windowStartRef.current))
   }
 
   // ── Handlers ──
@@ -674,7 +705,8 @@ export default function Home() {
     const enCache = cacheJoursRef.current.get(`${start.toISODate()}/${fin.toISODate()}`)
     if (!enCache) return
     setUserEvents(enCache);
-      setJourMembre(start);
+    // same day: the same object, so nothing redraws for it
+    setJourMembre((jour) => (jour?.hasSame(start, 'day') ? jour : start));
   };
 
   /**
@@ -705,6 +737,49 @@ export default function Home() {
   useEffect(() => calendrierEvents.abonner((jour) => appliquerJourCalendrier(jour)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [])
+
+  /**
+   * Something was just created (see creationEvents): moves to its time range right
+   * away, while this screen is still hidden under the creation screen — its day (the
+   * window around it, like a day picked in the calendar) and its hours in the middle of
+   * the rows (its start near the left when it's longer than the rows). Recorded as this
+   * screen's offset, so the focus effect puts it back there instead of where the member
+   * was before opening the creation.
+   *
+   * @author Philip — back on the created event's time range after a creation
+   * @param {PlageCreee} plage - Local start and end of what was created.
+   * @returns {void}
+   */
+  const allerALaPlageCreee = ({ debut, fin }: PlageCreee) => {
+    // In the window's zone: the rows' wall-clock layout (positionHeures) reads it.
+    const zone = windowStartRef.current.zone
+    const debutLocal = debut.setZone(zone)
+    const finLocal = fin.setZone(zone)
+    const jour = debutLocal.startOf('day')
+    if (!jourAfficheRef.current?.hasSame(jour, 'day')) {
+      setTodayDateTime(jour)
+      dateAujShared.set(jour.toMillis())
+      jourDemandeRef.current = jour
+      afficherDepuisCache(jour)
+    }
+    // The window starts three days before the displayed day (like the day arrows).
+    const debutFenetre = jour.minus({ days: 3 })
+    chargerFenetre(debutFenetre)
+    const cellule = pxHeures + L_HEURES
+    const largeur = (positionHeures(finLocal, debutFenetre) - positionHeures(debutLocal, debutFenetre)) * cellule
+    const offset = clampOffset(largeur <= WIN_W - WIDTH_COL
+      // Fits in the rows: centered on them.
+      ? offsetCentreSur(debutLocal.plus({ milliseconds: finLocal.diff(debutLocal).toMillis() / 2 }), debutFenetre)
+      // Longer: its start near the left, half an hour in.
+      : positionHeures(debutLocal, debutFenetre) * cellule - cellule / 2)
+    offsetAccueilRef.current = offset
+    offsetX.set(offset)
+  }
+  // The latest handler (the hour's width can change with the zoom), for the
+  // subscription made once below.
+  const allerALaPlageCreeeRef = useRef(allerALaPlageCreee)
+  useEffect(() => { allerALaPlageCreeeRef.current = allerALaPlageCreee })
+  useEffect(() => creationEvents.abonner((plage) => allerALaPlageCreeeRef.current(plage)), [])
 
   /**
    * Arrows of the bottom bar: shows the previous / next day.
@@ -810,7 +885,7 @@ export default function Home() {
   const majMaxY = () => {
     maxY.set(Math.max(0, amisAffiches.length * (LIST_HEIGHT + 4) - zoneH.current))
   }
-  useEffect(majMaxY, [amisAffiches.length])
+  useEffect(majMaxY, [amisAffiches.length, maxY])
 
   // A tap anywhere on the rows clears the picked range ("click off"). Shorter than the
   // hold that starts a selection on the member's row (200 ms), so that hold never
@@ -877,6 +952,18 @@ export default function Home() {
           scrollTo(friendsList, 0, offset, false)
   )
 
+  // Near the bottom of the rows (2 rows left, or all of them fit on screen): 10 more
+  // friends. Asked again after each answer while still there (nbAmisCharges changes).
+  useAnimatedReaction(
+    () => {
+      const presDuBas = offsetY.get() >= maxY.get() - 2 * (LIST_HEIGHT + 4)
+      return presDuBas ? nbAmisCharges.get() : -1
+    },
+    (actuel, precedent) => {
+      if (actuel >= 0 && actuel !== precedent) scheduleOnRN(chargerPlusAmis)
+    }
+  )
+
   useAnimatedReaction(
     () => {
       const cellule = pxHeures + L_HEURES
@@ -937,6 +1024,19 @@ export default function Home() {
   // event covers it (e.g. the one just created on it), it's dropped when the member's
   // events arrive (modifierEvenementsMembreFetched).
 
+  // Leaving the screen (another tab, a pushed screen): polling paused, not destroyed, so
+  // coming back only asks the server what changed.
+  function pauseALaSortie() {
+    // This screen's exact position, given back on return (it was only recorded when
+    // the displayed day changed, so coming back from e.g. the creation jumped to an
+    // older position, away from a range picked on the same day).
+    if (accueilActifRef.current) offsetAccueilRef.current = offsetX.get()
+    accueilActifRef.current = false
+    accueilActif.set(false)
+    userEventsRefresh.current?.stop()
+    friendsEventsRefresh.current?.stop()
+  }
+
   useFocusEffect(
     useCallback(() => {
       const now = DateTime.now();
@@ -953,15 +1053,31 @@ export default function Home() {
       accueilActifRef.current = true
       accueilActif.set(true)
       fenetreEnCoursRef.current =`${debutFenetre.toISODate()}/${debutFenetre.plus({ days: JOURS_FENETRE }).toISODate()}`
-      setTodayDateTime(jourAffiche.startOf('day'));
-      setTempsClassement(now);
+      // Coming back to the tab: only what changed is updated, so the timeline doesn't
+      // redraw and re-rank every friend each time (same day → same object; the ranking
+      // by "time from now" is redone if it's over a minute old).
+      setTodayDateTime((jour) => (jour?.hasSame(jourAffiche, 'day') ? jour : jourAffiche.startOf('day')));
+      setTempsClassement((avant) => (now.diff(avant).as('seconds') < 60 ? avant : now));
       dateAujShared.set(jourAffiche.toMillis());
       jourDemandeRef.current = jourAffiche.startOf('day');
       afficherDepuisCache(jourAffiche);
       //chargerEvenements(now, now)
 
+      // Back on the tab: the pollers paused when it was left resume. Same query, so
+      // the server only sends the events again if something changed (before, both were
+      // rebuilt with a full reload each time, which re-ranked every friend).
+      const paramsMembre = paramsPlage(debutFenetre, debutFenetre.plus({ days: JOURS_FENETRE }))
+      if (userEventsRefresh.current && !userEventsRefresh.current.estArrete()
+        && friendsEventsRefresh.current && !friendsEventsRefresh.current.estArrete()) {
+        userEventsRefresh.current.reprendre(paramsMembre)
+        friendsEventsRefresh.current.reprendre(paramsAmis(debutFenetre))
+        return pauseALaSortie
+      }
+      userEventsRefresh.current?.destroy()
+      friendsEventsRefresh.current?.destroy()
+
       userEventsRefresh.current = new AutoRefresh(api, '/evenements/', {
-        extraParams: paramsPlage(debutFenetre, debutFenetre.plus({ days: JOURS_FENETRE })),
+        extraParams: paramsMembre,
         onData: modifierEvenementsMembreFetched,
         onError: (error) => {
           log("impossible de charger les évènements du membre", error)
@@ -982,22 +1098,19 @@ export default function Home() {
         }
       })      
 
-      return () => {
-        // This screen's exact position, given back on return (it was only recorded when
-        // the displayed day changed, so coming back from e.g. the creation jumped to an
-        // older position, away from a range picked on the same day).
-        if (accueilActifRef.current) offsetAccueilRef.current = offsetX.get()
-        accueilActifRef.current = false
-        accueilActif.set(false)
-        userEventsRefresh.current?.destroy()
-        friendsEventsRefresh.current?.destroy()
-
-        
-      }
+      return pauseALaSortie
+      // On focus only: the pollers are resumed / created here once per visit (their
+      // callbacks read refs); as dependencies they would be rebuilt on every render.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
   );
 
-  
+  // The screen is gone for good (sign-out...): the pollers too.
+  useEffect(() => () => {
+    userEventsRefresh.current?.destroy()
+    friendsEventsRefresh.current?.destroy()
+  }, [])
+
 
   const s = StyleSheet.create({
     container: {
@@ -1207,6 +1320,11 @@ export default function Home() {
       alignItems: 'center',
       justifyContent: 'center',
     },
+    chargementPlusAmis: {
+      height: LIST_HEIGHT / 2,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     calendarContainer: {
       flex:5
     },
@@ -1408,6 +1526,12 @@ export default function Home() {
                           />
                         </View>                    
                       )})}
+                    {/* the next 10 friends on their way */}
+                    {chargementPlusAmis && (
+                      <View style={s.chargementPlusAmis}>
+                        <Spinner size={24} color={colors.muted} />
+                      </View>
+                    )}
                 </Animated.ScrollView>
             )}
           </Animated.View>        

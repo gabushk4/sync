@@ -24,6 +24,7 @@ import useGestionEvenement from "@/hooks/useGestionEvenement";
 import { useNavFab } from "@/hooks/useNavFAB";
 import PanneauDecisionInvitation from "@/components/panneauDecisionInvitation";
 import PanneauReport from "@/components/panneauReport";
+import AlbumEvenement from "@/components/albumEvenement";
 import ouvrirRevueInvitation from "@/functions/ouvrirRevueInvitation";
 import useDecisionInvitation from "@/hooks/useDecisionInvitation";
 import { InvitationInfo } from "@/types/invitation";
@@ -197,6 +198,10 @@ export default function Details(){
                 // leave: blocks at the end of the form, like the others
                 blocsFin={invitation ? undefined : (
                     <>
+                        {/* Shared photo album: every member of the event can add photos */}
+                        {!!event.id && !indisponibilite && !isExternal && (
+                            <AlbumEvenement idEvenement={event.id as string} />
+                        )}
                         {!!event.id && !indisponibilite && (
                             <PanneauReport enBloc idEvenement={event.id} onPlageChangee={() => getDetails(event.id as string)} />
                         )}

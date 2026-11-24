@@ -32,5 +32,20 @@
         "file": "from .ics file",
         "google": "from Google Agenda",
         "outlook": "from Outlook Calendar"
+    },
+    "privacy":"privacy",
+    "messagePreview":"message text in notifications",
+    "messagePreviewFailed":"the setting couldn't be changed",
+    "themePicker": {
+        "title":"app palette",
+        "open":"change the app's color",
+        "wheel":"color wheel",
+        "preview":"preview",
+        "sampleTitle":"dinner with friends",
+        "sampleTime":"tomorrow, 18:00 – 20:00",
+        "sampleStatus":"accepted",
+        "sampleButton":"edit",
+        "done":"done",
+        "cancel":"cancel"
     }
 }

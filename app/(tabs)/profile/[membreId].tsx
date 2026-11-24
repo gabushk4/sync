@@ -1,3 +1,4 @@
+import BoutonAjouterAmi, { RelationAmitie } from '@/components/boutonAjouterAmi'
 import PfpWithAvailability from '@/components/pfpWithAvailability'
 import WidgetDisposCommunes from '@/components/widgetDisposCommunes'
 import { useAPI } from '@/contextes/contexteAPI'
@@ -35,6 +36,11 @@ export default function MemberProfil() {
   const [estAmiProche, setEstAmiProche] = useState(false)
   const [miseAJourAmiProche, setMiseAJourAmiProche] = useState(false)
   const [loading, setLoading] = useState(true)
+  // Not a friend (e.g. opened from a group conversation): "add friend" button
+  const [relation, setRelation] = useState<RelationAmitie>('aucune')
+  const [demandeId, setDemandeId] = useState<string | null>(null)
+  // bumped to reload the profile once a request is accepted (mood, widget...)
+  const [rechargement, setRechargement] = useState(0)
   const etatAmiProcheRef = useRef(false)
   const etatConfirmeAmiProcheRef = useRef(false)
   const prochainEtatAmiProcheRef = useRef<boolean | null>(null)
@@ -51,6 +57,8 @@ export default function MemberProfil() {
         if (!active) return
         setProfile(data.profil)
         setEstAmi(!!data.estAmi && data.id_publique !== membre.idPublique)
+        setRelation(data.id_publique === membre.idPublique ? 'moi' : data.estAmi ? 'ami' : (data.relation ?? 'aucune'))
+        setDemandeId(data.demande_id ?? null)
         const proche = !!(data.estAmiProche ?? data.profil?.estAmiProche ?? data.proche ?? data.profil?.proche)
         etatAmiProcheRef.current = proche
         etatConfirmeAmiProcheRef.current = proche
@@ -60,7 +68,7 @@ export default function MemberProfil() {
       .catch((error) => catcher(error, t('errors.loadFriendProfileFailed')))
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [api, membreId, membre.idPublique, t]))
+  }, [api, membreId, membre.idPublique, t, rechargement]))
 
   // Sends the latest requested value, serializing writes and limiting them to one
   // request per second. Taps update the star immediately; taps during a request are
@@ -158,6 +166,18 @@ export default function MemberProfil() {
           </TouchableOpacity>
         )}
       </View>
+      {relation !== 'ami' && relation !== 'moi' && (
+        <View style={{ width: '100%', marginTop: 20 }}>
+          <BoutonAjouterAmi
+            // a new key when the server's answer changes, so the button starts from it
+            key={`${membreId}-${relation}`}
+            membreId={membreId}
+            relation={relation}
+            demandeId={demandeId}
+            onRelationChange={(nouvelle) => { if (nouvelle === 'ami') setRechargement((n) => n + 1) }}
+          />
+        </View>
+      )}
       <View style={{ width: '100%', padding: 16, marginTop: 24, borderRadius: 12, backgroundColor: colors.card }}>
         <Text style={{ color: colors.muted, fontFamily: fonts.title, fontSize: 16 }}>{t('friendMood')}</Text>
         <Text style={{ marginTop: 8, color: colors.text, fontFamily: fonts.body, fontSize: 18 }}>
