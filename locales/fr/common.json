@@ -39,6 +39,7 @@
 		"warningWithoutMessage": "un avertissement sans message est survenu"
 	},
 	"bugReport": {
+		"tab": "Signaler un bug",
 		"title": "Signaler un bug",
 		"instructions": "Décris ce qui s'est passé et les étapes pour reproduire le problème.",
 		"when": "Quand j’ai fait",
@@ -70,6 +71,22 @@
 		"successTitle": "Merci pour le signalement",
 		"successMessage": "Les développeurs pourront examiner ce problème.",
 		"submitFailed": "impossible d'envoyer le signalement"
+	},
+	"feedback": {
+		"tab": "Envoyer un feedback",
+		"title": "Envoyer un feedback",
+		"prompt": "Comment vous sentez-vous par rapport au produit ?",
+		"placeholder": "Partagez une idée, une amélioration ou votre expérience…",
+		"sending": "Envoi…",
+		"successTitle": "Merci pour votre feedback",
+		"successMessage": "Votre message a été transmis aux développeurs.",
+		"submitFailed": "Impossible d'envoyer le feedback"
+	},
+	"shakeReport": {
+		"title": "Signaler un bug ?",
+		"message": "Voulez-vous vraiment ouvrir le formulaire de signalement ?",
+		"cancel": "Annuler",
+		"confirm": "Signaler"
 	},
 	"tabs": {
 		"home": "sync",

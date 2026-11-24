@@ -217,6 +217,15 @@
     "futureOnly": "Choisis un moment à venir.",
     "sameTime": "C’est déjà la plage actuelle."
   },
+  "reminders": {
+    "title": "Alertes de rappel",
+    "debut": "Au début de l'événement",
+    "fin": "À la fin de l'événement",
+    "none": "Aucune alerte n'est configurée.",
+    "add": "Ajouter une alerte",
+    "cancel": "Annuler",
+    "sent": "Rappel : {{title}} {{moment}}."
+  },
   "album": {
     "title": "Album photo",
     "seeAll": "Tout voir",

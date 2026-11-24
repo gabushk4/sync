@@ -43,6 +43,8 @@
 		"title": "Admin dashboard",
 		"dashboard": "Open admin dashboard",
 		"bugsTab": "Bugs",
+		"feedbackTab": "Feedback",
+		"feedbackEmpty": "No feedback has been sent.",
 		"empty": "No bugs have been reported.",
 		"loadFailed": "Could not load reported bugs.",
 		"retry": "Try again",

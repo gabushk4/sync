@@ -2,7 +2,7 @@ import TextInputAbs from '@/abstractions/textInputAbs'
 import { useFont } from '@/contextes/contexteFont'
 import { usePalette } from '@/contextes/contextePalette'
 
-import { Event, Recurrence } from '@/types/calendar'
+import { Event, MomentAlerte, Recurrence } from '@/types/calendar'
 
 
 import ceilBy5 from '@/functions/ceilBy5'
@@ -28,6 +28,7 @@ import MenuDeroulant from './menuDeroulant'
 import ParticipantsListe from './participantsListe'
 import RenderCalendarColor from '@/functions/renderCalendarColor'
 import catcher from '@/functions/catcher'
+import AlertesEvenement from './alertesEvenement'
 
 const MAX_LONG_TITLE = 50
 const MAX_LONG_DESC = 2000
@@ -44,6 +45,7 @@ export type EventFormValues = {
     start: DateTime
     end: DateTime
     regleRecurrence: string | null
+    alertes: MomentAlerte[]
 }
 
 export type EventFormHandle = {
@@ -76,6 +78,8 @@ type Props = {
     onCreerConversation?: () => void
     /** The conversation is being created (the block shows a spinner). */
     creationConversationEnCours?: boolean
+    /** Saves reminder changes made directly in the details card. */
+    onAlertesChange?: (moments: MomentAlerte[]) => void | boolean | Promise<void | boolean>
     /** Blocks drawn after the others (details page: common availabilities / suggestions,
      * delete or leave). */
     blocsFin?: React.ReactNode
@@ -128,7 +132,7 @@ function lireRegle(regle?: string | null): { freq: string | null, until: DateTim
  */
 const EventForm = forwardRef<EventFormHandle, Props>(
 
-function EventForm({ event, prefills, constraints, mode, masquerParticipants = false, nature = 'evenement', onOuvrirConversation, onCreerConversation, creationConversationEnCours = false, blocsFin }, ref) {
+function EventForm({ event, prefills, constraints, mode, masquerParticipants = false, nature = 'evenement', onOuvrirConversation, onCreerConversation, creationConversationEnCours = false, onAlertesChange, blocsFin }, ref) {
     const { t } = useTranslation('events')
     const indisponibilite = nature === 'indisponibilite'
     const { colors } = usePalette()
@@ -163,6 +167,7 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
     const [title, setTitle] = useState<string>(event.titre ?? '')
     const [description, setDescription] = useState<string>(event.description ?? '')
     const [eventPrivate, setPrivate] = useState<boolean>(event.prive == 1)
+    const [alertes, setAlertes] = useState<MomentAlerte[]>(() => mode === 'create' && nature !== 'indisponibilite' ? ['debut', 'fin'] : event.alertes ?? [])
 
     const [montrerRecPicker, setMontrerRecPicker] = useState(Platform.OS === 'ios')
     // The frequency only ('DAILY'…); an existing event's rule is read in the [event]
@@ -254,6 +259,7 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
     useEffect(() => {
         setTitle(event.titre ?? '')
         setPrivate(event.prive == 1)
+        setAlertes(mode === 'create' && nature !== 'indisponibilite' ? ['debut', 'fin'] : event.alertes ?? [])
         // Existing rule: its frequency and end (Philip — user story 20, review).
         const { freq, until } = lireRegle(event.regle_recurrence)
         const choix = recVals.find((v) => v.value === freq) ?? recVals[0]
@@ -261,7 +267,7 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
         if (until) setFinRecurrence(until)
         if (event.id)
             setEventParicipantsControlUrl(`/evenements/${event.id}/participants`)
-    }, [event])
+    }, [event, mode, nature])
 
     // Details arrive asynchronously: replace the placeholder dates as soon as the
     // actual event is loaded, so friend availability is searched on its real range.
@@ -282,6 +288,7 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
             start,
             end,
             regleRecurrence: creerRegle(),
+            alertes,
         }),
     }))
 
@@ -446,6 +453,22 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
                         disabled={dateTimeDisabled}
                     />
                 </View>
+            )}
+            {!indisponibilite && (
+                <AlertesEvenement
+                    moments={alertes}
+                    mode={mode === 'details' ? 'details' : 'edition'}
+                    editable={mode !== 'details' || event.privilege_membre === 'editeur'}
+                    onChange={async (moments) => {
+                        if (mode === 'details') {
+                            const enregistre = await onAlertesChange?.(moments)
+                            if (enregistre === false) return
+                            setAlertes(moments)
+                        } else {
+                            setAlertes(moments)
+                        }
+                    }}
+                />
             )}
             {/* Extern calendar infos */}
             {event.source !== 'sync' && event.couleur &&

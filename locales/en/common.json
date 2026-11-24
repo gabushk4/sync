@@ -39,6 +39,7 @@
 		"warningWithoutMessage": "A warning occurred without a message"
 	},
 	"bugReport": {
+		"tab": "Report a bug",
 		"title": "Report a bug",
 		"instructions": "Describe what happened and the steps to reproduce the problem.",
 		"when": "What I was doing",
@@ -70,6 +71,22 @@
 		"successTitle": "Thanks for the report",
 		"successMessage": "The developers can now review this issue.",
 		"submitFailed": "Unable to send the report"
+	},
+	"feedback": {
+		"tab": "Send feedback",
+		"title": "Send feedback",
+		"prompt": "How do you feel about the product?",
+		"placeholder": "Share an idea, an improvement, or your experience…",
+		"sending": "Sending…",
+		"successTitle": "Thanks for your feedback",
+		"successMessage": "Your message has been sent to the developers.",
+		"submitFailed": "Unable to send feedback"
+	},
+	"shakeReport": {
+		"title": "Report a bug?",
+		"message": "Do you really want to open the bug report form?",
+		"cancel": "Cancel",
+		"confirm": "Report"
 	},
 	"tabs": {
 		"home": "Sync",

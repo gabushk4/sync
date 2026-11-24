@@ -217,6 +217,15 @@
     "futureOnly": "Pick a time in the future.",
     "sameTime": "That's already the current time."
   },
+  "reminders": {
+    "title": "Reminders",
+    "debut": "At the start of the event",
+    "fin": "At the end of the event",
+    "none": "No reminders are set.",
+    "add": "Add a reminder",
+    "cancel": "Cancel",
+    "sent": "Reminder: {{title}} {{moment}}."
+  },
   "album": {
     "title": "Photo album",
     "seeAll": "See all",
