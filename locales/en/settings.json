@@ -33,6 +33,7 @@
     "privacy":"privacy",
     "messagePreview":"message text in notifications",
     "messagePreviewFailed":"the setting couldn't be changed",
+    "sendFeedback":"Send feedback",
     "themePicker": {
         "title":"app palette",
         "open":"change the app's color",

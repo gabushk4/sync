@@ -43,6 +43,8 @@
 		"title": "Dashboard admin",
 		"dashboard": "Ouvrir le dashboard admin",
 		"bugsTab": "Bugs",
+		"feedbackTab": "Feedbacks",
+		"feedbackEmpty": "Aucun feedback n'a été envoyé.",
 		"empty": "Aucun bug n’a été rapporté.",
 		"loadFailed": "Impossible de charger les bugs rapportés.",
 		"retry": "Réessayer",

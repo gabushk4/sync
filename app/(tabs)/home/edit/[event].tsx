@@ -68,6 +68,7 @@ export default function EditEvent() {
         debut: event.debut,
         fin: event.fin,
         regle: event.regle_recurrence ?? null,
+        alertes: [...(event.alertes ?? [])].sort(),
     })
 
     // Le formulaire vit son propre state en interne. EditEvent ne fait que
@@ -149,7 +150,8 @@ export default function EditEvent() {
         }
 
         const participantsChanges = invites.length > 0 || retraits.length > 0
-        if (champsModifies.length === 0 && !participantsChanges) return
+        const alertesModifiees = JSON.stringify([...values.alertes].sort()) !== JSON.stringify(original.current.alertes)
+        if (champsModifies.length === 0 && !participantsChanges && !alertesModifiees) return
         // Saved: a retry after a later failure (e.g. the invitations) doesn't send the
         // event's fields again, which would notify its participants a second time.
         const sauves = () => {
@@ -160,14 +162,19 @@ export default function EditEvent() {
                 debut: values.start,
                 fin: values.end,
                 regle: values.regleRecurrence,
+                alertes: original.current.alertes,
             }
         }
-        const champsToast = participantsChanges ? [...champsModifies, 'participants'] : champsModifies
+        const champsToast = [
+            ...champsModifies,
+            ...(participantsChanges ? ['participants'] : []),
+            ...(alertesModifiees ? ['alertes'] : []),
+        ]
 
         // Only participants changed: the event itself isn't sent, so the other
         // participants aren't notified nor asked again.
         if (champsModifies.length === 0) {
-            enregistrer(null, champsToast, sauves)
+            enregistrer(null, champsToast, sauves, alertesModifiees ? values.alertes : undefined)
             return
         }
 
@@ -190,7 +197,7 @@ export default function EditEvent() {
                             // The form's rule: it was rebuilt from the OLD rule with UNTIL
                             // set to this occurrence's end, which cut the series short.
                             data.regle_recurrence = values.regleRecurrence
-                            enregistrer({ url, data }, champsToast, sauves)
+                            enregistrer({ url, data }, champsToast, sauves, alertesModifiees ? values.alertes : undefined)
                         },
                     },
                     {
@@ -204,7 +211,7 @@ export default function EditEvent() {
                             data.debut_occurence = formaterDatePourServeur(
                                 event.debut ? event.debut : DateTime.now().toUTC()
                             )
-                            enregistrer({ url, data }, champsToast, sauves)
+                            enregistrer({ url, data }, champsToast, sauves, alertesModifiees ? values.alertes : undefined)
                         },
                         isPreferred: true,
                     },
@@ -212,7 +219,7 @@ export default function EditEvent() {
             )
         } else if (event.type === 'exception') {
             url = { method: 'PATCH', string: `/evenements/exceptions/${event.id}` }
-            enregistrer({ url, data }, champsToast, sauves)
+            enregistrer({ url, data }, champsToast, sauves, alertesModifiees ? values.alertes : undefined)
         } else {
             enregistrer({ url, data }, champsToast, sauves)
         }
@@ -234,7 +241,7 @@ export default function EditEvent() {
      * @param {() => void} sauves - Records the fields as saved once sent.
      * @returns {Promise<void>}
      */
-    const enregistrer = async (patch: Patch | null, champsModifies: string[], sauves: () => void) => {
+    const enregistrer = async (patch: Patch | null, champsModifies: string[], sauves: () => void, alertes?: NonNullable<Event['alertes']>) => {
         if (enregistrementRef.current) return
         enregistrementRef.current = true
         const urlParticipants = `/evenements/${event.id}/participants`
@@ -247,6 +254,10 @@ export default function EditEvent() {
             if (patch) {
                 await api.request({ method: patch.url.method, url: patch.url.string, data: patch.data })
                 sauves()
+            }
+            if (alertes) {
+                await api.patch(`/evenements/${event.id}/alertes`, { alertes })
+                original.current.alertes = [...alertes].sort()
             }
             // 3. Invitations (the API skips members who already take part).
             if (invites.length > 0) {

@@ -32,6 +32,7 @@
     "privacy":"confidentialité",
     "messagePreview":"texte des messages dans les notifications",
     "messagePreviewFailed":"le réglage n'a pas pu être changé",
+    "sendFeedback":"Envoyer un feedback",
     "themePicker": {
         "title":"palette de l'app",
         "open":"changer la couleur de l'app",

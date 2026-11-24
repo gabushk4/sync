@@ -238,6 +238,12 @@ export default function Settings(){
             ],
         },
         {
+            id: 'sendFeedback',
+            titleKey: 'sendFeedback',
+            type: 'link',
+            href: { pathname: '/(modals)/reportBug', params: { page: 'feedback' } },
+        },
+        {
             id: 'exportData',
             titleKey: 'exportData',
             type: 'link',
