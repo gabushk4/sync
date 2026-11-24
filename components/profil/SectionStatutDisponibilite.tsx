@@ -1,10 +1,7 @@
-import React, { memo, useCallback } from 'react';
-import { Alert, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { memo, useCallback } from 'react';
+import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from '@react-native-vector-icons/ionicons';
 import { useTranslation } from 'react-i18next';
-
-import { useFont } from '@/contextes/contexteFont';
-import { usePalette } from '@/contextes/contextePalette';
 
 type Statut = 'disponible' | 'silencieux' | 'indisponible';
 

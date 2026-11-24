@@ -7,7 +7,6 @@ import { useFont } from '@/contextes/contexteFont'
 import { useConversations } from '@/contextes/contexteConversations'
 import { useRouteAbs } from '@/contextes/contexteRoute'
 import { useNavFab } from '@/hooks/useNavFAB'
-import Icon from '@react-native-vector-icons/ionicons'
 
 import ConversationItem from '@/components/conversationItem'
 import NotificationItem from '@/components/notificationItem'

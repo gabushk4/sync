@@ -39,11 +39,11 @@ type ToggleSetting = SettingBase & {
 type DropdownSetting<T extends string = string> = SettingBase & {
 	type: 'dropdown'
 	value: T
-	options: Array<{
+	options: {
 		value: T
 		titleKey?: string
 		title?: string
-	}>
+	}[]
 	onValueChange: (value: T) => void
 }
 

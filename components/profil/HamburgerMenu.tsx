@@ -105,7 +105,10 @@ export const HamburgerMenu = memo(function HamburgerMenu({
     setTimeout(() => Haptics.clickLeger(), 40 + SPRING_DURATION_ESTIMATE);
     setTimeout(() => Haptics.click(), 80 + SPRING_DURATION_ESTIMATE);
     setTimeout(() => Haptics.clickLeger(), 120 + SPRING_DURATION_ESTIMATE);
-  }, [isOpen, onToggle, colors]);
+  }, [isOpen, onToggle, colors, adminOptionBottom, 
+      editOptionBottom, hamburgerBg, hamburgerOpenShared, 
+      importOptionBottom, logOutOptionBottom, optionOpacity, 
+      paramsOptionBottom]);
 
   // Style du bouton trigger (fond qui change)
   const boutonStyle = useAnimatedStyle(() => ({
@@ -117,25 +120,26 @@ export const HamburgerMenu = memo(function HamburgerMenu({
     const rotate = interpolate(
       hamburgerOpenShared.value,
       [0, 1],
-      ['0deg', '180deg']
+      [0, 180]
     );
     const opacity = interpolate(hamburgerOpenShared.value, [0, 1], [1, 0]);
     return {
-      transform: [{ rotate }],
+      transform: [{  rotate: `${rotate}deg` }],
       opacity,
     };
   });
 
   // Animation de la croix (apparition quand ouvert)
   const closeAnimated = useAnimatedStyle(() => {
+    "worklet"
     const rotate = interpolate(
       hamburgerOpenShared.value,
       [0, 1],
-      ['-45deg', '0deg']
+      [-45, 0]
     );
     const opacity = interpolate(hamburgerOpenShared.value, [0, 1], [0, 1]);
     return {
-      transform: [{ rotate }],
+      transform: [{ rotate: `${rotate}deg` }],
       opacity,
     };
   });

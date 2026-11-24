@@ -78,7 +78,7 @@ export default function ConnexionEcran(){
 
     useFocusEffect(useCallback(()=>{
         ajouterEcran('connexion')
-    },[]))
+    },[ajouterEcran]))
 
     const s = StyleSheet.create({
         container: {

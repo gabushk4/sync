@@ -1,11 +1,10 @@
 import { useLocalSearchParams, useNavigation } from "expo-router";
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DateTime } from "luxon";
 import { StyleSheet, View } from "react-native";
 
 import { useAPI } from "@/contextes/contexteAPI";
-import { useTutoriel } from "@/contextes/contexteTutoriel";
 
 import { CreationHandle } from "@/components/creationEvenement";
 import EventForm, { EventFormHandle } from "@/components/eventForm";
@@ -45,7 +44,6 @@ const CreationIndisponibilite = forwardRef<CreationHandle>(function CreationIndi
     const { t } = useTranslation('events')
     const navigation = useNavigation()
     const { api } = useAPI()
-    const { enregistrerCible } = useTutoriel()
 
     const formRef = useRef<EventFormHandle>(null)
     const tutorialTargetRef = useRef<View>(null)

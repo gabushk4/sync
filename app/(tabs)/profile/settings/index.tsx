@@ -124,7 +124,6 @@ export default function Settings(){
             openPermissionSettings()
         }
         await requestCameraPermission()
-        await getPermissions()
     }
 
     const requestLocation = async (enabled: boolean) => {
@@ -136,7 +135,6 @@ export default function Settings(){
             openPermissionSettings()
         }
         await Location.requestForegroundPermissionsAsync()
-        await getPermissions()
     }
 
     const requestNotifications = async (enabled: boolean) => {
@@ -148,7 +146,6 @@ export default function Settings(){
             openPermissionSettings()
         }
         await Notifications.requestPermissionsAsync()
-        await getPermissions()
     }
 
     const settings: Setting[] = [
@@ -284,33 +281,34 @@ export default function Settings(){
         },
     ]
 
-    /**
-     * Gets and sets the app's permissions from the OS itself. Those permissions are displayed in the settings screen.
-     */
-    const getPermissions = async () => {
-        const [camera, notifications, location] = await Promise.all([
-            getCameraPermission(),
-            Notifications.getPermissionsAsync(),
-            Location.getForegroundPermissionsAsync(),
-        ]);
+    const onFocus = useCallback(() => {
+        const fetchPermissions = async () => {
+            const [camera, notifications, location] = await Promise.all([
+                getCameraPermission(),
+                Notifications.getPermissionsAsync(),
+                Location.getForegroundPermissionsAsync(),
+            ]);
 
-        setPermissions({
-            camera: { granted: camera.granted, canAskAgain: camera.canAskAgain },
-            location: { granted: location.granted, canAskAgain: location.canAskAgain },
-            notifications: {
-                granted: notifications.granted ||
-                    notifications.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL,
-                canAskAgain: notifications.canAskAgain,
-            },
-        })
-    }
+            setPermissions({
+                camera: { granted: camera.granted, canAskAgain: camera.canAskAgain },
+                location: { granted: location.granted, canAskAgain: location.canAskAgain },
+                notifications: {
+                    granted:
+                        notifications.granted ||
+                        notifications.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL,
+                    canAskAgain: notifications.canAskAgain,
+                },
+            });
+        };
 
-    useFocusEffect(useCallback(() => {
-        getPermissions()
+        fetchPermissions();
+
         api.get('/notifications/preferences')
             .then(({ data }) => setApercuMessages(data?.apercu_messages !== false))
-            .catch((error) => log('préférences de notifications', error))
-    }, [api]))
+            .catch((error) => log('préférences de notifications', error));
+    }, [api, getCameraPermission]);
+
+    useFocusEffect(onFocus);
 
     const s = StyleSheet.create({
         screen: {
@@ -396,8 +394,8 @@ export default function Settings(){
                             <Separator
                                 show={
                                     !isLast(settings, i)
-                                    && (settings[i + 1].type != 'section' 
-                                        && setting.type != 'section'
+                                    && (settings[i + 1].type !== 'section' 
+                                        && setting.type !== 'section'
                                     )
                                 }
                             />

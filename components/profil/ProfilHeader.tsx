@@ -1,31 +1,29 @@
-import { useColorScheme } from 'react-native';
-import React, { memo, useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import {
-  ImageSourcePropType,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
 import Icon from '@react-native-vector-icons/ionicons';
 
 import { useFont } from '@/contextes/contexteFont';
 import { usePalette } from '@/contextes/contextePalette';
-import { FPType, isFpObject } from '@/types/pfp';
-import { convertirTimestampDateCourte } from '@/functions/convertirTimestamp';
+import { FPType} from '@/types/pfp';
+import { convertirTimestampDateCourte, Timestamp } from '@/functions/convertirTimestamp';
 import MemberCode from '@/components/memberCode';
-import PfpWithAvailability from '@/components/pfpWithAvailability';
+import PfpWithAvailability, { StatutDisponibilite } from '@/components/pfpWithAvailability';
 
 type Props = {
   membre: {
     pseudo: string;
     idPublique?: string | null;
     fp: FPType;
-    statutDisponibilite?: string | null;
+    statutDisponibilite?: StatutDisponibilite | null;
     bio: string;
-    tempsCreation?: number;
+    tempsCreation?: Timestamp;
     admin?: boolean;
   };
   colors: ReturnType<typeof usePalette>['colors'];
@@ -50,20 +48,6 @@ export const ProfilHeader = memo(function ProfilHeader({
   bioMaxLines = 3,
 }: Props) {
   const { t } = useTranslation('profile');
-  const colorScheme = useColorScheme();
-
-  // Image source résolue une seule fois
-  const fpSource = useMemo<ImageSourcePropType>(() => {
-    if (membre.fp && typeof membre.fp === 'string') {
-      return { uri: membre.fp.startsWith('http') ? membre.fp : `${membre.fp}` };
-    }
-    if (isFpObject(membre.fp)) {
-      return { uri: membre.fp.uri };
-    }
-    return colorScheme === 'dark'
-      ? require('@/assets/icones/profil-dark-icon.png')
-      : require('@/assets/icones/profil-light-icon.png');
-  }, [membre.fp, colorScheme]);
 
   // Animation locale pour l'apparition des infos
   const opaciteInfos = useSharedValue(1);

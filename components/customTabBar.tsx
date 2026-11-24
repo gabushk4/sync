@@ -1,5 +1,5 @@
 //contexts
-import { FabConfig, useFabActions, useFabState } from "@/contextes/contexteFAB";
+import { useFabActions, useFabState } from "@/contextes/contexteFAB";
 import { usePalette } from "@/contextes/contextePalette";
 
 //dependancies
@@ -8,7 +8,6 @@ import { useRouter } from "expo-router";
 import { BottomTabBar, type BottomTabBarProps } from 'expo-router/js-tabs';
 import React from "react";
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 
 //components - abstractions
 import ToastAbs from "@/abstractions/toastAbs";

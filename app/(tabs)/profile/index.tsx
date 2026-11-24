@@ -28,7 +28,6 @@ import MemberCode from '@/components/memberCode';
 import PfpWithAvailability from "@/components/pfpWithAvailability";
 import { withSpringConfig, withTimingConfig } from '@/constants/ReanimatedConfs';
 import { convertirTimestampDateCourte } from "@/functions/convertirTimestamp";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import IntroTodoList from "@/components/introTodoList";
 
 //#region Constantes (module)

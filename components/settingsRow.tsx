@@ -55,7 +55,7 @@ export default function SettingRow({ setting }: SettingRowProps) {
         },
     })
     return (
-        <View style={setting.type == 'link' ? s.linkContainer : s.container}>
+        <View style={setting.type === 'link' ? s.linkContainer : s.container}>
             {setting.type === 'toggle' && (
                 <SwitchAbs
                     style={{alignSelf:'flex-end'}}

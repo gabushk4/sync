@@ -119,7 +119,7 @@ function Todo({
     useEffect(() => {
         if (!pending) return;
 
-        x.value = withDelay(
+        x.set(withDelay(
             delay,
             withTiming(
                 rowW.value,
@@ -136,7 +136,7 @@ function Todo({
                     );
                 }
             )
-        );
+        ));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pending]);
 
@@ -242,6 +242,8 @@ function Checklist({ storageKey, forceShown }: { storageKey: string; forceShown:
         [shown]
     );
 
+    
+
     /* ---------------------------------- Effets ---------------------------------- */
 
     // 1. Au montage : la checklist a-t-elle déjà été terminée pour CE compte ?
@@ -259,6 +261,23 @@ function Checklist({ storageKey, forceShown }: { storageKey: string; forceShown:
         };
     }, [storageKey]);
 
+    // Met à jour ce qui est affiché à partir des données du serveur :
+    // - première charge : tel quel, sans animation
+    // - tâche complétée : NON copiée (c'est la ligne qui déclenche le swap)
+    // - tâche redevenue non faite : copiée tout de suite
+    function syncShown(prev: TutoProgress | undefined, data: TutoProgress): TutoProgress {
+        if (!prev) return data;
+        let changed = false;
+        const next = { ...prev };
+        for (const { id } of TODOS) {
+            if (!data[id] && prev[id]) {
+                next[id] = false;
+                changed = true;
+            }
+        }
+        return changed ? next : prev;
+    }
+
     // 2. Récupération de la progression (si la checklist est active, ou forcée)
     const fetchTodoProgress = useCallback(async () => {
         try {
@@ -268,6 +287,7 @@ function Checklist({ storageKey, forceShown }: { storageKey: string; forceShown:
             log('tuto_progress: ', data);
 
             setTutoProgress(data);
+            setShown((prev) => syncShown(prev, data))
         } catch (err) {
             catcher(err, 'récupération échouée');
         }
@@ -280,26 +300,6 @@ function Checklist({ storageKey, forceShown }: { storageKey: string; forceShown:
             if (phase === 'tasks' || forceShown) fetchTodoProgress();
         }, [phase, forceShown, fetchTodoProgress])
     );
-
-    // 3. Synchronisation tutoProgress -> shown
-    //    - première charge : on affiche tel quel, SANS animation
-    //    - tâche complétée : NON copiée ici, c'est la ligne qui déclenche le swap
-    //    - tâche redevenue non faite : copiée tout de suite
-    useEffect(() => {
-        if (!tutoProgress) return;
-        setShown((prev) => {
-            if (!prev) return tutoProgress;
-            let changed = false;
-            const next = { ...prev };
-            for (const { id } of TODOS) {
-                if (!tutoProgress[id] && prev[id]) {
-                    next[id] = false;
-                    changed = true;
-                }
-            }
-            return changed ? next : prev;
-        });
-    }, [tutoProgress]);
 
     // Appelé par une ligne quand elle est hors écran : on la marque comme faite
     const onSwap = useCallback((id: TaskId) => {
@@ -319,14 +319,14 @@ function Checklist({ storageKey, forceShown }: { storageKey: string; forceShown:
 
     // 5. Après CELEBRATION_MS : animation de hauteur + opacité, puis 'hidden'
     const hide = useCallback(() => {
-        collapsing.value = true;
-        progress.value = withTiming(
+        collapsing.set(true);
+        progress.set(withTiming(
             0,
             { duration: COLLAPSE_MS, easing: Easing.out(Easing.cubic) },
             (finished) => {
                 if (finished) scheduleOnRN(setPhase, 'hidden');
             }
-        );
+        ))
     }, [collapsing, progress]);
 
     useEffect(() => {
@@ -347,7 +347,7 @@ function Checklist({ storageKey, forceShown }: { storageKey: string; forceShown:
             <View
                 onLayout={(e) => {
                     // On mesure la hauteur réelle tant qu'on n'a pas commencé à réduire
-                    if (!collapsing.value) fullHeight.value = e.nativeEvent.layout.height;
+                    if (!collapsing.value) fullHeight.set(e.nativeEvent.layout.height);
                 }}
                 style={[s.container, { backgroundColor: colors.card, borderColor: colors.border }]}
             >

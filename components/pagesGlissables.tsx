@@ -224,7 +224,7 @@ export default function PagesGlissables({ pages, pageInitiale = 0, onChangerPage
         Haptics.clickLeger()
         scrollViewRef.current?.scrollTo({ x: largeurPages * index })
         changerPage(index)
-    }, [largeurPages, changerPage, pages])
+    }, [largeurPages, changerPage])
 
     /**
      * Enregistre la largeur visible de la barre d'onglets.

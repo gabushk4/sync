@@ -2,7 +2,7 @@ import { StyleSheet, View } from "react-native";
 import Icon from '@react-native-vector-icons/ionicons'
 import { usePalette } from "@/contextes/contextePalette";
 
-export default function NewChatIcon({}){
+export default function NewChatIcon(){
     const {colors} = usePalette()
     return(
         <View style={styles.iconeNouveauMessage}>

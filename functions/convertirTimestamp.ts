@@ -5,7 +5,7 @@ import enFormats from "../locales/en/formats.json";
 import frFormats from "../locales/fr/formats.json";
 import log from "./log";
 
-type Timestamp = string | Date | DateTime | null | undefined;
+export type Timestamp = string | Date | DateTime | null | undefined;
 type FormatKey = "dateShort" | "dayShort" | "dateLong";
 
 interface FormatsLangue {
