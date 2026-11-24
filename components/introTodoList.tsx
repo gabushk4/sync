@@ -2,6 +2,7 @@ import PATHS from '@/constants/pathNames';
 import Radius from '@/constants/Radius';
 import { useAPI } from '@/contextes/contexteAPI';
 import { useFont } from '@/contextes/contexteFont';
+import { useMembre } from '@/contextes/contexteMembre';
 import { usePalette } from '@/contextes/contextePalette';
 import catcher from '@/functions/catcher';
 import log from '@/functions/log';
@@ -10,7 +11,7 @@ import Ionicons from '@react-native-vector-icons/ionicons';
 import { Href, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, {
     Easing,
     LinearTransition,
@@ -21,7 +22,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import Separator from './listSeparator';
-import { useMembre } from '@/contextes/contexteMembre';
 
 /* ------------------------------ Types & config ------------------------------ */
 
@@ -57,7 +57,17 @@ const TODOS: TodoConfig[] = [
     { id: TASK_IDS.fromSharedAvailability, route: PATHS.home },
 ];
 
-const STORAGE_KEY = 'tuto_checklist_done';
+// Valeur de repli quand `shown` n'existe pas encore (mode forceShown)
+const NONE_DONE: TutoProgress = {
+    addedEvent: false,
+    addedFriend: false,
+    importedEvents: false,
+    invitedFriend: false,
+    createdDiscussion: false,
+    fromSharedAvailability: false,
+};
+
+const STORAGE_PREFIX = 'tuto_checklist_done';
 const CELEBRATION_MS = 5000; // durée de l'état « tout est terminé »
 const COLLAPSE_MS = 400; // durée de l'animation de disparition du composant
 
@@ -169,16 +179,16 @@ function Todo({
     );
 }
 
-/* ------------------------------- IntroTodoList ------------------------------ */
+/* ------------------------------ Checklist (interne) ------------------------------ */
 
-export default function IntroTodoList() {
+// Un composant par compte : le parent lui donne une `key` différente à chaque
+// membre, donc il est détruit et recréé au changement de compte, avec un état
+// tout neuf (aucune donnée ni AsyncStorage hérités du compte précédent).
+function Checklist({ storageKey, forceShown }: { storageKey: string; forceShown: boolean }) {
     const { api } = useAPI();
     const { t } = useTranslation('tutoChecklist');
     const { colors } = usePalette();
     const { fonts } = useFont();
-    const {membre} = useMembre()
-
-    const storageKey = membre ? `tuto_checklist_done:${membre.idPublique}` : null;
 
     const [phase, setPhase] = useState<Phase>('loading');
 
@@ -186,6 +196,9 @@ export default function IntroTodoList() {
     // shown        : ce qui est affiché (en retard sur tutoProgress le temps de l'animation)
     const [tutoProgress, setTutoProgress] = useState<TutoProgress>();
     const [shown, setShown] = useState<TutoProgress>();
+
+    // Ce qu'on lit dans le rendu : jamais undefined (utile en mode forceShown)
+    const display = shown ?? NONE_DONE;
 
     // Animation de disparition du composant
     const progress = useSharedValue(1);
@@ -231,26 +244,22 @@ export default function IntroTodoList() {
 
     /* ---------------------------------- Effets ---------------------------------- */
 
-    // 1. Au montage : la checklist a-t-elle déjà été terminée ?
+    // 1. Au montage : la checklist a-t-elle déjà été terminée pour CE compte ?
     useEffect(() => {
-        // Changement de compte : on repart de zéro
-        setPhase('loading');
-        setTutoProgress(undefined);
-        setShown(undefined);
-        collapsing.value = false;
-        progress.value = 1;
-
-        if (!storageKey) return;
-
         let cancelled = false;
         AsyncStorage.getItem(storageKey)
-            .then((v) => { if (!cancelled) setPhase(v === 'true' ? 'hidden' : 'tasks'); })
-            .catch(() => { if (!cancelled) setPhase('tasks'); });
-
-        return () => { cancelled = true; };
+            .then((v) => {
+                if (!cancelled) setPhase(v === 'true' ? 'hidden' : 'tasks');
+            })
+            .catch(() => {
+                if (!cancelled) setPhase('tasks');
+            });
+        return () => {
+            cancelled = true;
+        };
     }, [storageKey]);
 
-    // 2. Récupération de la progression (seulement si la checklist est active)
+    // 2. Récupération de la progression (si la checklist est active, ou forcée)
     const fetchTodoProgress = useCallback(async () => {
         try {
             const res = await api.get(`/membres/tuto_progress`);
@@ -268,8 +277,8 @@ export default function IntroTodoList() {
     // fetch se relance en boucle
     useFocusEffect(
         useCallback(() => {
-            if (phase === 'tasks') fetchTodoProgress();
-        }, [phase, fetchTodoProgress])
+            if (phase === 'tasks' || forceShown) fetchTodoProgress();
+        }, [phase, forceShown, fetchTodoProgress])
     );
 
     // 3. Synchronisation tutoProgress -> shown
@@ -298,14 +307,15 @@ export default function IntroTodoList() {
     }, []);
 
     // 4. Tout est fait (une fois les animations terminées) : « complete » + mémorisation
+    //    Désactivé en mode forceShown : la checklist reste affichée, sans rien écrire
     useEffect(() => {
-        if (phase !== 'tasks' || !allDone || !storageKey) return;
+        if (forceShown || phase !== 'tasks' || !allDone) return;
         const id = setTimeout(() => {
             setPhase('complete');
             AsyncStorage.setItem(storageKey, 'true').catch(() => {});
         }, SETTLE_MS);
         return () => clearTimeout(id);
-    }, [phase, allDone, storageKey]);
+    }, [forceShown, phase, allDone, storageKey]);
 
     // 5. Après CELEBRATION_MS : animation de hauteur + opacité, puis 'hidden'
     const hide = useCallback(() => {
@@ -320,16 +330,17 @@ export default function IntroTodoList() {
     }, [collapsing, progress]);
 
     useEffect(() => {
-        if (phase !== 'complete') return;
+        if (forceShown || phase !== 'complete') return;
         const id = setTimeout(hide, CELEBRATION_MS);
         return () => clearTimeout(id);
-    }, [phase, hide]);
+    }, [forceShown, phase, hide]);
 
     /* ----------------------------------- Rendu ----------------------------------- */
 
     // On attend la première réponse du serveur : évite d'afficher des cases
-    // décochées à tort, puis de les voir se réorganiser
-    if (phase === 'loading' || phase === 'hidden' || !shown) return null;
+    // décochées à tort, puis de les voir se réorganiser.
+    // forceShown outrepasse toutes ces conditions.
+    if (!forceShown && (phase === 'loading' || phase === 'hidden' || !shown)) return null;
 
     return (
         <Animated.View style={[s.wrapper, animatedStyle]}>
@@ -340,18 +351,24 @@ export default function IntroTodoList() {
                 }}
                 style={[s.container, { backgroundColor: colors.card, borderColor: colors.border }]}
             >
+                {/* En-tête : hors du ScrollView, donc toujours visible (sticky) */}
                 <View style={[s.header, { borderColor: colors.border }]}>
                     <Text style={[s.title, { color: colors.text, fontFamily: fonts.title }]}>
                         {phase === 'complete' ? t('checklist.allDone') : t('checklist.title')}
                     </Text>
-                    <Text style={[s.title, { color: colors.muted, fontFamily: fonts.body }]}>
+                    <Text style={[s.subtitle, { color: colors.muted, fontFamily: fonts.body }]}>
                         {t('checklist.progress', { done: tasksDone, total: TODOS.length })}
                     </Text>
                 </View>
 
-                {/* overflow hidden : la ligne qui glisse est coupée au bord de la liste,
-                    sans toucher à l'ombre du conteneur */}
-                <View style={s.list}>
+                {/* Si le parent limite la hauteur, la liste défile ; sinon elle prend sa
+                    taille naturelle. Le ScrollView coupe aussi la ligne qui glisse au bord
+                    de la liste, sans toucher à l'ombre du conteneur. */}
+                <ScrollView
+                    style={s.list}
+                    nestedScrollEnabled
+                    showsVerticalScrollIndicator={true}
+                >
                     {ordered.map((todo, i) => (
                         <Animated.View
                             key={todo.id}
@@ -361,7 +378,7 @@ export default function IntroTodoList() {
                                 id={todo.id}
                                 title={t(`checklist.tasks.${todo.id}.title`)}
                                 description={t(`checklist.tasks.${todo.id}.description`)}
-                                done={shown[todo.id]}
+                                done={display[todo.id]}
                                 pending={pendingIds.includes(todo.id)}
                                 delay={Math.max(pendingIds.indexOf(todo.id), 0) * STAGGER_MS}
                                 onSwap={onSwap}
@@ -373,23 +390,46 @@ export default function IntroTodoList() {
                             />
                         </Animated.View>
                     ))}
-                </View>
+                </ScrollView>
             </View>
         </Animated.View>
+    );
+}
+
+/* ------------------------------- IntroTodoList ------------------------------ */
+
+export default function IntroTodoList({ forceShown = false }: { forceShown?: boolean }) {
+    const { membre } = useMembre();
+
+    // Pas encore de compte (ou profil pas chargé) : rien à afficher
+    if (!membre?.idPublique) return null;
+
+    // key : un autre compte = un composant tout neuf, sans état hérité
+    return (
+        <Checklist
+            key={membre.idPublique}
+            storageKey={`${STORAGE_PREFIX}:${membre.idPublique}`}
+            forceShown={forceShown}
+        />
     );
 }
 
 /* --------------------------------- Styles --------------------------------- */
 
 const s = StyleSheet.create({
+    // flexShrink: 1 sur toute la chaîne (wrapper -> container -> ScrollView) :
+    // c'est ce qui permet au composant de rétrécir quand le parent manque de place
     wrapper: {
         width: '100%',
+        flexShrink: 1,
     },
     container: {
-        padding: 8,
+        paddingTop: 8,
+        paddingHorizontal:8,
         alignItems: 'center',
         justifyContent: 'center',
         width: '100%',
+        flexShrink: 1,
         borderWidth: 1,
         borderRadius: Radius.md,
         shadowColor: '#000',
@@ -400,18 +440,24 @@ const s = StyleSheet.create({
     },
     header: {
         width: '100%',
+        flexShrink: 0, // l'en-tête ne rétrécit jamais
         paddingHorizontal: 8,
         paddingBottom: 8,
         borderBottomWidth: 1,
         flexDirection: 'row',
         justifyContent: 'space-between',
+        alignItems:'center'
     },
     title: {
         fontSize: 20,
     },
+    subtitle:{
+        fontSize:16
+    },
     list: {
         width: '100%',
-        overflow: 'hidden',
+        flexGrow: 0, // ne s'étire pas : prend sa taille naturelle quand tout rentre
+        flexShrink: 1, // rétrécit (et défile) quand le parent limite la hauteur
     },
     slide: {
         width: '100%',

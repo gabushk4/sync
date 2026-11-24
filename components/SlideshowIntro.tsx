@@ -24,6 +24,7 @@ import Animated, {
 import Radius from '@/constants/Radius';
 import AppIcon from '@/svgs/appIcon';
 import IntroTodoList from './introTodoList';
+import NewChatIcon from '@/svgs/newChat';
 
 const TUTORIAL_COMPLETED_KEY = 'tutorial_completed';
 
@@ -77,7 +78,7 @@ const SLIDES: Slide[] = [
                 text: 'Ajoute un événement ou une indisponibilité',
               },
               {
-                icon: 'add',
+                icon: (<NewChatIcon/>),
                 title: 'messaging',
                 text: 'Crée une conversation avec un ami',
               },
@@ -107,13 +108,15 @@ const SLIDES: Slide[] = [
     titre: 'slide4.titre',
     message: 'slide4.message',
     contenu: (
-      <IntroTodoList/>
+      <View style={{height:'80%', width:'100%'}}>
+        <IntroTodoList forceShown={true}/>
+      </View>
     )
   },
 ];
 
 type FabIconItem = {
-  icon: React.ComponentProps<typeof Icon>['name'];
+  icon: React.ComponentProps<typeof Icon>['name'] | React.ReactElement;
   title: string;
   text: string;
 };
@@ -144,7 +147,14 @@ function IconCell({item} : { item: FabIconItem }){
 
   return(
     <View style={[styles.iconCell, { width: '48%' }]}>   
-      <Icon name={item.icon} size={28} color={colors.text} style={{marginTop:8}}/>   
+    <View style={{height:34, width:34, alignItems:'center', justifyContent:'center'}}>
+      {typeof item.icon === 'string' ? (
+          <Icon name={item.icon} size={28} color={colors.text} style={{ marginTop: 8 }} />
+        ) : (
+          item.icon
+        )
+      }  
+      </View>
       <View style={styles.iconTextContainer}>
         <Text style={[styles.iconTitle, { color: colors.text, fontFamily: fonts.body }]}>
           {t(item.title)}
@@ -428,6 +438,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   }, 
   iconCell: {
+    justifyContent: 'flex-start',
     alignItems: 'center',
     flexDirection: 'column'
   },

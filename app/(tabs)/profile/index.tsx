@@ -28,6 +28,8 @@ import MemberCode from '@/components/memberCode';
 import PfpWithAvailability from "@/components/pfpWithAvailability";
 import { withSpringConfig, withTimingConfig } from '@/constants/ReanimatedConfs';
 import { convertirTimestampDateCourte } from "@/functions/convertirTimestamp";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import IntroTodoList from "@/components/introTodoList";
 
 //#region Constantes (module)
 const MENU_OPTIONS_GAP = 8
@@ -167,7 +169,6 @@ export default function ProfilEcran(){
 
     // Nettoyage des timers d'haptique si l'écran est démonté pendant l'animation
     useEffect(() => () => hapticTimers.current.forEach(clearTimeout), [])
-
 //#region ValeursAnimé
     const opaciteAvertissement = useSharedValue(0)
     const { height: winH } = useWindowDimensions()
@@ -472,7 +473,7 @@ export default function ProfilEcran(){
             */}
             <ScrollView
                 style={{ flex: 1 }}
-                contentContainerStyle={{ flexGrow: 1 }}
+                contentContainerStyle={{ flexGrow: 1, gap:16, paddingBottom:88 }}
                 showsVerticalScrollIndicator={false}
                 bounces={false}
             >
@@ -539,9 +540,15 @@ export default function ProfilEcran(){
                             <Text style={{ color: colors.text, fontFamily: fonts.body, fontSize: 16 }}>{t('editProfile')}</Text>
                         </TouchableOpacity>
                     </View>
-
-                    {/* Futurs widgets : ajoute ici, la carte s'allonge toute seule */}
+                    
                 </View>
+                {/* Todo list d'introduction */}
+                <View style={{paddingHorizontal:8}}>
+                    <IntroTodoList
+                        forceShown={false}
+                    />
+                </View>
+                {/* Futurs widgets : ajoute ici, la carte s'allonge toute seule */}
             </ScrollView>
 
             <StatutModal

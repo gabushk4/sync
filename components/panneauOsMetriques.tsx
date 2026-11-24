@@ -50,7 +50,7 @@ import { useFont } from '@/contextes/contexteFont'
 import { usePalette } from '@/contextes/contextePalette'
 import catcher from '@/functions/catcher'
 import VoileEnvoi from '@/components/voileEnvoi'
-import PanneauCollapsable from './PanneauCollapsable'
+import PanneauCollapsable from './panneauCollapsable'
 
 type MetriqueOs = {
     sample_count: number

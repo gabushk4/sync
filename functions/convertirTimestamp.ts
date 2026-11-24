@@ -5,20 +5,32 @@ import enFormats from "../locales/en/formats.json";
 import frFormats from "../locales/fr/formats.json";
 import log from "./log";
 
-const formats = { fr: frFormats, en: enFormats };
+type Timestamp = string | Date | DateTime | null | undefined;
+type FormatKey = "dateShort" | "dayShort" | "dateLong";
 
-function getCurrentLocale() {
-    const language = i18n.resolvedLanguage || i18n.language || "fr";
-    return SUPPORTED_LANGUAGES[language]?.locale || "fr-CA";
+interface FormatsLangue {
+    monthsShort: string[];
+    weekdaysShort: string[];
+    [cle: string]: unknown;
 }
 
-function getDateFormat(formatKey) {
-    const language = i18n.resolvedLanguage || i18n.language || "fr";
-    return formats[language]?.[formatKey] || formats.fr[formatKey];
+const formats: Record<string, FormatsLangue> = { fr: frFormats, en: enFormats };
+
+function getLanguage(): string {
+    return i18n.resolvedLanguage || i18n.language || "fr";
 }
 
-function formatDate(dateTime, formatKey) {
-    const language = i18n.resolvedLanguage || i18n.language || "fr";
+function getCurrentLocale(): string {
+    const languages = SUPPORTED_LANGUAGES as Record<string, { locale: string } | undefined>;
+    return languages[getLanguage()]?.locale || "fr-CA";
+}
+
+function getDateFormat(formatKey: string): string {
+    return (formats[getLanguage()]?.[formatKey] || formats.fr[formatKey]) as string;
+}
+
+function formatDate(dateTime: DateTime, formatKey: FormatKey): string {
+    const language = getLanguage();
     const languageFormats = formats[language] || formats.fr;
     const month = languageFormats.monthsShort[dateTime.month - 1];
 
@@ -27,7 +39,6 @@ function formatDate(dateTime, formatKey) {
             ? `${month} ${dateTime.day}`
             : `${dateTime.day} ${month}`;
     }
-    
 
     const weekday = languageFormats.weekdaysShort[dateTime.weekday - 1];
     if (formatKey === "dayShort") {
@@ -40,11 +51,11 @@ function formatDate(dateTime, formatKey) {
         : `${weekday} ${dateTime.day} ${month} ${dateTime.year}`;
 }
 
-function translateRelativeTime(key, options) {
-    return i18n.t(`formats:${key}`, options);
+function translateRelativeTime(key: string, options?: Record<string, unknown>): string {
+    return i18n.t(`formats:${key}`, options) as string;
 }
 
-function toDateTime(timestamp) {
+function toDateTime(timestamp: Timestamp): DateTime | null {
     if (DateTime.isDateTime(timestamp)) {
         return timestamp;
     }
@@ -65,11 +76,9 @@ function toDateTime(timestamp) {
 }
 
 /**
- *
- * @param {string || DateTime || JSDate} timestamp
- * @returns {string} month and day depending on locale
+ * @returns month and day depending on locale ("3 nov." / "Nov 3")
  */
-function convertirTimestampDateCourte(timestamp) {
+function convertirTimestampDateCourte(timestamp: Timestamp): string {
     const dateTime = toDateTime(timestamp)?.setLocale(getCurrentLocale());
     if (!dateTime?.isValid) {
         log('erreur convertirTimestampDateCourte')
@@ -79,49 +88,36 @@ function convertirTimestampDateCourte(timestamp) {
     return formatDate(dateTime, "dateShort");
 }
 
-
 /**
  * Weekday, day and month, without the year: "mar. 3 nov." / "Tue, Nov 3".
  * Like the other helpers here, it uses formats.json, not Luxon's month names
  * (`LLL` in toFormat), which come out as "null" on the phone (no Intl month names).
- *
- * @param {string || DateTime || JSDate} timestamp
- * @returns {string}
  */
-function convertirTimestampJourCourt(timestamp) {
+function convertirTimestampJourCourt(timestamp: Timestamp): string {
     const dateTime = toDateTime(timestamp)?.setLocale(getCurrentLocale());
     if (!dateTime?.isValid) return '???'
     return formatDate(dateTime, "dayShort");
 }
 
-function convertirTimestampDateLongue(timestamp) {
+function convertirTimestampDateLongue(timestamp: Timestamp): string {
     const dateTime = toDateTime(timestamp)?.setLocale(getCurrentLocale());
     if (!dateTime?.isValid) {
-        console.warn("Timestamp n'est pas une date ou un DateTime", typeof(timestamp));
+        console.warn("Timestamp n'est pas une date ou un DateTime", typeof (timestamp));
         return '???';
     }
 
     return formatDate(dateTime, "dateLong");
 }
 
-/**
- *
- * @param {JSDate || DateTime} timestamp
- * @returns
- */
-function convertirTimestampHeure(timestamp) {
+function convertirTimestampHeure(timestamp: Timestamp): string {
     const dateTime = toDateTime(timestamp)?.setLocale(getCurrentLocale());
     if (!dateTime?.isValid)
         return '???'
 
     return dateTime.toFormat(getDateFormat("time"));
 }
-/**
- *
- * @param {DateTime} timestamp
- * @returns {string} 
- */
-function convertToWhen(timestamp) {
+
+function convertToWhen(timestamp: DateTime): string {
     const diff = DateTime.now().diff(timestamp, 'minutes').minutes
 
     switch (true) {
@@ -139,6 +135,5 @@ function convertToWhen(timestamp) {
             return convertirTimestampDateCourte(timestamp)
     }
 }
-
 
 export { convertirTimestampDateCourte, convertirTimestampDateLongue, convertirTimestampHeure, convertirTimestampJourCourt, convertToWhen };

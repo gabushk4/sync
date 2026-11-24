@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Dimensions, Image, Keyboard, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, View } from 'react-native';
 
-import Haptics from '@/abstractions/haptics.js';
+import Haptics from '@/abstractions/haptics';
 import { createLinkStyles, LinkAbs } from '@/abstractions/linkAbs';
 import TextInputAbs from '@/abstractions/textInputAbs';
 import ToastAbs from '@/abstractions/toastAbs';
@@ -20,7 +20,7 @@ import { usePalette } from '@/contextes/contextePalette';
 import { useRouteAbs } from '@/contextes/contexteRoute';
 
 import catcher from '@/functions/catcher';
-import log from '@/functions/log.js';
+import log from '@/functions/log';
 
 export default function ConnexionEcran(){
     const { t } = useTranslation('auth')

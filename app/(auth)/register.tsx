@@ -11,7 +11,7 @@ import { useRouteAbs } from '@/contextes/contexteRoute';
 import log from '@/functions/log';
 
 import CheckboxAbs from "@/abstractions/checkboxAbs";
-import Haptics from '@/abstractions/haptics.js';
+import Haptics from '@/abstractions/haptics';
 import KeyboardDismisser from "@/abstractions/keyboardDismisser";
 import { LinkAbs } from '@/abstractions/linkAbs';
 import TextInputAbs from '@/abstractions/textInputAbs';

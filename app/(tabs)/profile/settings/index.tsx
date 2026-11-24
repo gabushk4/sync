@@ -187,12 +187,6 @@ export default function Settings(){
             onPress: replayTutorial,
         },
         {
-            id: 'replayTutorial',
-            titleKey: 'replayTutorial',
-            type: 'link',
-            onPress: replayTutorial,
-        },
-        {
             id: 'imports',
             type: 'section',
             titleKey: 'imports',
