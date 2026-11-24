@@ -1597,3 +1597,8 @@ L'endpoint `GET /admin/os_metrics/points` n'existe pas encore : "je get aucuns p
 ## Animation du libellé de disponibilité (24/11/2026)
 - `app/(tabs)/profile/index.tsx` : le libellé du bouton utilise maintenant `Animated.Text` avec `FadeOut` (150 ms) et `FadeIn` (200 ms). Le conteneur conserve `LinearTransition` configuré avec `withSpringConfig` pour animer sa largeur. Délai et réaffichage au focus inchangés.
 - ESLint et typecheck passent.
+
+## Alertes de rappel d'evenement (24/11/2026)
+- L'app propose deux moments de rappel (debut/fin), selectionnes par defaut a la creation, reglables dans le formulaire d'edition et ajoutables dans la carte de details (editeurs).
+- L'API synchronise les alertes pour les participants, renvoie les moments dans GET /evenements/:id et accepte PATCH /evenements/:id/alertes. Le cron `envoyer_rappels_evenement` envoie une push et cree une notification de fil; les rappels recurrent sont reprogrammes a l'occurrence suivante.
+- Migration requise : `20261124120000_ADD_moments_alertes.js`. Verification : typecheck app OK, ESLint 0 erreur (13 avertissements preexistants sur les ecrans form/details), `node --check` OK sur les fichiers serveur modifies. Aucun test ni essai appareil fait.
