@@ -5,7 +5,7 @@ import { useFocusEffect, useIsFocused } from "expo-router/react-navigation";
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View, ViewStyle } from 'react-native';
-import Animated, { createAnimatedComponent, interpolate, useAnimatedProps, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { createAnimatedComponent, interpolate, useAnimatedProps, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming,  FadeIn, FadeOut, LinearTransition, ReduceMotion } from 'react-native-reanimated';
 import { interpolatePath, parse } from 'react-native-redash';
 import Svg, { Path } from 'react-native-svg';
 
@@ -164,6 +164,7 @@ export default function ProfilEcran(){
 
     const [avertissementVisible, setAvertissementVisible] = useState(false)
     const [menuStatutVisible, setMenuStatutVisible] = useState(false)
+    const [texteStatutVisible, setTexteStatutVisible] = useState(true)
     const [hamburgerMenuOpen, setHamburgerMenuOpen] = useState<boolean>(false)
 
     // Nettoyage des timers d'haptique si l'écran est démonté pendant l'animation
@@ -377,6 +378,10 @@ export default function ProfilEcran(){
 
     useFocusEffect(
         React.useCallback(() => {
+            // Restore the full label each time this screen receives focus.
+            setTexteStatutVisible(true)
+            const minuterieMasquage = setTimeout(() => setTexteStatutVisible(false), 5000)
+
             ajouterEcran('profil')
             log("temps creation", membre.tempsCreation)
             
@@ -384,8 +389,10 @@ export default function ProfilEcran(){
                 getMembre()
             
             //getWidgetsMembre()
-            // (the photo is shown by PfpWithAvailability from membre.fp: the unused
-            // local copy of it was removed)
+
+            return () => {
+                clearTimeout(minuterieMasquage)
+            };
         // only when the screen gets the focus: with membre in the deps, getMembre (which
         // changes membre) could run again and again while a field stays empty
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -508,17 +515,25 @@ export default function ProfilEcran(){
                             <MemberCode code={membre.idPublique??''}/>
                         </View>                            
                         <Text style={{color:colors.muted, fontSize:14, paddingLeft:4, fontFamily:fonts.body}}>{t('memberSince', { date: convertirTimestampDateCourte(membre.tempsCreation) })}</Text>
-                        <TouchableOpacity
-                            accessibilityRole="button"
-                            accessibilityLabel={t('availability.change')}
-                            accessibilityState={{ expanded: menuStatutVisible }}
-                            onPress={() => setMenuStatutVisible(true)}
-                            style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: couleurDuStatut, backgroundColor: colors.card }}
-                        >
-                            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: couleurDuStatut }} />
-                            <Text style={{ color: colors.text, fontFamily: fonts.body, fontSize: 13 }}>{t(`availability.${membre.statutDisponibilite}`)}</Text>
-                            <Icon name="chevron-down" size={16} color={colors.muted} />
-                        </TouchableOpacity>
+                            <Animated.View
+                                layout={LinearTransition.springify()
+                                    .mass(withSpringConfig.mass ?? 1)
+                                    .damping(withSpringConfig.damping ?? 10)
+                                    .reduceMotion(withSpringConfig.reduceMotion ?? ReduceMotion.System)}
+                                style={{ alignSelf: 'flex-start', marginTop: 8 }}
+                            >
+                            <TouchableOpacity
+                                accessibilityRole="button"
+                                accessibilityLabel={t('availability.change')}
+                                accessibilityState={{ expanded: menuStatutVisible }}
+                                onPress={() => setMenuStatutVisible(true)}
+                                style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: couleurDuStatut, backgroundColor: colors.card }}
+                            >
+                                <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: couleurDuStatut }} />
+                                {texteStatutVisible && <Animated.Text entering={FadeIn.duration(200)} exiting={FadeOut.duration(150)} style={{ color: colors.text, fontFamily: fonts.body, fontSize: 13 }}>{t(`availability.${membre.statutDisponibilite}`)}</Animated.Text>}
+                                <Icon name="chevron-down" size={16} color={colors.muted} />
+                            </TouchableOpacity>
+                            </Animated.View>
                     </Animated.View>
 
                     {/* TODO: avoir un bouton avec le compte des amis qui affiche la liste des amis */}

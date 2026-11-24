@@ -1283,6 +1283,83 @@ L'utilisation du voile est cohérente avec `creationEvenement.tsx` et `creationI
 ## À faire côté serveur (par l'user)
 L'endpoint `GET /admin/os_metrics/points` n'existe pas encore : "je get aucuns points". Il faut ajouter `getPointsAverageBetween` dans `metricsModel` et la route correspondante (SQL fourni dans les messages précédents).
 
+# HANDOFF - Date du jour sur l'accueil au retour dans l'application (18/11/2026)
+
+## Fait
+- `app/(tabs)/home/index.tsx` conservait le jour pr?c?demment affich? lors du focus. Ajout d'un traitement du cycle d'?tat de l'application : apr?s un passage en arri?re-plan, l'accueil revient ? aujourd'hui s'il est d?j? actif, ou marque ce retour pour le prochain focus.
+- La s?lection faite en naviguant dans le calendrier reste conserv?e lors des transitions internes; le retour au premier plan de l'application r?initialise l'accueil au jour courant.
+- Aucun changement API requis.
+
+## V?rifications
+- `npx.cmd eslint 'app/(tabs)/home/index.tsx'` : 0 erreur, 8 avertissements pr?existants dans ce fichier.
+- Tests et typecheck non ex?cut?s.
+
+# HANDOFF - Fen�tre initiale de l'accueil (18/11/2026)
+
+## Fait
+- Au premier focus, l'accueil activait son �couteur de scroll avant de centrer l'offset. L'offset initial � z�ro pouvait donc �tre lu comme le premier jour de la fen�tre (J-3) et remplacer la date du jour.
+- L'initialisation de la fen�tre et de l'offset est maintenant faite avant d'activer le traitement du d�filement.
+- Aucun changement API requis.
+
+## V�rifications
+- `npx.cmd eslint 'app/(tabs)/home/index.tsx'` : 0 erreur, 8 avertissements existants.
+- Pas de test sur appareil effectu�.
+
+# HANDOFF - Glissement de fen�tre par trois jours (18/11/2026)
+
+## Fait
+- La fen�tre de 7 jours avance ou recule maintenant de 3 jours lorsqu'on approche de son bord dans l'accueil. Le d�calage est compens� pour garder le m�me instant visible; les appels API gardent leurs param�tres d�but/fin sur 7 jours.
+- Aucun changement API requis.
+
+## V�rifications
+- `npx.cmd eslint 'app/(tabs)/home/index.tsx'` : 0 erreur, 8 avertissements existants.
+- Pas de test sur appareil effectu�.
+
+# HANDOFF - Libell� du statut compact dans le profil (18/11/2026)
+
+## Fait
+- Dans `app/(tabs)/profile/index.tsx`, le libell� du bouton de disponibilit� est visible 5 secondes � chaque focus du profil, puis masqu� pour ne garder que le point color� et la fl�che. Le d�lai est annul� quand on quitte l'�cran.
+- Aucun changement API requis.
+
+## V�rifications
+- ESLint sur le fichier : m�mes 18 erreurs et 2 avertissements que la version HEAD (probl�mes pr�existants); aucun diagnostic suppl�mentaire.
+- Pas de test sur appareil effectu�.
+
+# HANDOFF - Heure d'expiration des invitations dans le fil (18/11/2026)
+
+## Fait
+- `components/notificationItem.tsx` convertit maintenant l'expiration UTC envoy�e par l'API vers le fuseau choisi dans les param�tres de l'application avant d'afficher l'heure.
+- V�rification en lecture seule de `sync_api` : son format de date d'expiration est un ISO sans offset, interpr�t� comme UTC par l'app. Aucun changement API requis.
+
+## V�rifications
+- `npx.cmd eslint components/notificationItem.tsx` : 0 erreur, 3 avertissements pr�existants.
+- Pas de test sur appareil effectu�.
+
+# HANDOFF - Blocage directionnel d'un ami (18/11/2026)
+
+## Fait
+- Profil ami : bouton Bloquer/D�bloquer, �tat charg� depuis l'API et erreurs affich�es via le catcher.
+- `sync_api` : migration `20261119000000_CREATE_blocages.js`, table directionnelle `blocages` (`id_bloqueur`, `id_bloque`), endpoint `PATCH /amis/:idami_publique/blocage`, et refus en 404 de l'acc�s au profil par la personne bloqu�e. Le bloqueur conserve l'acc�s et peut d�bloquer depuis le profil.
+- `bd/schema.sql` mis � jour pour les nouvelles installations. La migration n'a pas �t� appliqu�e � une base.
+
+## V�rifications
+- ESLint du profil ami : 0 erreur, 1 avertissement pr�existant (`rechargement`). JSON FR/EN valide.
+- `node --check` r�ussi sur les deux routes et la migration API. ESLint API non ex�cut� : `npx eslint` est rest� bloqu� sans sortie, commande interrompue.
+- Aucun test d'int�gration ni sur appareil effectu�.
+
+# HANDOFF - Restrictions entre membres bloqu�s (18/11/2026)
+
+## Fait
+- Les conversations priv�es � deux participants sont masqu�es des listes et recherches des deux membres; le middleware refuse aussi l'ouverture et l'envoi de messages. Un changement de blocage incr�mente le num�ro de version des conversations afin de rafra�chir les listes.
+- `verifierAmitieParticipants` refuse les membres bloqu�s dans les cr�ations de conversation et les invitations/cr�ations d'�v�nements.
+- `fetchAmis` retire le bloqueur de la liste du membre bloqu� et expose `bloque_par_moi` au bloqueur. Les s�lecteurs d'invit�s, cr�neaux communs et widget de profil tiennent compte de cet �tat.
+- Les contr�les `/disponibilites/communes` et `/disponibilites/amis/:idpublique` refusent aussi les paires bloqu�es.
+
+## V�rifications
+- `node --check` r�ussi sur 8 fichiers JS de l'API, dont les routes/middlewares modifi�s et la migration.
+- ESLint des fichiers app touch�s : 0 erreur; avertissements pr�sents dans le profil ami, eventListAmi et l'accueil.
+- `git diff --check` r�ussi dans les deux projets.
+- ESLint API non ex�cut� : `npx eslint` reste bloqu� sans sortie dans sync_api. Migration non appliqu�e � la base; aucun test d'int�gration/appareil ex�cut�.
 ---
 
 ## Ajout (21/11/2026) — US 49 : thème choisi avec une roue de couleurs (branche `philip-us49-theme-colorwheel`, depuis main)
@@ -1510,6 +1587,21 @@ L'endpoint `GET /admin/os_metrics/points` n'existe pas encore : "je get aucuns p
   (la modale doit rester ouverte quand la carte disparaît / quand la page revient à
   l'accueil), sélecteurs natifs dans la feuille (iOS compact, dialogues Android), envoi →
   étape « envoyée », Non merci, évènement récurrent (pas de question, toast du refus).
+
+## Résolution de conflits après pull main (24/11/2026)
+- Les conflits du journal, de l'accueil et du profil ont été résolus en gardant les changements des deux branches.
+- L'accueil conserve le glissement de fenêtre par 3 jours et reprend les rafraîchissements en pause. Le profil conserve le bouton de statut compact, avec transition ressort basée sur `withSpringConfig`; la photo continue d'utiliser `PfpWithAvailability`.
+- `npm ci` n'a pas terminé : accès EACCES au registre npm sur `zxing-wasm`.
+- Verification après synchronisation des dépendances : `npm ci` réussi; `npm run typecheck` passe; ESLint passe sur les deux écrans fusionnés et `components/albumEvenement.tsx`. Le chemin d'album avait un type Expo généré en retard; navigation conservée via Href après vérification que la route existe.
+
+## Animation du libellé de disponibilité (24/11/2026)
+- `app/(tabs)/profile/index.tsx` : le libellé du bouton utilise maintenant `Animated.Text` avec `FadeOut` (150 ms) et `FadeIn` (200 ms). Le conteneur conserve `LinearTransition` configuré avec `withSpringConfig` pour animer sa largeur. Délai et réaffichage au focus inchangés.
+- ESLint et typecheck passent.
+
+## Alertes de rappel d'evenement (24/11/2026)
+- L'app propose deux moments de rappel (debut/fin), selectionnes par defaut a la creation, reglables dans le formulaire d'edition et ajoutables dans la carte de details (editeurs).
+- L'API synchronise les alertes pour les participants, renvoie les moments dans GET /evenements/:id et accepte PATCH /evenements/:id/alertes. Le cron `envoyer_rappels_evenement` envoie une push et cree une notification de fil; les rappels recurrent sont reprogrammes a l'occurrence suivante.
+- Migration requise : `20261124120000_ADD_moments_alertes.js`. Verification : typecheck app OK, ESLint 0 erreur (13 avertissements preexistants sur les ecrans form/details), `node --check` OK sur les fichiers serveur modifies. Aucun test ni essai appareil fait.
 
 ---
 

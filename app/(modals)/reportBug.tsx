@@ -4,7 +4,7 @@ import Constants from 'expo-constants'
 import * as Device from 'expo-device'
 import * as Network from 'expo-network'
 import Icon from '@react-native-vector-icons/ionicons'
-import { router, usePathname } from 'expo-router'
+import { router, useLocalSearchParams, usePathname } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 
 import { useAPI } from '@/contextes/contexteAPI'
@@ -15,6 +15,7 @@ import ToastAbs from '@/abstractions/toastAbs'
 import { toastTypes } from '@/constants/toastConfig'
 import { useSignalements } from '@/contextes/contexteSignalements'
 import ModalBase from '@/components/modalBase'
+import PagesGlissables, { type PageGlissable } from '@/components/pagesGlissables'
 
 type TechnicalInfo = { label: string; value: string }
 
@@ -26,6 +27,8 @@ export default function ReportBug() {
   const { fonts } = useFont()
   const { erreursCapturees, retirerErreursCapturees } = useSignalements()
   const pathname = usePathname()
+  const params = useLocalSearchParams<{ page?: string }>()
+  const pageInitiale = params.page === 'feedback' ? 1 : 0
   const [messageQuand, setMessageQuand] = useState('')
   const [messageExpl, setMessageExpl] = useState('')
   const [infos, setInfos] = useState<TechnicalInfo[]>([])
@@ -33,6 +36,7 @@ export default function ReportBug() {
   const idsErreursCapturees = new Set(erreursCapturees.map((erreur) => erreur.id))
   const erreursSelectionneesDisponibles = erreursSelectionnees.filter((id) => idsErreursCapturees.has(id))
   const [sending, setSending] = useState(false)
+  const [feedback, setFeedback] = useState('')
   const canSend = !!messageQuand.trim() && !!messageExpl.trim() && !sending
   useEffect(() => {
     let actif = true
@@ -127,8 +131,34 @@ export default function ReportBug() {
     } as const,
   }
 
-  return (
-    <ModalBase>
+  const envoyerFeedback = async () => {
+    if (!feedback.trim() || sending) return
+    setSending(true)
+    try {
+      await api.post('/signalements/feedbacks', { message: feedback.trim() })
+      ToastAbs.show({ type: toastTypes.success, text1: t('feedback.successTitle'), text2: t('feedback.successMessage') })
+      router.back()
+    } catch (error) {
+      catcher(error, t('feedback.submitFailed'))
+    } finally {
+      setSending(false)
+    }
+  }
+
+  const pageFeedback = (
+    <View style={{ flex: 1, width: '100%', minHeight: 0 }}>
+      <Text style={{ color: colors.text, fontFamily: fonts.title, fontSize: 20, textAlign: 'center', paddingVertical: 8 }}>{t('feedback.title')}</Text>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 4, paddingTop: 8, paddingBottom: 20 }} keyboardShouldPersistTaps="handled">
+        <Text style={styles.titreSection}>{t('feedback.prompt')}</Text>
+        <TextInput accessibilityLabel={t('feedback.prompt')} value={feedback} onChangeText={setFeedback} placeholder={t('feedback.placeholder')} placeholderTextColor={colors.muted} multiline maxLength={5000} textAlignVertical="top" style={[styles.input, { minHeight: 180 }]} />
+      </ScrollView>
+      <View style={{ alignItems: 'flex-end', paddingHorizontal: 4, paddingTop: 12, paddingBottom: 8, borderTopWidth: 1, borderColor: colors.border, backgroundColor: colors.card }}>
+        <TouchableOpacity onPress={envoyerFeedback} accessibilityRole="button" accessibilityLabel={sending ? t('feedback.sending') : t('bugReport.sendShort')} accessibilityState={{ disabled: !feedback.trim() || sending }} disabled={!feedback.trim() || sending} style={{ width: 56, height: 56, alignItems: 'center', justifyContent: 'center', borderRadius: 28, borderWidth: 1, borderColor: colors.border, backgroundColor: feedback.trim() && !sending ? colors.secondary : colors.card, opacity: sending ? 0.7 : 1 }}><Icon name="checkmark" color={colors.text} size={30} /></TouchableOpacity>
+      </View>
+    </View>
+  )
+
+  const pageBug = (
       <View style={{ flex: 1, width: '100%', minHeight: 0 }}>
         <Text style={{ color: colors.text, fontFamily: fonts.title, fontSize: 20, textAlign: 'center', paddingVertical: 8 }}>{t('bugReport.title')}</Text>
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 4, paddingTop: 8, paddingBottom: 20 }} keyboardShouldPersistTaps="handled">
@@ -211,6 +241,16 @@ export default function ReportBug() {
           </TouchableOpacity>
         </View>
       </View>
+  )
+
+  const pages: PageGlissable[] = [
+    { id: 'bug', titre: t('bugReport.tab'), contenu: pageBug },
+    { id: 'feedback', titre: t('feedback.tab'), contenu: pageFeedback },
+  ]
+
+  return (
+    <ModalBase>
+      <PagesGlissables pages={pages} pageInitiale={pageInitiale} integre />
     </ModalBase>
   )
 }

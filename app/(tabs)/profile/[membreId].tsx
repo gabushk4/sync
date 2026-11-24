@@ -35,6 +35,8 @@ export default function MemberProfil() {
   const [estAmi, setEstAmi] = useState(false)
   const [estAmiProche, setEstAmiProche] = useState(false)
   const [miseAJourAmiProche, setMiseAJourAmiProche] = useState(false)
+  const [bloqueParMoi, setBloqueParMoi] = useState(false)
+  const [miseAJourBlocage, setMiseAJourBlocage] = useState(false)
   const [loading, setLoading] = useState(true)
   // Not a friend (e.g. opened from a group conversation): "add friend" button
   const [relation, setRelation] = useState<RelationAmitie>('aucune')
@@ -57,6 +59,7 @@ export default function MemberProfil() {
         if (!active) return
         setProfile(data.profil)
         setEstAmi(!!data.estAmi && data.id_publique !== membre.idPublique)
+        setBloqueParMoi(Boolean(data.bloqueParMoi))
         setRelation(data.id_publique === membre.idPublique ? 'moi' : data.estAmi ? 'ami' : (data.relation ?? 'aucune'))
         setDemandeId(data.demande_id ?? null)
         const proche = !!(data.estAmiProche ?? data.profil?.estAmiProche ?? data.proche ?? data.profil?.proche)
@@ -143,6 +146,19 @@ export default function MemberProfil() {
     programmerRequeteAmiProcheRef.current()
   }
 
+  const basculerBlocage = async () => {
+    if (!estAmi || miseAJourBlocage) return
+    setMiseAJourBlocage(true)
+    try {
+      const { data } = await api.patch(`/amis/${encodeURIComponent(membreId)}/blocage`, { bloque: !bloqueParMoi })
+      setBloqueParMoi(Boolean(data?.bloque ?? !bloqueParMoi))
+    } catch (error) {
+      catcher(error, t('errors.friendBlockUpdateFailed'))
+    } finally {
+      setMiseAJourBlocage(false)
+    }
+  }
+
   // Spinner only before the first answer: reloading on focus (e.g. back from creating
   // an event from the widget) keeps the page, so the widget keeps its week.
   // Philip — user story 25.
@@ -163,6 +179,19 @@ export default function MemberProfil() {
             style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22, borderWidth: 1, borderColor: estAmiProche ? colors.warning : colors.border, backgroundColor: colors.card }}
           >
             <Icon name={estAmiProche ? 'star' : 'star-outline'} size={24} color={estAmiProche ? colors.warning : colors.muted} />
+          </TouchableOpacity>
+        )}
+        {estAmi && (
+          <TouchableOpacity
+            onPress={basculerBlocage}
+            disabled={miseAJourBlocage}
+            accessibilityRole="button"
+            accessibilityLabel={t(bloqueParMoi ? 'blockFriend.unblock' : 'blockFriend.block')}
+            accessibilityState={{ selected: bloqueParMoi, busy: miseAJourBlocage }}
+            style={{ minWidth: 44, height: 44, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: 22, borderWidth: 1, borderColor: bloqueParMoi ? colors.error : colors.border, backgroundColor: colors.card, opacity: miseAJourBlocage ? 0.6 : 1 }}
+          >
+            <Icon name={bloqueParMoi ? 'lock-open-outline' : 'ban-outline'} size={20} color={bloqueParMoi ? colors.error : colors.muted} />
+            <Text style={{ color: colors.text, fontFamily: fonts.body, fontSize: 12 }}>{t(bloqueParMoi ? 'blockFriend.unblock' : 'blockFriend.block')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -189,7 +218,7 @@ export default function MemberProfil() {
         <Text style={{ marginTop: 8, color: colors.text, fontFamily: fonts.body, fontSize: 16 }}>{profile.bio?.trim() || t('bioEmpty')}</Text>
       </View>
       {/* Widgets, under the profile's info (user story 25). */}
-      {estAmi && (
+      {estAmi && !bloqueParMoi && (
         <WidgetDisposCommunes ami={{ id: membreId, pseudo: profile.pseudo, fp_url: profile.fp_url }} />
       )}
     </ScrollView>

@@ -34,11 +34,17 @@
 		"errorTitle": "Status not changed",
 		"errorMessage": "Could not save your availability status."
 	},
+	"blockFriend": {
+		"block": "Block",
+		"unblock": "Unblock"
+	},
 	"memberIdLabel": "member ID",
 	"admin": {
 		"title": "Admin dashboard",
 		"dashboard": "Open admin dashboard",
 		"bugsTab": "Bugs",
+		"feedbackTab": "Feedback",
+		"feedbackEmpty": "No feedback has been sent.",
 		"empty": "No bugs have been reported.",
 		"loadFailed": "Could not load reported bugs.",
 		"retry": "Try again",
@@ -169,6 +175,7 @@
 	"errors": {
 		"widgetsLoadFailed": "error loading widgets",
 		"closeFriendUpdateFailed": "unable to update close friend status",
+		"friendBlockUpdateFailed": "unable to update this friend's block status",
 		"updateFailed": "unable to update profile",
 		"loadFriendProfileFailed": "unable to load this friend's profile",
 		"friendProfileUnavailable": "this profile is unavailable"

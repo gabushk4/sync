@@ -8,7 +8,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { DateTime } from 'luxon';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
+import { AppState,
     Dimensions, Easing, Image, Keyboard,
     StyleSheet, Text, TouchableOpacity, useColorScheme,
     View
@@ -90,6 +90,7 @@ const RAYON_ONGLET = 10
 // consulte le 16; sa borne API exclusive est le 21 à 00:00. On ne charge donc
 // pas une nouvelle semaine depuis chaque jour affiché.
 const JOURS_FENETRE = 7
+const JOURS_GLISSEMENT_FENETRE = 3
 const { width: WIN_W } = Dimensions.get('window')
 
 /**
@@ -279,6 +280,9 @@ export default function Home() {
   // back to this screen keeps it instead of resetting to today.
   const jourAfficheRef = useRef<DateTime | undefined>(undefined)
   useEffect(() => { jourAfficheRef.current = todayDateTime }, [todayDateTime])
+  const retourAujourdhuiAuFocusRef = useRef(false)
+  const appEnArrierePlanRef = useRef(false)
+  const retourMaintenantRef = useRef<() => void>(() => {})
   // The horizontal offset is shared by every timeline of the app (GestionScrollProvider):
   // the sliding window only follows it while this screen is focused, and its last
   // value here is put back on return. Otherwise another screen's one-day timeline
@@ -401,7 +405,7 @@ export default function Home() {
   
   const disponibilitesAmis = useMemo(() => friends.map((ami) => ({
     ami,
-    commonFreeSlots: dispoCommunesPossibles
+    commonFreeSlots: dispoCommunesPossibles && !ami.bloque_par_moi
       ? getCommonFreeSlotsSurPlage(evenementsHoraire, ami.evenements, windowStart, JOURS_FENETRE)
       : [],
   })), [friends, dispoCommunesPossibles, evenementsHoraire, windowStart])
@@ -815,10 +819,10 @@ export default function Home() {
       setTodayDateTime(dateVue.startOf('day'))
       dateAujShared.set(dateVue.toMillis())
     }
-    // Keep the seven-day window moving by one calendar day at a time. This limits
-    // refetches to one per 24h scrolled and preserves the visible instant.
+    // Move the seven-day window by three calendar days in the scroll direction.
+    // The overlap keeps the visible instant in the window while reducing fetches.
     if (heures < 24 || heures >= 6 * 24) {
-      const deltaJours = heures < 24 ? -1 : 1
+      const deltaJours = heures < 24 ? -JOURS_GLISSEMENT_FENETRE : JOURS_GLISSEMENT_FENETRE
       const nouveauDebut = debut.plus({ days: deltaJours })
       windowStartRef.current = nouveauDebut
       windowStartMillis.set(nouveauDebut.toMillis())
@@ -880,6 +884,31 @@ export default function Home() {
     }
     afficherRetourMaintenant.set({...afficherRetourMaintenant.get(), afficher:false})
   };
+
+  useEffect(() => {
+    retourMaintenantRef.current = retourMaintenant
+  })
+
+  useEffect(() => {
+    const abonnement = AppState.addEventListener('change', (etat) => {
+      if (etat === 'background') {
+        appEnArrierePlanRef.current = true
+        return
+      }
+      if (etat !== 'active') return
+      if (!appEnArrierePlanRef.current) return
+
+      appEnArrierePlanRef.current = false
+      const maintenant = DateTime.now()
+      if (jourAfficheRef.current?.hasSame(maintenant, 'day')) return
+
+      if (accueilActifRef.current) retourMaintenantRef.current()
+      else retourAujourdhuiAuFocusRef.current = true
+    })
+
+    return () => abonnement.remove()
+  }, [])
+
   const lockedAxis = useSharedValue<string | null>(null)
 
   const maxY = useSharedValue(0)
@@ -1044,8 +1073,23 @@ export default function Home() {
       const now = DateTime.now();
       // Keep the day that was displayed — already the calendar's selection when
       // coming back from it (see appliquerJourCalendrier). It used to reset to
-      // today; the "today" tab in the bottom bar does that now. First visit: today.
-      const jourAffiche = jourAfficheRef.current ?? now
+      // today; the "today" tab in the bottom bar does that now. First visit and
+      // app resume: today.
+      const retourAujourdhui = retourAujourdhuiAuFocusRef.current
+      retourAujourdhuiAuFocusRef.current = false
+      const premiereOuverture = jourAfficheRef.current === undefined
+      const initialiserAujourdhui = retourAujourdhui || premiereOuverture
+      const jourAffiche = initialiserAujourdhui ? now : jourAfficheRef.current!
+      // Establish today's window and offset before enabling the scroll listener.
+      // Otherwise its initial offset (0) can be interpreted as the first day of
+      // the seven-day window and replace today's date during startup.
+      if (initialiserAujourdhui) {
+        const debutAujourdhui = now.startOf('day').minus({ days: 3 })
+        chargerFenetre(debutAujourdhui)
+        const offsetAujourdhui = offsetCentreSur(now, debutAujourdhui)
+        offsetAccueilRef.current = offsetAujourdhui
+        initialiserOffset(offsetAujourdhui, false)
+      }
       // Keep the existing sliding window and horizontal offset when returning
       // from a pushed screen (such as event creation). Re-centering only the
       // window start here made the same offset point at a different calendar day.
@@ -1098,7 +1142,7 @@ export default function Home() {
           log("impossible de charger les évènements d'amis", error)
           catcher(error, t('errors.loadFriendEvents'))
         }
-      })      
+      })
 
       return pauseALaSortie
       // On focus only: the pollers are resumed / created here once per visit (their

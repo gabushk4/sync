@@ -23,6 +23,7 @@
 		"acceptee": "accepted",
 		"refusee": "refused",
 		"en_attente": "pending",
+		"expiree": "expired",
 		"annulee": "cancelled"
 	},
 	"vote": {

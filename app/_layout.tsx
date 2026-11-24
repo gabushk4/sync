@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import '../i18n';
+import i18n from '../i18n';
 
 //Providers
 import { APIProvider } from '@/contextes/contexteAPI';
@@ -29,7 +29,7 @@ import { TutorielProvider, useTutoriel } from '@/contextes/contexteTutoriel';
 import { router, Stack, usePathname } from 'expo-router';
 import { Accelerometer } from 'expo-sensors';
 import * as SplashScreen from 'expo-splash-screen';
-import { View } from 'react-native';
+import { Alert, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import {
   configureReanimatedLogger,
@@ -150,16 +150,28 @@ function RootLayoutNav() {
         if (!actif || !disponible) return
 
         Accelerometer.setUpdateInterval(100)
+        let confirmationOuverte = false
         subscription = Accelerometer.addListener(({ x, y, z }) => {
           const acceleration = Math.sqrt(x * x + y * y + z * z)
           const maintenant = Date.now()
           const dejaDansSignalement = pathname.endsWith('/reportBug')
 
-          if (acceleration < 2.3 || dejaDansSignalement || maintenant - dernierDeclenchement < 2000) return
+          if (acceleration < 2.3 || dejaDansSignalement || confirmationOuverte || maintenant - dernierDeclenchement < 2000) return
 
           dernierDeclenchement = maintenant
-
-          router.push('/(modals)/reportBug')
+          confirmationOuverte = true
+          Alert.alert(
+            i18n.t('shakeReport.title'),
+            i18n.t('shakeReport.message'),
+            [
+              { text: i18n.t('shakeReport.cancel'), style: 'cancel', onPress: () => { confirmationOuverte = false } },
+              { text: i18n.t('shakeReport.confirm'), onPress: () => {
+                confirmationOuverte = false
+                router.push({ pathname: '/(modals)/reportBug', params: { page: 'bug' } })
+              } },
+            ],
+            { cancelable: true, onDismiss: () => { confirmationOuverte = false } },
+          )
         })
       } catch (error) {
         console.warn('Impossible de démarrer la détection de secousse', error)

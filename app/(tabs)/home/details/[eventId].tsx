@@ -118,6 +118,17 @@ export default function Details(){
         }
     }
 
+    const sauvegarderAlertes = async (alertes: NonNullable<Event['alertes']>): Promise<boolean> => {
+        try {
+            await api.patch(`/evenements/${event.id}/alertes`, { alertes })
+            setEvent((avant) => ({ ...avant, alertes }))
+            return true
+        } catch (error) {
+            catcher(error, t('errors.updateFailed'))
+            return false
+        }
+    }
+
     const FABParams = useMemo(
         () => ({ event: JSON.stringify(event) }),
         [event]
@@ -188,6 +199,7 @@ export default function Details(){
                 key={event.id}
                 event={event}
                 mode={'details'}
+                onAlertesChange={sauvegarderAlertes}
                 masquerParticipants={!!invitation}
                 nature={event.nature}
                 // Story #21: a block under the participants (review: part of the form)

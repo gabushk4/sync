@@ -25,6 +25,13 @@ type BugRapporte = {
   pseudo?: string | null
 }
 
+type FeedbackRapporte = {
+  id_publique: string
+  message: string
+  cree_le: string
+  pseudo?: string | null
+}
+
 type Etat = 'verification' | 'chargement' | 'pret' | 'erreur'
 
 // Stories #29 et #30 (loi 25) : demandes d'export et de suppression des données
@@ -145,12 +152,34 @@ function PageMetriques({ onAccesRefuse }: { onAccesRefuse: () => void }) {
   return <PanneauMetriques onAccesRefuse={onAccesRefuse} />
 }
 
+function PageFeedback({ etat, feedbacks, charger }: { etat: Etat; feedbacks: FeedbackRapporte[]; charger: () => void }) {
+  const { t, i18n } = useTranslation('profile')
+  const { colors } = usePalette()
+  const { fonts } = useFont()
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <EtatPage etat={etat} onRecharger={charger}>
+        {feedbacks.length === 0 ? <Text style={{ padding: 24, color: colors.muted, fontFamily: fonts.body, fontSize: 16, textAlign: 'center' }}>{t('admin.feedbackEmpty')}</Text> : (
+          <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 12 }}>
+            {feedbacks.map((feedback) => <View key={feedback.id_publique} style={{ padding: 16, borderRadius: 12, backgroundColor: colors.card, gap: 8 }}>
+              <Text style={{ color: colors.text, fontFamily: fonts.title, fontSize: 16 }}>@{feedback.pseudo || t('admin.unknown')}</Text>
+              <Text style={{ color: colors.text, fontFamily: fonts.body, fontSize: 15 }}>{feedback.message}</Text>
+              <Text style={{ color: colors.muted, fontFamily: fonts.body, fontSize: 13 }}>{t('admin.reportedAt', { date: new Date(feedback.cree_le).toLocaleString(i18n.language) })}</Text>
+            </View>)}
+          </ScrollView>
+        )}
+      </EtatPage>
+    </View>
+  )
+}
+
 /** Admin-only dashboard. The API also enforces admin access on the bug endpoint. */
 export default function DashboardAdmin() {
   const { t } = useTranslation('profile')
   const { api } = useAPI()
   const [etat, setEtat] = useState<Etat>('verification')
   const [bugs, setBugs] = useState<BugRapporte[]>([])
+  const [feedbacks, setFeedbacks] = useState<FeedbackRapporte[]>([])
   const [bugOuvert, setBugOuvert] = useState<string | null>(null)
 
   const sortirAccesRefuse = useCallback(() => {
@@ -169,8 +198,12 @@ export default function DashboardAdmin() {
       }
 
       setEtat('chargement')
-      const { data } = await api.get('/admin/bugs')
-      setBugs(Array.isArray(data.bugs) ? data.bugs : [])
+      const [{ data: dataBugs }, { data: dataFeedbacks }] = await Promise.all([
+        api.get('/admin/bugs'),
+        api.get('/admin/feedbacks'),
+      ])
+      setBugs(Array.isArray(dataBugs.bugs) ? dataBugs.bugs : [])
+      setFeedbacks(Array.isArray(dataFeedbacks.feedbacks) ? dataFeedbacks.feedbacks : [])
       setEtat('pret')
     } catch (error: any) {
       if (error?.response?.status === 401 || error?.response?.status === 403) {
@@ -189,6 +222,7 @@ export default function DashboardAdmin() {
 
   const pages: PageGlissable[] = [
     { id: 'bugs', titre: t('admin.bugsTab'), contenu: <PageBugs etat={etat} bugs={bugs} bugOuvert={bugOuvert} setBugOuvert={setBugOuvert} charger={charger} /> },
+    { id: 'feedback', titre: t('admin.feedbackTab'), contenu: <PageFeedback etat={etat} feedbacks={feedbacks} charger={charger} /> },
     { id: 'exports', titre: t('admin.exportsTab'), contenu: <PageLoi25 type="export" onAccesRefuse={sortirAccesRefuse} /> },
     { id: 'suppressions', titre: t('admin.deletionsTab'), contenu: <PageLoi25 type="suppression" onAccesRefuse={sortirAccesRefuse} /> },
     { id: 'metriques', titre: t('admin.metricsTab'), contenu: <PageMetriques onAccesRefuse={sortirAccesRefuse} /> },

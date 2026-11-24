@@ -206,6 +206,7 @@ const CreationEvenement = forwardRef<CreationHandle>(function CreationEvenement(
                 nouveau = {
                     ...event,
                     ...corpsCreation(values),
+                    alertes: values.alertes,
                     // kept in `nouveau`, so the conflict screen re-sends it too
                     creer_conversation: creerConversation,
                     participants: invites.map((i) => ({ id: i.id, privilege: i.privilege })),

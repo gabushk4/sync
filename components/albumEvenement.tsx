@@ -1,4 +1,4 @@
-import { router } from 'expo-router'
+import { Href, router } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { useTranslation } from 'react-i18next'
@@ -50,9 +50,12 @@ export default function AlbumEvenement({ idEvenement }: Props) {
 
     const total = album.photos.length
     const photosRevues = lots.find((l) => l.id === lotRevu)?.photos ?? []
-    const ouvrirAlbum = () => router.push({ pathname: '/(tabs)/home/details/album/[eventId]', params: { eventId: idEvenement } })
+    // This route was added alongside the typed-route snapshot from before the pull.
+    // Keep the real route and params while allowing Expo to regenerate its route types.
+    const cheminAlbum = '/(tabs)/home/details/album/[eventId]' as const
+    const ouvrirAlbum = () => router.push({ pathname: cheminAlbum, params: { eventId: idEvenement } } as unknown as Href)
     // + : the album screen, its photo picker opened right away (same picker as everywhere)
-    const ajouterPhotos = () => router.push({ pathname: '/(tabs)/home/details/album/[eventId]', params: { eventId: idEvenement, ajouter: '1' } })
+    const ajouterPhotos = () => router.push({ pathname: cheminAlbum, params: { eventId: idEvenement, ajouter: '1' } } as unknown as Href)
 
     return (
         <View style={[s.bloc, { backgroundColor: colors.card }]}>
