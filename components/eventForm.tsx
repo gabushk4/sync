@@ -13,7 +13,7 @@ import log from '@/functions/log'
 import RNDateTimePicker from '@react-native-community/datetimepicker'
 import { useFocusEffect } from 'expo-router'
 import { DateTime } from 'luxon'
-import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, View } from 'react-native'
 
@@ -32,11 +32,6 @@ import AlertesEvenement from './alertesEvenement'
 
 const MAX_LONG_TITLE = 50
 const MAX_LONG_DESC = 2000
-/**
- * NOTE POUR TOI : adapte les types (Props, Event, Recurrence, etc.) à tes
- * définitions réelles — je les ai gardés identiques à ton fichier original.
- * ============================================================================
- */
 
 export type EventFormValues = {
     titre: string
@@ -58,7 +53,7 @@ type Props = {
     prefills?: {
         start?: DateTime;
         end?: DateTime;
-        participants?:Array<Participant>
+        participants?: Participant[]
     }
     constraints?: {
         maximumStart?: DateTime;
@@ -153,12 +148,12 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
     const dateTimesCalculated = useRef(false)
     const prefilledParticipantsApplied = useRef(false)
 
-    const dateLocaleEvenement = (date?: DateTime): DateTime => {
+    const dateLocaleEvenement = useCallback((date?: DateTime): DateTime => {
         if (!date) return dtNow
         // Details already contains a Luxon DateTime in the member's timezone;
         // edit routes receive ISO strings after JSON serialization.
         return DateTime.isDateTime(date) ? date : convertUTCToLocal(date as unknown as string)
-    }
+    }, [])
 
     const [dateTimeDisabled, setDateTimeDisabled] = useState<boolean>(false)
     const [titleLen, setTitleLen] = useState<number>(0)
@@ -182,23 +177,23 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
     const [descriptionTruncated, setDescriptionTruncated] = useState<boolean>(false)
     const [showTextModal, setShowTextModal] = useState<boolean>(false)
 
-    const recVals = [
+    const recVals = useMemo(() => [
         { title: t('recurrence.never'), value: null },
         { title: t('recurrence.daily'), value: 'DAILY' },
         { title: t('recurrence.weekly'), value: 'WEEKLY' },
         { title: t('recurrence.monthly'), value: 'MONTHLY' },
         { title: t('recurrence.yearly'), value: 'YEARLY' },
-    ]
+    ], [t])
         
     const [eventParticipantsControlUrl, setEventParicipantsControlUrl] = useState<string|undefined>(undefined)
 
     const daysDiff = end.diff(start, 'days').toObject().days ?? 0
     const hasSecondDate = daysDiff >= 1
 
-    const calculateDateTimes = (): { start: DateTime, end: DateTime } => {  
+    const calculateDateTimes = useCallback((): { start: DateTime, end: DateTime } => {  
         dateTimesCalculated.current = true
             
-        if (mode == 'create') {  
+        if (mode === 'create') {  
             //log("mode create dtNow:", dtNow)
             let start = prefills?.start || ceilBy5(dtNow.plus({ hours: 1 }))
             let end = prefills?.end || ceilBy5(start.plus({ hours: 1 }))
@@ -210,7 +205,7 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
         let end = dateLocaleEvenement(event.fin)
 
         return {start, end}
-    }
+    }, [event.debut, event.fin, mode, prefills, dateLocaleEvenement])
         
     const creerRegle = (): string | null => {
         if (recurrence.value != null) {
@@ -221,11 +216,11 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
         return null
     }
     
-    const appliquerInvites = (invites: Array<Participant>) => {
+    const appliquerInvites = useCallback((invites: Participant[]) => {
         if (invites) {
             ajouterInvite(invites)
         }
-    }
+    }, [ajouterInvite])
         
     useFocusEffect(
         useCallback(() => {
@@ -238,7 +233,7 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
                 prefilledParticipantsApplied.current = true
                 appliquerInvites(prefills.participants)
             }
-        }, [event, mode, prefills, setEnd, setStart])
+        }, [mode, prefills, setEnd, setStart, appliquerInvites, calculateDateTimes])
     )    
 
     useEffect(() => {
@@ -267,7 +262,7 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
         if (until) setFinRecurrence(until)
         if (event.id)
             setEventParicipantsControlUrl(`/evenements/${event.id}/participants`)
-    }, [event, mode, nature])
+    }, [event, mode, nature, recVals])
 
     // Details arrive asynchronously: replace the placeholder dates as soon as the
     // actual event is loaded, so friend availability is searched on its real range.
@@ -278,7 +273,7 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
         dateTimesCalculated.current = true
         setStart(debut)
         setEnd(fin)
-    }, [event.debut, event.fin, mode, setEnd, setStart])
+    }, [event.debut, event.fin, mode, setEnd, setStart, dateLocaleEvenement])
 
     useImperativeHandle(ref, () => ({
         getValues: (): EventFormValues => ({
@@ -324,7 +319,7 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
             right: 4,
             fontFamily: fonts.number,
             fontWeight: 'bold',
-            color: titleLen != MAX_LONG_TITLE ? colors.muted : colors.error,
+            color: titleLen !== MAX_LONG_TITLE ? colors.muted : colors.error,
         },
         descriptionLength: {
             position: 'absolute',
@@ -332,7 +327,7 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
             right: 4,
             fontFamily: fonts.number,
             fontWeight: 'bold',
-            color: descriptionLen != MAX_LONG_DESC ? colors.muted : colors.error,
+            color: descriptionLen !== MAX_LONG_DESC ? colors.muted : colors.error,
         },
         separator: { height: 1, width: '95%', backgroundColor: colors.border, alignSelf: 'center' },
         champsContainer: {
@@ -454,22 +449,7 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
                     />
                 </View>
             )}
-            {!indisponibilite && (
-                <AlertesEvenement
-                    moments={alertes}
-                    mode={mode === 'details' ? 'details' : 'edition'}
-                    editable={mode !== 'details' || event.privilege_membre === 'editeur'}
-                    onChange={async (moments) => {
-                        if (mode === 'details') {
-                            const enregistre = await onAlertesChange?.(moments)
-                            if (enregistre === false) return
-                            setAlertes(moments)
-                        } else {
-                            setAlertes(moments)
-                        }
-                    }}
-                />
-            )}
+            
             {/* Extern calendar infos */}
             {event.source !== 'sync' && event.couleur &&
                 <TouchableOpacity
@@ -568,7 +548,7 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
                         ? (eventPrivate ? t('unavailability.reasonPrivate') : t('unavailability.reasonShared'))
                         : (eventPrivate ? t('form.private') : t('form.public'))}
                 </Animated.Text>
-                {mode != 'details'
+                {mode !== 'details'
                     ?   <View style={{ alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }}>                    
                             <Icon name='lock-open' color={eventPrivate ? colors.muted : colors.text} size={24}/>
                             <SwitchAbs
@@ -632,9 +612,24 @@ function EventForm({ event, prefills, constraints, mode, masquerParticipants = f
                 </TouchableOpacity>
             )}
 
+            {!indisponibilite && (
+                <AlertesEvenement
+                    moments={alertes}
+                    mode={mode === 'details' ? 'details' : 'edition'}
+                    editable={mode !== 'details' || event.privilege_membre === 'editeur'}
+                    onChange={async (moments) => {
+                        if (mode === 'details') {
+                            const enregistre = await onAlertesChange?.(moments)
+                            if (enregistre === false) return
+                            setAlertes(moments)
+                        } else {
+                            setAlertes(moments)
+                        }
+                    }}
+                />
+            )}
+
             {blocsFin}
-            {/* room for the tab bar's FAB area under the last block */}
-            {mode === 'details' && <View style={{ height: 70 }} />}
 
             <Modal visible={showTextModal} transparent={true} backdropColor="transparent">
                 <Pressable />

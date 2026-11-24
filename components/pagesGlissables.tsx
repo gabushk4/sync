@@ -7,7 +7,7 @@
  * @author Gabriel P Levesque
  */
 
-import React, { useCallback, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Dimensions, Keyboard, LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent, StyleSheet, TouchableOpacity, View } from 'react-native'
 import { ScrollView } from 'react-native-gesture-handler'
 import Animated, { Extrapolation, interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated'
@@ -15,11 +15,15 @@ import Animated, { Extrapolation, interpolate, useAnimatedScrollHandler, useAnim
 import Haptics from '@/abstractions/haptics'
 import { useFont } from '@/contextes/contexteFont'
 import { usePalette } from '@/contextes/contextePalette'
+import { tabPrefix } from '@/constants/tutorial'
+import { useTutoriel } from '@/contextes/contexteTutoriel'
+import { measureSpotlightEvents } from '@/events/mesureSpotlightEvents'
 
 export type PageGlissable = {
     id: string
     titre: string
     contenu: React.ReactNode
+    conditionTutoriel?: string
 }
 
 type Props = {
@@ -36,6 +40,42 @@ const HAUTEUR_BARRE_ONGLETS = 56
 const HAUTEUR_INDICATEUR = 44
 const AnimatedGestureScrollView = Animated.createAnimatedComponent(ScrollView)
 const {width: SCREEN_W} = Dimensions.get("window")
+const styles = StyleSheet.create({
+    conteneur: { flex: 1 },
+    onglets: {
+        marginBottom: 8,
+        maxHeight: HAUTEUR_BARRE_ONGLETS,
+        borderBottomWidth: 1,
+    },
+    ongletsContent: {
+        height: HAUTEUR_BARRE_ONGLETS,
+        alignItems: 'center',
+        flexDirection: 'row',
+    },
+    onglet: {
+        paddingHorizontal: 14,
+        paddingVertical: 4,
+        maxHeight: HAUTEUR_INDICATEUR,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    title: {
+        fontSize: 16,
+        letterSpacing: 0.4,
+        textAlign: 'center',
+    },
+    tab: {
+        position: 'absolute',
+        bottom: 6,
+        opacity: 0.9,
+        borderRadius: 8,
+        left: 0,
+        height: HAUTEUR_INDICATEUR,
+    },
+    page: { flex: 1 },
+    scrollable: { flex: 1 },
+})
+
 
 /**
  * Affiche les onglets et les pages, avec un indicateur qui suit le swipe.
@@ -43,10 +83,15 @@ const {width: SCREEN_W} = Dimensions.get("window")
 export default function PagesGlissables({ pages, pageInitiale = 0, onChangerPage, integre = false }: Props) {
     const { colors } = usePalette()
     const { fonts } = useFont()
+    const { enregistrerCible } = useTutoriel()
 
     const scrollViewRef = useRef<ScrollView>(null)
     const ongletsScrollViewRef = useRef<ScrollView>(null)
     const pageRef = useRef(pageInitiale)
+    const ongletsRef = useMemo(
+        () => pages.map(({ id }) => ({ id, ref: React.createRef<View>() })),
+        [pages],
+    )
 
     const contentOffset = useSharedValue(pageInitiale * SCREEN_W)
     const ongletContentOffsetX = useSharedValue<number>(0)
@@ -59,6 +104,21 @@ export default function PagesGlissables({ pages, pageInitiale = 0, onChangerPage
     const [largeurPages, setLargeurPages] = useState(SCREEN_W)
     //Largeur de la scrollView des onglets; pour séparé équitablement l'espace aux onglets
     const [largeurBarre, setLargeurBarre] = useState<number>(0)
+    const stylesDynamiques = useMemo(() => ({
+        onglets: {
+            marginHorizontal: integre ? 0 : 20,
+            marginTop: integre ? 0 : 12,
+            borderBottomColor: colors.border,
+        },
+        ongletsContent: { minWidth: largeurBarre },
+        onglet: { minWidth: largeurBarre / Math.max(pages.length, 1) },
+        title: {
+            color: colors.text,
+            fontFamily: fonts.title,
+        },
+        tab: { backgroundColor: colors.secondary },
+        page: { width: largeurPages },
+    }), [colors.border, colors.secondary, colors.text, fonts.title, integre, largeurBarre, largeurPages, pages.length])
 
     const [mesuresInitiales] = useState(() => pages.map(() => ({ x: 0, w: 0 })))
     const mesuresOngletsRef = useRef(mesuresInitiales)
@@ -188,6 +248,7 @@ export default function PagesGlissables({ pages, pageInitiale = 0, onChangerPage
         mesures[index] = { x, w: width }
         mesuresOngletsRef.current = mesures
         publierPlagesOnglets(mesures, largeurPages)
+        
     }, [largeurPages, pages.length, publierPlagesOnglets])
 
     /**
@@ -200,7 +261,6 @@ export default function PagesGlissables({ pages, pageInitiale = 0, onChangerPage
             publierPlagesOnglets(mesuresOngletsRef.current, largeur)
             scrollViewRef.current?.scrollTo({ x: largeur * pageRef.current, animated: false })
     }
-
     
     /**
      * Met à jour l'index actif quand le swipe s'arrête.
@@ -210,84 +270,61 @@ export default function PagesGlissables({ pages, pageInitiale = 0, onChangerPage
         console.log("currentOffset", currentOffset)
         const index = Math.round(currentOffset / largeurPages)
         changerPage(index)
+        measureSpotlightEvents.emitMeasureSpotlight()
     },[largeurPages, changerPage])
 
-    const s = StyleSheet.create({
-        conteneur: { flex: 1 },
-        onglets: {
-            marginHorizontal: integre ? 0 : 20,
-            marginTop: integre ? 0 : 12,
-            marginBottom: 8,
-            maxHeight: HAUTEUR_BARRE_ONGLETS,
-            borderBottomWidth:1,
-            borderBottomColor: colors.border
-        },
-        ongletsContent: {
-            minWidth:largeurBarre,            
-            height: HAUTEUR_BARRE_ONGLETS,
-            alignItems: 'center',
-            flexDirection: 'row',
-        },
-        onglet: {
-            paddingHorizontal: 14,
-            paddingVertical: 4,
-            maxHeight: HAUTEUR_INDICATEUR,
-            alignItems:'center', 
-            justifyContent:'center',
-            minWidth: largeurBarre / Math.max(pages.length, 1)
-        },
-        title: {
-            color: colors.text,
-            fontSize: 16,
-            letterSpacing: 0.4,
-            fontFamily: fonts.title,
-            textAlign: 'center',
-        },
-        tab: {
-            position: 'absolute',
-            bottom: 6,
-            backgroundColor: colors.secondary,
-            opacity: 0.9,
-            borderRadius: 8,
-            left: 0,
-            height: HAUTEUR_INDICATEUR,
-        },
-    })
+    const notifierFinDefilementOnglets = useCallback(() => {
+        measureSpotlightEvents.emitMeasureSpotlight()
+    }, [])
+
+    useEffect(()=>{
+        const tabsUnsubs = ongletsRef.map(({ id, ref }) =>
+            enregistrerCible(tabPrefix + id, ref),
+        )
+        return () =>{
+            tabsUnsubs.forEach(unsub=>unsub())
+        }
+    }, [enregistrerCible, ongletsRef])
 
     return (
-        <View style={s.conteneur}>
+        <View style={styles.conteneur}>
             <ScrollView
                 ref={ongletsScrollViewRef}
                 horizontal={true}
                 showsHorizontalScrollIndicator={false}
-                style={s.onglets}
-                contentContainerStyle={s.ongletsContent}
+                style={[styles.onglets, stylesDynamiques.onglets]}
+                contentContainerStyle={[styles.ongletsContent, stylesDynamiques.ongletsContent]}
                 onLayout={onLayoutOngletsViewport}
                 scrollEventThrottle={16}
                 onScroll={(e: NativeSyntheticEvent<NativeScrollEvent>)=>{
                     ongletContentOffsetX.set(e.nativeEvent.contentOffset.x)
                 }}
+                onScrollEndDrag={notifierFinDefilementOnglets}
+                onMomentumScrollEnd={notifierFinDefilementOnglets}
                 onContentSizeChange={(contentWidth) => {
                     if (contentWidth > 0) largeurContenuOnglets.set(contentWidth)
                 }}
             >
-                <Animated.View style={[s.tab, animatedTab]} />
+            {/* Tabs */}
+                <Animated.View style={[styles.tab, stylesDynamiques.tab, animatedTab]} />
                 {pages.map((p, index) =>
                     <TouchableOpacity
-                        key={'tab' + p.id}
-                        style={s.onglet}
+                        key={tabPrefix + p.id}
+                        testID={tabPrefix + p.id}
+                        ref={ongletsRef[index].ref}
+                        style={[styles.onglet, stylesDynamiques.onglet]}
                         onPress={() => allerA(index)}
                         accessibilityRole="tab"
                         onLayout={onLayoutOnglet(index)}
                     >
-                        <Animated.Text style={s.title}>{p.titre}</Animated.Text>
+                        <Animated.Text style={[styles.title, stylesDynamiques.title]}>{p.titre}</Animated.Text>
                     </TouchableOpacity>
                 )}
             </ScrollView>
             <AnimatedGestureScrollView
                 ref={scrollViewRef}
                 horizontal={true}
-                style={{ flex: 1 }}
+                style={styles.scrollable}
                 onLayout={onLayoutPages}
                 snapToInterval={largeurPages}
                 decelerationRate={'fast'}
@@ -298,7 +335,7 @@ export default function PagesGlissables({ pages, pageInitiale = 0, onChangerPage
                 onMomentumScrollEnd={onFinDefilement}
             >
                 {pages.map((p) =>
-                    <View key={p.id} style={{ width: largeurPages, flex: 1 }}>
+                    <View key={p.id} style={[styles.page, stylesDynamiques.page]}>
                         {p.contenu}
                     </View>
                 )}

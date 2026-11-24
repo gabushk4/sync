@@ -15,6 +15,8 @@
     "dangerZone":"danger zone",
     "signOut":"sign out",
     "open":"open",
+    "replayTutorial":"Replay the tutorial",
+    "replayTutorialFailed":"Unable to restart the tutorial",
     "deleteAccount":"delete my account",
     "exportData":"export my data",
     "theme":"palette",
@@ -22,6 +24,7 @@
     "appVersion":"version {{version}}",
     "about":"about sync",
     "privacyPolicy":"privacy policy",
+    "usageContract":"usage contract",
     "minorSecurity":"child safety standards",
     "imports":"import and manage a calendar",
     "calendarImports":{

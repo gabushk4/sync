@@ -2,6 +2,7 @@ import { useLocalSearchParams, useNavigation } from "expo-router";
 import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DateTime } from "luxon";
+import { StyleSheet, View } from "react-native";
 
 import { useAPI } from "@/contextes/contexteAPI";
 
@@ -18,6 +19,7 @@ import titreEvenement from "@/functions/titreEvenement";
 import useEnvoiCreation, { corpsCreation } from "@/hooks/useEnvoiCreation";
 import { defaultEvent, Event } from "@/types/calendar";
 import { conflitsDeLaReponse, EvenementEnConflit, NouvelEvenement } from "@/types/conflit";
+import { eventFormIds } from "@/constants/tutorial";
 
 /**
  * Unavailability page: a stretch where the member is busy, stored as an event of
@@ -44,6 +46,7 @@ const CreationIndisponibilite = forwardRef<CreationHandle>(function CreationIndi
     const { api } = useAPI()
 
     const formRef = useRef<EventFormHandle>(null)
+    const tutorialTargetRef = useRef<View>(null)
     const [event] = useState<Event>(defaultEvent)
     const { enChargement, envoyerUneFois } = useEnvoiCreation()
     // Conflict screen over this page (409 answer), or null.
@@ -134,7 +137,7 @@ const CreationIndisponibilite = forwardRef<CreationHandle>(function CreationIndi
     useImperativeHandle(ref, () => ({ envoyer }))
 
     return (
-        <>
+        <View ref={tutorialTargetRef} testID={eventFormIds.dnd} style={styles.formulaire}>
             <EventForm
                 ref={formRef}
                 event={event}
@@ -152,8 +155,14 @@ const CreationIndisponibilite = forwardRef<CreationHandle>(function CreationIndi
                     onSortie={quitterConflit}
                 />
             )}
-        </>
+        </View>
     )
 })
 
 export default CreationIndisponibilite
+
+const styles = StyleSheet.create({
+    formulaire: {
+        flex: 1,
+    },
+})

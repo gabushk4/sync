@@ -1,44 +1,34 @@
 import { usePalette } from "@/contextes/contextePalette";
 
-import React, { View } from "react-native";
+import React, { ActivityIndicator, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import { useEffect, useState } from "react";
 import { useMembre } from "@/contextes/contexteMembre";
 import { useAPI } from "@/contextes/contexteAPI";
 import log from "@/functions/log";
 import MemberCode from "@/components/memberCode";
+import Spinner from "@/components/spinner";
 
 export default function QRCodeAbs() {
     const { colors } = usePalette()
     const { membre } = useMembre()
     const { APIBaseURL } = useAPI()
 
-    const [qrCodeValue, setQrCodeValue] = useState<string>('')
-
-    const createQrCodeValue = async ()=>{
-        if (!membre.idPublique) {
-            console.warn('id publique du membre introuvable');
-            return;
-        }
-
-        // Génère un objet clair pour le QR
-        const payload = {
-            action: 'demande_ami',
-            method: 'post',
-            url: APIBaseURL + '/amis/demandes/',
-            body: {
-                id_destinataire: membre.idPublique,
-            }
-        }
-        const strPayload = JSON.stringify(payload)
-        log('qr code set payload', strPayload)
-        setQrCodeValue(JSON.stringify(payload))
+    const qrCodeValue = membre?.idPublique
+    ? JSON.stringify({
+          action: 'demande_ami',
+          method: 'post',
+          url: `${APIBaseURL}/amis/demandes/`,
+          body: {
+              id_destinataire: membre.idPublique,
+          },
+      })
+    : null;
+    
+    if(!qrCodeValue){
+        return <Spinner/>
     }
-
-    useEffect(() => {
-        createQrCodeValue()
-    }, [])
-
+    
     return(
         <View style={{width:'100%', height:'100%', alignItems:'center', justifyContent:'center', gap:'4%'}}>
             {qrCodeValue.length > 0 &&

@@ -39,19 +39,24 @@ type ToggleSetting = SettingBase & {
 type DropdownSetting<T extends string = string> = SettingBase & {
 	type: 'dropdown'
 	value: T
-	options: Array<{
+	options: {
 		value: T
 		titleKey?: string
 		title?: string
-	}>
+	}[]
 	onValueChange: (value: T) => void
 }
 
-type LinkSetting = SettingBase & {
-	type: 'link'
-	href: LinkProps['href'] | string
-	externalLink?: boolean
-}
+type LinkSetting =
+	| (SettingBase & {
+		type: 'link'
+		href: LinkProps['href'] | string
+		externalLink?: boolean
+	})
+	| (SettingBase & {
+		type: 'link'
+		onPress: () => void | Promise<void>
+	})
 
 type InputSettings = SettingBase & {
 	type: 'input'

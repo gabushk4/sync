@@ -13,6 +13,17 @@ import { AccessTokenProvider } from '@/contextes/contexteToken';
 import { ThemeProvider } from "expo-router/react-navigation";
 
 //Contexts
+import { AuthProvider, useAuth } from '@/contextes/contexteAuth';
+import { ConversationsProvider } from '@/contextes/contexteConversations';
+import { EventDraftProvider } from '@/contextes/contexteEventDraft';
+import { GestionScrollProvider } from '@/contextes/contexteGestionListes';
+import { InvitesProvider } from '@/contextes/contexteInvites';
+import { MockModeProvider } from '@/contextes/contexteMockMode';
+import { NotificationProvider } from '@/contextes/contexteNotifications';
+import { SettingsProvider, useSettings } from '@/contextes/contexteSettings';
+import { SignalementsProvider } from '@/contextes/contexteSignalements';
+import { TimelineProvider } from '@/contextes/contexteTimeline';
+import { TutorielProvider, useTutoriel } from '@/contextes/contexteTutoriel';
 
 //Dependencies
 import { router, Stack, usePathname } from 'expo-router';
@@ -27,24 +38,16 @@ import {
 
 //Components
 import Toast from 'react-native-toast-message';
-
-//Functions
 import ChargementEcran from '@/components/chargementEcran';
 import RequestStatus from '@/components/requestStatus';
-import { toastConfig } from '@/constants/toastConfig';
-import { AuthProvider, useAuth } from '@/contextes/contexteAuth';
-import { ConversationsProvider } from '@/contextes/contexteConversations';
-import { EventDraftProvider } from '@/contextes/contexteEventDraft';
-import { GestionScrollProvider } from '@/contextes/contexteGestionListes';
-import { InvitesProvider } from '@/contextes/contexteInvites';
-import { MockModeProvider } from '@/contextes/contexteMockMode';
-import { NotificationProvider } from '@/contextes/contexteNotifications';
-import { SettingsProvider, useSettings } from '@/contextes/contexteSettings';
-import { SignalementsProvider } from '@/contextes/contexteSignalements';
-import { TimelineProvider } from '@/contextes/contexteTimeline';
-import { initLocalization } from '@/locales/initLocale';
+import SlideshowIntro from '@/components/slideshowIntro';
+
+//Functions
 import { configurerAffichagePremierPlan } from '@/functions/notificationsPush';
+import { initLocalization } from '@/locales/initLocale';
 import useNotificationsPush from '@/hooks/useNotificationsPush';
+
+import { toastConfig } from '@/constants/toastConfig';
 
 // This is the default configuration
 configureReanimatedLogger({
@@ -61,48 +64,45 @@ configurerAffichagePremierPlan();
 
 export default function RootLayout() {
   return (
-    
     <GestureHandlerRootView style={{ flex: 1 }}>
       <FontProvider>
         <AccessTokenProvider>
           <MockModeProvider>
-            <APIProvider>
-              <SignalementsProvider>
-              
-                <SettingsProvider>
-                  <PaletteProvider>
-                    <MembreProvider>
-                      <AuthProvider> 
-                        <NotificationProvider>
-                          <ConversationsProvider>
-                            <RouteAbsProvider>
-                              <ModalProvider>                  
-                                <FabProvider>
-                                  <TimelineProvider>
-                                    <GestionScrollProvider> 
-                                      <InvitesProvider>
-                                        
-                                          <AppLoader />  
-                                    
-                                      </InvitesProvider>  
-                                    </GestionScrollProvider>
-                                  </TimelineProvider>
-                                </FabProvider>                  
-                              </ModalProvider>
-                            </RouteAbsProvider>
-                          </ConversationsProvider>   
-                        </NotificationProvider>  
-                      </AuthProvider>
-                    </MembreProvider>
-                  </PaletteProvider>
-                </SettingsProvider>
-              </SignalementsProvider>
-            </APIProvider>
+            <TutorielProvider>
+              <APIProvider>
+                <SignalementsProvider>
+                  <SettingsProvider>
+                    <PaletteProvider>
+                      <MembreProvider>
+                        <AuthProvider>
+                          <NotificationProvider>
+                            <ConversationsProvider>
+                              <RouteAbsProvider>
+                                <ModalProvider>
+                                  <FabProvider>
+                                    <TimelineProvider>
+                                      <GestionScrollProvider>
+                                        <InvitesProvider>
+                                          <AppLoader />
+                                        </InvitesProvider>
+                                      </GestionScrollProvider>
+                                    </TimelineProvider>
+                                  </FabProvider>
+                                </ModalProvider>
+                              </RouteAbsProvider>
+                            </ConversationsProvider>
+                          </NotificationProvider>
+                        </AuthProvider>
+                      </MembreProvider>
+                    </PaletteProvider>
+                  </SettingsProvider>
+                </SignalementsProvider>
+              </APIProvider>
+            </TutorielProvider>
           </MockModeProvider>
-        </AccessTokenProvider>            
+        </AccessTokenProvider>
       </FontProvider>
     </GestureHandlerRootView>
-    
   );
 }
 
@@ -133,8 +133,8 @@ function RootLayoutNav() {
   const { navTheme } = usePalette();
   const { state } = useAuth()
   const pathname = usePathname()
-  // User story 45: push registration, toast of a push received while the app is open,
-  // and opening a tapped notification.
+  const { isCompleted, isLoading, marquerTermine } = useTutoriel();
+
   useNotificationsPush()
 
   useEffect(() => {
@@ -191,39 +191,54 @@ function RootLayoutNav() {
     return <ChargementEcran />;
   }
 
+  // Slideshow d'intro : écran intermédiaire plein écran entre login et home.
+  // Remplace complètement la navigation tant qu'il n'est pas terminé.
+  if (state === 'authenticated' && !isLoading && !isCompleted) {
+    return (
+      <>
+        <ThemeProvider value={navTheme}>
+          <SlideshowIntro onFinish={marquerTermine} />
+        </ThemeProvider>
+        <Toast config={toastConfig} />
+      </>
+    );
+  }
+
   return (
-    <ThemeProvider value={navTheme}>
-      <View style={{ flex: 1 }}>
-      <Stack>
-        {/* Modals and scanQR are only ever opened by a signed-in member, so they live
-            behind the same guard as the tabs: signing out removes them all at once and
-            shows (auth). Outside the guard, an open modal (e.g. the sign-out confirmation)
-            stayed on top of the login screen. */}
-        <Stack.Protected guard={state === 'authenticated'}>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="(modals)"
-            options={{
-              presentation: 'transparentModal',
-              animation: 'none',
-              gestureEnabled: false,
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name='scanQR'
-            options={{
-              headerShown:false
-            }}
-          />
-        </Stack.Protected>
-        <Stack.Protected guard={state === 'unauthenticated'}>
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        </Stack.Protected>
-      </Stack>
-      <RequestStatus />      
-      </View>
-      <Toast config={toastConfig}/>
-    </ThemeProvider>
+    <>
+      <ThemeProvider value={navTheme}>
+        <View style={{ flex: 1 }}>
+        <Stack>
+          {/* Modals and scanQR are only ever opened by a signed-in member, so they live
+              behind the same guard as the tabs: signing out removes them all at once and
+              shows (auth). Outside the guard, an open modal (e.g. the sign-out confirmation)
+              stayed on top of the login screen. */}
+          <Stack.Protected guard={state === 'authenticated'}>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="(modals)"
+              options={{
+                presentation: 'transparentModal',
+                animation: 'none',
+                gestureEnabled: false,
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name='scanQR'
+              options={{
+                headerShown:false
+              }}
+            />
+          </Stack.Protected>
+          <Stack.Protected guard={state === 'unauthenticated'}>
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          </Stack.Protected>
+        </Stack>
+        <RequestStatus />      
+        </View>
+        <Toast config={toastConfig}/>
+      </ThemeProvider>
+    </>
   );
 }

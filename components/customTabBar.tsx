@@ -1,10 +1,15 @@
+//contexts
+import { useFabActions, useFabState } from "@/contextes/contexteFAB";
 import { usePalette } from "@/contextes/contextePalette";
+
+//dependancies
 import Icon from "@react-native-vector-icons/ionicons";
-import { BottomTabBar, type BottomTabBarProps } from 'expo-router/js-tabs';
 import { useRouter } from "expo-router";
+import { BottomTabBar, type BottomTabBarProps } from 'expo-router/js-tabs';
 import React from "react";
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import { useFabActions, useFabState } from "@/contextes/contexteFAB";
+
+//components - abstractions
 import ToastAbs from "@/abstractions/toastAbs";
 import { toastTypes } from "@/constants/toastConfig";
 

@@ -1,50 +1,71 @@
-import { useAPI } from '@/contextes/contexteAPI';
-import { useGestionScroll } from '@/contextes/contexteGestionListes';
-import { usePalette } from '@/contextes/contextePalette';
 
-import BarreRecherche from '@/components/barreRecherche';
-import normaliserRecherche from '@/functions/normaliserRecherche';
-import ouvrirDetailsEvenement from '@/functions/ouvrirDetailsEvenement';
-import { useNavFab } from '@/hooks/useNavFAB';
+
+
+//packages imports
+
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { router, useFocusEffect } from 'expo-router';
 import { DateTime } from 'luxon';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import Animated, { cancelAnimation, scrollTo, useAnimatedReaction, useAnimatedRef, useAnimatedStyle, useSharedValue, withDecay, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
-
-import { AppState, Dimensions, Easing, Image, Keyboard, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
+import { AppState,
+    Dimensions, Easing, Image, Keyboard,
+    StyleSheet, Text, TouchableOpacity, useColorScheme,
+    View
+} from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import Animated, {
+    cancelAnimation, scrollTo, useAnimatedReaction,
+    useAnimatedRef, useAnimatedStyle, useSharedValue, withDecay,
+    withRepeat, withSpring, withTiming
+} from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 
+//hooks
+import { useNavFab } from '@/hooks/useNavFAB';
+
+//functions
+import AutoRefresh from '@/functions/autoRefresh';
 import { getCommonFreeSlotsSurPlage } from '@/functions/availability';
 import catcher from '@/functions/catcher';
+import { convertirTimestampHeure } from '@/functions/convertirTimestamp';
 import { convertUTCToLocal } from '@/functions/convertirUTCenLocal';
+import { estJourFerie, formaterEvenementsMembre, joursFeriesDuJour, paramsPlage } from '@/functions/evenementsMembre';
+import { debutCreationPourJour } from '@/functions/jourCreation';
 import log from '@/functions/log';
+import normaliserRecherche from '@/functions/normaliserRecherche';
+import ouvrirDetailsEvenement from '@/functions/ouvrirDetailsEvenement';
 import { heuresVersDate, positionHeures } from '@/functions/positionTimeline';
 
-
+//components
+import BarreRecherche from '@/components/barreRecherche';
 import EventsList, { RETRAIT_RANGEE } from '@/components/eventsList';
 import PfpWithAvailability from '@/components/pfpWithAvailability';
 import Spinner from '@/components/spinner';
 import Timeline from '@/components/timeline';
 import TrousHoraire, { PlageChoisie } from '@/components/trousHoraire';
-import { useFont } from '@/contextes/contexteFont';
-import { useMembre } from '@/contextes/contexteMembre';
-import { useTimeline } from '@/contextes/contexteTimeline';
 
+//contexts
+import { useAPI } from '@/contextes/contexteAPI';
+import { useFont } from '@/contextes/contexteFont';
+import { useGestionScroll } from '@/contextes/contexteGestionListes';
+import { useMembre } from '@/contextes/contexteMembre';
+import { usePalette } from '@/contextes/contextePalette';
+import { useTimeline } from '@/contextes/contexteTimeline';
+import { useTutoriel } from '@/contextes/contexteTutoriel';
+
+//constants
+import { withSpringConfig } from '@/constants/ReanimatedConfs';
+import { homeIds } from '@/constants/tutorial';
 
 //dummy datas
 //import {seedData} from '@/seed'
-import { withSpringConfig } from '@/constants/ReanimatedConfs';
+
 import { calendrierEvents } from '@/events/calendrierEvents';
 import { creationEvents, PlageCreee } from '@/events/creationEvents';
 import { rechercheAmiEvents } from '@/events/rechercheAmiEvents';
-import AutoRefresh from '@/functions/autoRefresh';
-import { convertirTimestampHeure } from '@/functions/convertirTimestamp';
-import { estJourFerie, formaterEvenementsMembre, joursFeriesDuJour, paramsPlage } from '@/functions/evenementsMembre';
-import { debutCreationPourJour, estJourPasse } from '@/functions/jourCreation';
+
 import { Friend } from '@/types/calendar';
-import { scheduleOnRN } from 'react-native-worklets';
 
 //Constants
 const WIDTH_COL = 80;
@@ -115,6 +136,7 @@ export default function Home() {
   const { initialiserOffset, definirOffsetMaintenant, afficherRetourMaintenant, onPan, offset: offsetX, LEFT_GO_TO_AFTER, clampOffset, maxOffset } = useGestionScroll()
   const { pxHeures, L_HEURES } = useTimeline();
   const { membre } = useMembre()
+  const {enregistrerCible} = useTutoriel()
 
   const icones = {
     arrowR:colorScheme === 'dark'?require('@/assets/icones/fleche-d-dark-icon.png'):require('@/assets/icones/fleche-d-light-icon.png'),
@@ -132,6 +154,10 @@ export default function Home() {
   const friendsList = useAnimatedRef<Animated.ScrollView>()
   const friendsEventsRefresh = useRef<AutoRefresh>(null)
   const userEventsRefresh = useRef<AutoRefresh>(null)
+  //tutorial
+  const containerRef = useRef(null);
+  const timelineRef = useRef(null);
+  const schedulesRef = useRef(null);
 
   //Sates
   const [tempsClassement, setTempsClassement] = useState(() => DateTime.now())
@@ -376,12 +402,14 @@ export default function Home() {
   // loaded. A fully booked selected day must not hide availability on the other
   // six days of the planning window.
   const dispoCommunesPossibles = evenementsMembreAJour && evenementsAmisAJour
+  
   const disponibilitesAmis = useMemo(() => friends.map((ami) => ({
     ami,
     commonFreeSlots: dispoCommunesPossibles && !ami.bloque_par_moi
       ? getCommonFreeSlotsSurPlage(evenementsHoraire, ami.evenements, windowStart, JOURS_FENETRE)
       : [],
   })), [friends, dispoCommunesPossibles, evenementsHoraire, windowStart])
+
   const amisAvecDisponibilites = useMemo(() => {
     const maintenant = tempsClassement
     return disponibilitesAmis.map(({ ami, commonFreeSlots }) => {
@@ -997,10 +1025,30 @@ export default function Home() {
       : debutCreation ? { start: debutCreation.toISO() } : undefined,
     icon: null,
     visible: true,
+    //Gabriel US 33
+    //Bloc bellow skipped since the native fucntion of event form is to bring back start to now. 
+    // We dont need to validate it while entering the form
+    // 
     // No events in the past: on a day before today, the "+" shows an error instead
     // (a picked range is never in the past).
-    bloque: !plageChoisie && todayDateTime && estJourPasse(todayDateTime) ? t('create.pastDate', { ns: 'events' }) : undefined,
+    //bloque: !plageChoisie && todayDateTime && estJourPasse(todayDateTime) ? t('create.pastDate', { ns: 'events' }) : undefined,
+    //END Gabriel US 33
+  
   })
+  
+  
+
+  useEffect(()=>{
+    const indexUnsub = enregistrerCible(homeIds.index, containerRef) 
+    const timelineUnsub = enregistrerCible(homeIds.timeline, timelineRef)
+    const schedulesUnsub = enregistrerCible(homeIds.schedules, schedulesRef) 
+ 
+    return () => {
+      indexUnsub()
+      timelineUnsub()
+      schedulesUnsub()
+    }    
+  }, [enregistrerCible])
 
   // The picked range stays when the home screen is left (backing out of the creation
   // finds it still selected); a tap elsewhere clears it (see effacerSelection). Once an
@@ -1395,9 +1443,11 @@ export default function Home() {
   }
   );
 
+  
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <View style={s.container}>
+      <View style={s.container} testID={homeIds.index} ref={containerRef}>
 
         {/* ── Friend search (user story 22), opened by the magnifier left of the hours ── */}
         {rechercheOuverte && (
@@ -1412,7 +1462,7 @@ export default function Home() {
         )}
 
         {/* ── Timeline (heures) ── */}
-        <View style={s.timeline}>
+        <View style={s.timeline} testID='timeline' ref={timelineRef}>
           {/* Friend search (user story 22): a small magnifier in the photos' column. */}
           <TouchableOpacity
             style={s.caseRecherche}
@@ -1443,6 +1493,8 @@ export default function Home() {
         <GestureDetector gesture={Gesture.Simultaneous(panGesture, toucherHorsSelection)}>
           <View
             style={s.calendarContainer}
+            testID={homeIds.schedules}
+            ref={schedulesRef}
           >
           <Animated.View style={[loadingAnimated, s.friendsZone]}>
             {/* TODO: ScrollView verticale des amis */}

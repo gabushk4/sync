@@ -6,6 +6,7 @@ import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native'
 import { useFont } from '@/contextes/contexteFont'
 import { usePalette } from '@/contextes/contextePalette'
 import { MomentAlerte } from '@/types/calendar'
+import Spinner from './spinner'
 
 export type { MomentAlerte } from '@/types/calendar'
 
@@ -50,7 +51,7 @@ export default function AlertesEvenement({ moments, mode, editable = true, onCha
                 disabled={enCours}
                 accessibilityRole="button"
                 accessibilityState={{ selected: actif, disabled: enCours }}
-                style={{ minHeight: 46, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 10, borderRadius: 10, backgroundColor: actif ? colors.primary : 'transparent' }}
+                style={{borderWidth:1, borderColor:colors.border, marginVertical:4, minHeight: 46, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 10, borderRadius: 10, backgroundColor: actif ? colors.primary : 'transparent' }}
             >
                 <Icon name={moment === 'debut' ? 'play-circle-outline' : 'flag-outline'} size={20} color={colors.secondary} />
                 <Text style={{ flex: 1, color: colors.text, fontFamily: fonts.body, fontSize: 15 }}>{t(`reminders.${moment}`)}</Text>
@@ -86,7 +87,7 @@ export default function AlertesEvenement({ moments, mode, editable = true, onCha
                     {mode === 'details' && <TouchableOpacity onPress={() => setChoixOuverts(false)} style={{ minHeight: 38, justifyContent: 'center', paddingHorizontal: 10 }}><Text style={{ color: colors.muted, fontFamily: fonts.body }}>{t('reminders.cancel')}</Text></TouchableOpacity>}
                 </View>
             )}
-            {enCours && <ActivityIndicator color={colors.secondary} />}
+            {enCours && <Spinner style={{position: 'absolute', left: '48%', top:'48%'}}/>}
         </View>
     )
 }

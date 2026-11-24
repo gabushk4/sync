@@ -10,6 +10,10 @@
       "sync",
       "com.alkemist.sync"
     ],
+    "scheme": [
+      "sync",
+      "com.alkemist.sync"
+    ],
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,

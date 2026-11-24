@@ -15,7 +15,7 @@ import catcher from '@/functions/catcher'
 import { convertUTCToLocal } from '@/functions/convertirUTCenLocal'
 import { convertToWhen } from '@/functions/convertirTimestamp'
 import RenderHueColor from '@/functions/renderHueColor'
-import PanneauCollapsable from './PanneauCollapsable'
+import PanneauCollapsable from './panneauCollapsable'
 
 type TauxGlobaux = {
     taux_acceptation_invitations: number

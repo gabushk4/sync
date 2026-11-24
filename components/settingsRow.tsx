@@ -55,7 +55,7 @@ export default function SettingRow({ setting }: SettingRowProps) {
         },
     })
     return (
-        <View style={setting.type == 'link' ? s.linkContainer : s.container}>
+        <View style={setting.type === 'link' ? s.linkContainer : s.container}>
             {setting.type === 'toggle' && (
                 <SwitchAbs
                     style={{alignSelf:'flex-end'}}
@@ -80,14 +80,23 @@ export default function SettingRow({ setting }: SettingRowProps) {
             )}
             {setting.type === 'link' && (
                 <View style={s.action}>
-                    <LinkAbs
-                        href={setting.href}
-                        externalLink={setting.externalLink}
-                        disabled={setting.disabled ?? false}
-                        style={s.status}
-                    >
-                        {t('open')}
-                    </LinkAbs>
+                    {'onPress' in setting ? (
+                        <TouchableOpacity
+                            onPress={setting.onPress}
+                            disabled={setting.disabled ?? false}
+                        >
+                            <Text style={linkStyle(c, f)}>{t('open')}</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <LinkAbs
+                            href={setting.href}
+                            externalLink={setting.externalLink}
+                            disabled={setting.disabled ?? false}
+                            style={s.status}
+                        >
+                            {t('open')}
+                        </LinkAbs>
+                    )}
                 </View>
             )}
             {setting.type === 'input' && (

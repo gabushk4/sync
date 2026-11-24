@@ -1294,72 +1294,72 @@ L'endpoint `GET /admin/os_metrics/points` n'existe pas encore : "je get aucuns p
 - `npx.cmd eslint 'app/(tabs)/home/index.tsx'` : 0 erreur, 8 avertissements pr?existants dans ce fichier.
 - Tests et typecheck non ex?cut?s.
 
-# HANDOFF - Fen�tre initiale de l'accueil (18/11/2026)
+# HANDOFF - Fen�tre initiale de l'accueil (18/11/2026)
 
 ## Fait
-- Au premier focus, l'accueil activait son �couteur de scroll avant de centrer l'offset. L'offset initial � z�ro pouvait donc �tre lu comme le premier jour de la fen�tre (J-3) et remplacer la date du jour.
-- L'initialisation de la fen�tre et de l'offset est maintenant faite avant d'activer le traitement du d�filement.
+- Au premier focus, l'accueil activait son �couteur de scroll avant de centrer l'offset. L'offset initial � z�ro pouvait donc �tre lu comme le premier jour de la fen�tre (J-3) et remplacer la date du jour.
+- L'initialisation de la fen�tre et de l'offset est maintenant faite avant d'activer le traitement du d�filement.
 - Aucun changement API requis.
 
-## V�rifications
+## V�rifications
 - `npx.cmd eslint 'app/(tabs)/home/index.tsx'` : 0 erreur, 8 avertissements existants.
-- Pas de test sur appareil effectu�.
+- Pas de test sur appareil effectu�.
 
-# HANDOFF - Glissement de fen�tre par trois jours (18/11/2026)
+# HANDOFF - Glissement de fen�tre par trois jours (18/11/2026)
 
 ## Fait
-- La fen�tre de 7 jours avance ou recule maintenant de 3 jours lorsqu'on approche de son bord dans l'accueil. Le d�calage est compens� pour garder le m�me instant visible; les appels API gardent leurs param�tres d�but/fin sur 7 jours.
+- La fen�tre de 7 jours avance ou recule maintenant de 3 jours lorsqu'on approche de son bord dans l'accueil. Le d�calage est compens� pour garder le m�me instant visible; les appels API gardent leurs param�tres d�but/fin sur 7 jours.
 - Aucun changement API requis.
 
-## V�rifications
+## V�rifications
 - `npx.cmd eslint 'app/(tabs)/home/index.tsx'` : 0 erreur, 8 avertissements existants.
-- Pas de test sur appareil effectu�.
+- Pas de test sur appareil effectu�.
 
-# HANDOFF - Libell� du statut compact dans le profil (18/11/2026)
+# HANDOFF - Libell� du statut compact dans le profil (18/11/2026)
 
 ## Fait
-- Dans `app/(tabs)/profile/index.tsx`, le libell� du bouton de disponibilit� est visible 5 secondes � chaque focus du profil, puis masqu� pour ne garder que le point color� et la fl�che. Le d�lai est annul� quand on quitte l'�cran.
+- Dans `app/(tabs)/profile/index.tsx`, le libell� du bouton de disponibilit� est visible 5 secondes � chaque focus du profil, puis masqu� pour ne garder que le point color� et la fl�che. Le d�lai est annul� quand on quitte l'�cran.
 - Aucun changement API requis.
 
-## V�rifications
-- ESLint sur le fichier : m�mes 18 erreurs et 2 avertissements que la version HEAD (probl�mes pr�existants); aucun diagnostic suppl�mentaire.
-- Pas de test sur appareil effectu�.
+## V�rifications
+- ESLint sur le fichier : m�mes 18 erreurs et 2 avertissements que la version HEAD (probl�mes pr�existants); aucun diagnostic suppl�mentaire.
+- Pas de test sur appareil effectu�.
 
 # HANDOFF - Heure d'expiration des invitations dans le fil (18/11/2026)
 
 ## Fait
-- `components/notificationItem.tsx` convertit maintenant l'expiration UTC envoy�e par l'API vers le fuseau choisi dans les param�tres de l'application avant d'afficher l'heure.
-- V�rification en lecture seule de `sync_api` : son format de date d'expiration est un ISO sans offset, interpr�t� comme UTC par l'app. Aucun changement API requis.
+- `components/notificationItem.tsx` convertit maintenant l'expiration UTC envoy�e par l'API vers le fuseau choisi dans les param�tres de l'application avant d'afficher l'heure.
+- V�rification en lecture seule de `sync_api` : son format de date d'expiration est un ISO sans offset, interpr�t� comme UTC par l'app. Aucun changement API requis.
 
-## V�rifications
-- `npx.cmd eslint components/notificationItem.tsx` : 0 erreur, 3 avertissements pr�existants.
-- Pas de test sur appareil effectu�.
+## V�rifications
+- `npx.cmd eslint components/notificationItem.tsx` : 0 erreur, 3 avertissements pr�existants.
+- Pas de test sur appareil effectu�.
 
 # HANDOFF - Blocage directionnel d'un ami (18/11/2026)
 
 ## Fait
-- Profil ami : bouton Bloquer/D�bloquer, �tat charg� depuis l'API et erreurs affich�es via le catcher.
-- `sync_api` : migration `20261119000000_CREATE_blocages.js`, table directionnelle `blocages` (`id_bloqueur`, `id_bloque`), endpoint `PATCH /amis/:idami_publique/blocage`, et refus en 404 de l'acc�s au profil par la personne bloqu�e. Le bloqueur conserve l'acc�s et peut d�bloquer depuis le profil.
-- `bd/schema.sql` mis � jour pour les nouvelles installations. La migration n'a pas �t� appliqu�e � une base.
+- Profil ami : bouton Bloquer/D�bloquer, �tat charg� depuis l'API et erreurs affich�es via le catcher.
+- `sync_api` : migration `20261119000000_CREATE_blocages.js`, table directionnelle `blocages` (`id_bloqueur`, `id_bloque`), endpoint `PATCH /amis/:idami_publique/blocage`, et refus en 404 de l'acc�s au profil par la personne bloqu�e. Le bloqueur conserve l'acc�s et peut d�bloquer depuis le profil.
+- `bd/schema.sql` mis � jour pour les nouvelles installations. La migration n'a pas �t� appliqu�e � une base.
 
-## V�rifications
-- ESLint du profil ami : 0 erreur, 1 avertissement pr�existant (`rechargement`). JSON FR/EN valide.
-- `node --check` r�ussi sur les deux routes et la migration API. ESLint API non ex�cut� : `npx eslint` est rest� bloqu� sans sortie, commande interrompue.
-- Aucun test d'int�gration ni sur appareil effectu�.
+## V�rifications
+- ESLint du profil ami : 0 erreur, 1 avertissement pr�existant (`rechargement`). JSON FR/EN valide.
+- `node --check` r�ussi sur les deux routes et la migration API. ESLint API non ex�cut� : `npx eslint` est rest� bloqu� sans sortie, commande interrompue.
+- Aucun test d'int�gration ni sur appareil effectu�.
 
-# HANDOFF - Restrictions entre membres bloqu�s (18/11/2026)
+# HANDOFF - Restrictions entre membres bloqu�s (18/11/2026)
 
 ## Fait
-- Les conversations priv�es � deux participants sont masqu�es des listes et recherches des deux membres; le middleware refuse aussi l'ouverture et l'envoi de messages. Un changement de blocage incr�mente le num�ro de version des conversations afin de rafra�chir les listes.
-- `verifierAmitieParticipants` refuse les membres bloqu�s dans les cr�ations de conversation et les invitations/cr�ations d'�v�nements.
-- `fetchAmis` retire le bloqueur de la liste du membre bloqu� et expose `bloque_par_moi` au bloqueur. Les s�lecteurs d'invit�s, cr�neaux communs et widget de profil tiennent compte de cet �tat.
-- Les contr�les `/disponibilites/communes` et `/disponibilites/amis/:idpublique` refusent aussi les paires bloqu�es.
+- Les conversations priv�es � deux participants sont masqu�es des listes et recherches des deux membres; le middleware refuse aussi l'ouverture et l'envoi de messages. Un changement de blocage incr�mente le num�ro de version des conversations afin de rafra�chir les listes.
+- `verifierAmitieParticipants` refuse les membres bloqu�s dans les cr�ations de conversation et les invitations/cr�ations d'�v�nements.
+- `fetchAmis` retire le bloqueur de la liste du membre bloqu� et expose `bloque_par_moi` au bloqueur. Les s�lecteurs d'invit�s, cr�neaux communs et widget de profil tiennent compte de cet �tat.
+- Les contr�les `/disponibilites/communes` et `/disponibilites/amis/:idpublique` refusent aussi les paires bloqu�es.
 
-## V�rifications
-- `node --check` r�ussi sur 8 fichiers JS de l'API, dont les routes/middlewares modifi�s et la migration.
-- ESLint des fichiers app touch�s : 0 erreur; avertissements pr�sents dans le profil ami, eventListAmi et l'accueil.
-- `git diff --check` r�ussi dans les deux projets.
-- ESLint API non ex�cut� : `npx eslint` reste bloqu� sans sortie dans sync_api. Migration non appliqu�e � la base; aucun test d'int�gration/appareil ex�cut�.
+## V�rifications
+- `node --check` r�ussi sur 8 fichiers JS de l'API, dont les routes/middlewares modifi�s et la migration.
+- ESLint des fichiers app touch�s : 0 erreur; avertissements pr�sents dans le profil ami, eventListAmi et l'accueil.
+- `git diff --check` r�ussi dans les deux projets.
+- ESLint API non ex�cut� : `npx eslint` reste bloqu� sans sortie dans sync_api. Migration non appliqu�e � la base; aucun test d'int�gration/appareil ex�cut�.
 ---
 
 ## Ajout (21/11/2026) — US 49 : thème choisi avec une roue de couleurs (branche `philip-us49-theme-colorwheel`, depuis main)
@@ -1602,3 +1602,96 @@ L'endpoint `GET /admin/os_metrics/points` n'existe pas encore : "je get aucuns p
 - L'app propose deux moments de rappel (debut/fin), selectionnes par defaut a la creation, reglables dans le formulaire d'edition et ajoutables dans la carte de details (editeurs).
 - L'API synchronise les alertes pour les participants, renvoie les moments dans GET /evenements/:id et accepte PATCH /evenements/:id/alertes. Le cron `envoyer_rappels_evenement` envoie une push et cree une notification de fil; les rappels recurrent sont reprogrammes a l'occurrence suivante.
 - Migration requise : `20261124120000_ADD_moments_alertes.js`. Verification : typecheck app OK, ESLint 0 erreur (13 avertissements preexistants sur les ecrans form/details), `node --check` OK sur les fichiers serveur modifies. Aucun test ni essai appareil fait.
+
+---
+
+# HANDOFF — Tutoriel interactif Sync (18/11/2026)
+
+## Contexte
+Projet React Native + Expo (SDK 58), Expo Router, déjà avancé. Fiche technique du tutoriel : `C:\Users\AntecPC\Downloads\Sync – Fiche technique du tutoriel interactif.md`. Plan en 8 phases dans `TODO_TUTORIEL.md`.
+
+## Fait (vérifié tsc + eslint)
+- `expo-sqlite` installé via `npx expo install expo-sqlite` (config plugin ajouté à `app.json`)
+- `assets/tutorial_seed.js` existait déjà (551 lignes, seed fictif complet : membres, amitiés, événements, conversations, messages, scénario)
+- `contextes/contexteTutoriel.tsx` (nouveau) : `useTutoriel()` — état `step`, `isCompleted`, `isTutorialMode`, `db`, `explicationIndex` ; actions `startTutorial`, `nextStep`, `setStep`, `nextExplication`, `validerAction`, `completeTutorial`, `skipTutorial`, `reloadStep` ; ouverture `tutorial.db` (séparée de la vraie base), insertion du seed en transaction, lecture/écriture `tutorial_completed` via AsyncStorage, sauvegarde reprise par étape
+- `constants/etapesTutoriel.ts` (nouveau) : structure `EtapeTutoriel` (`id`, `screen`, `target`, `title`, `message`, `successCondition`, `explications?[{position, text}]`) + 11 étapes définies + helpers `getEtape`, `getExplication`, `nbExplications`
+- `components/spotlightOverlay.tsx` (nouveau) : trou lumineux cliquable via 4 rectangles bloquants autour du trou (pas de trou dans une vue parente) + masque SVG arrondi en `pointerEvents="none"`, Reanimated v4 avec `withTiming`
+- `components/TutorielEcran.tsx` (nouveau) : bulle + boutons Suivant/Passer (confirmation via `Alert.alert`) + badge « MODE DÉMO » + zone tactile pour explications intermédiaires ; utilise `usePalette()` (couleurs), `useFont()` (polices), `Radius` (bordures) ; styles dans `StyleSheet.create` à part, couleurs dynamiques en styles inline ; `conteneur` en `absoluteFill` (overlay par-dessus tout)
+- `app/_layout.tsx` : `TutorielProvider` injecté dans la chaîne des providers ; `TutorielBootstrapperNav` (démarrage auto `startTutorial()` si `!completed`) et `<TutorielEcran />` rendus à l'intérieur de `TutorielProvider`, conditionnés par `state === 'authenticated'` (plus d'affichage sur la page de login)
+- `tsc --noEmit` : 0 erreur sur tous les fichiers modifiés
+- `eslint` : 0 erreur sur tous les fichiers modifiés
+
+## Reste (phases 5 à 8 du plan)
+- Ajouter `testID` sur les écrans cibles (`tuto-bouton-creer-indisponibilite`, `tuto-bouton-creer-evenement`, etc.) et appeler `validerAction('...')` quand l'action réelle est faite (branchement des 11 étapes)
+- Ajouter les traductions `tuto.*` dans `locales/fr/` et `locales/en/`
+- Bouton « Revoir le tutoriel » dans les réglages (appelle `startTutorial()`)
+- Gestion retour Android / geste retour iOS pendant une étape
+- Accessibilité (lecteur d'écran, contraste des bulles)
+- Tests : premier lancement, reprise après fermeture, bouton « Passer », relecture depuis réglages, vraie base jamais touchée
+
+## Décisions prises
+- `MockMode` non utilisé pour le tuto (base fictive dédiée `tutorial.db`, pas de `contexteMockMode`)
+- `etapesTutoriel.ts` dans `constants/` (pas `contextes/`)
+- `TutorielEcran` en `absoluteFill` pour flotter par-dessus tout (pas dans le flux normal)
+- `isTutorialMode` comme garde unique d'affichage (pas `isLoading` qui fluctue pendant `startTutorial` et causait un flicker)
+
+## Bugs hors sujet (non corrigés, notés)
+- Aucun trouvé dans le périmètre du tutoriel pour l'instant.
+
+## 2026-11-20 — Animations du tutoriel
+- **Fait :** La bulle anime sa position, le masque SVG du spotlight suit maintenant les valeurs Reanimated, et le texte utilise un fondu entrant/sortant au changement d'explication.
+- **Vérifications :** ESLint ciblé sur `components/TutorielEcran.tsx` et `components/spotlightOverlay.tsx` ; `npx tsc --noEmit` passe.
+- **Reste / blocages :** Aucun.
+
+## 2026-11-20 — Position du tutoriel sans transition de route
+- **Fait :** Le changement de `pathname` repositionne immédiatement la bulle et remonte le spotlight sans tween inter-page. La clé de mesure inclut maintenant la route pour éviter de réutiliser une ancienne position.
+- **Vérifications :** ESLint ciblé sur `components/TutorielEcran.tsx` ; `npx tsc --noEmit` passe.
+- **Reste / blocages :** Aucun.
+
+## 2026-11-20 — Animations réservées aux changements d'explication
+- **Fait :** Les positions de la bulle et du spotlight s'animent seulement entre explications d'une même étape. Les mesures tardives et changements d'étape/route sont appliqués directement.
+- **Vérifications :** ESLint ciblé sur les deux composants du tutoriel ; `npx tsc --noEmit` passe.
+- **Reste / blocages :** Aucun.
+
+## 2026-11-21 — Styles de PagesGlissables
+- **Fait :** Les styles statiques sont déclarés hors du composant ; les styles dépendant du contexte et des mesures restent calculés dans le composant. Aucun style n'est défini directement dans le JSX.
+- **Vérifications :** ESLint et TypeScript sont bloqués par des changements locaux préexistants dans `components/pagesGlissables.tsx` : `useRef` appelé dans un `map` et attribut `ref={}` vide.
+- **Reste / blocages :** Corriger ces changements locaux avant de pouvoir valider le composant.
+
+## 2026-11-21 — Règle de séparation des styles React Native
+- **Fait :** La règle de styling du skill distingue maintenant les styles statiques au niveau module des styles dépendant du contexte, des props, de l'état ou du layout, et recommande d'éviter les objets inline dans le JSX.
+- **Vérifications :** Documentation seulement ; aucune vérification nécessaire.
+- **Reste / blocages :** Aucun.
+
+## 2026-11-21 — Consignation et application des décisions
+- **Fait :** Les règles demandent maintenant de consigner dans `docs/DECISIONS.md` les changements de logique et conventions réutilisables, puis de consulter ces décisions lors d'un alignement du code.
+- **Vérifications :** Documentation seulement ; aucune vérification nécessaire.
+- **Reste / blocages :** Aucun.
+## 2026-11-21 - Mesure du spotlight après défilement
+- **Fait :** L'abonnement à l'événement est limité au tutoriel actif, nettoyé à la désactivation ou au changement de cible; les callbacks de mesure obsolètes sont ignorés. Les onglets émettent l'événement à la fin du geste et de l'inertie, et leurs refs sont créées avec `useMemo`.
+- **Vérifications :** `npx eslint components/TutorielEcran.tsx components/pagesGlissables.tsx events/mesureSpotlightEvents.ts` et `npm run typecheck` passent.
+- **Reste / blocages :** Aucun.
+## 2026-11-21 - Repère du spotlight
+- **Fait :** La position de la cible est maintenant exprimée relativement à l'origine mesurée de la vue racine du tutoriel, plutôt que d'appliquer directement les coordonnées fenêtre au calque.
+- **Vérifications :** ESLint ciblé sur `components/TutorielEcran.tsx` et `npm run typecheck` passent.
+- **Reste / blocages :** À confirmer visuellement sur l'écran de création, car aucune exécution sur appareil n'a été effectuée.
+## 2026-11-21 - Mesure après ouverture de create
+- **Fait :** La route `create` émet une nouvelle demande de mesure à la fin de sa transition d'entrée; la fermeture de l'écran n'émet pas de mesure.
+- **Vérifications :** ESLint ciblé sur `app/(tabs)/home/create.tsx` et `npm run typecheck` passent.
+- **Reste / blocages :** À confirmer sur appareil au premier affichage après navigation.
+## 2026-11-21 - Fondu entrant du spotlight
+- **Fait :** L'opacité du voile SVG passe progressivement de 0 à 1 au montage; la découpe et les bloqueurs tactiles ne changent pas.
+- **Vérifications :** ESLint ciblé sur `components/spotlightOverlay.tsx` et `npm run typecheck` passent.
+- **Reste / blocages :** Aucun.
+## 2026-11-21 - Optimisation du fondu du spotlight
+- **Fait :** Le fondu du voile anime maintenant l'opacité d'une vue native qui enveloppe le SVG, plutôt que la propriété SVG elle-même.
+- **Vérifications :** ESLint ciblé sur `components/spotlightOverlay.tsx` et `npm run typecheck` passent.
+- **Reste / blocages :** À valider visuellement; si le lag persiste, profiler les animations de géométrie des bloqueurs et du masque.
+## 2026-11-21 - Étape de sélection de l'onglet indisponibilité
+- **Fait :** Le clic sur l'onglet valide l'étape 2; l'étape 3 cible le formulaire et attend sa création. Les anciens numéros sauvegardés sont migrés vers la nouvelle séquence.
+- **Vérifications :** ESLint ciblé, `npm run typecheck` et parsing JSON des locales FR/EN passent.
+- **Reste / blocages :** À valider en navigation réelle; le swipe ne valide intentionnellement pas l'étape 2.
+## 2026-11-21 - Fondu du voile limité aux changements d'étape et d'écran
+- **Fait :** Le voile ne relance plus son fondu si la cible disparaît puis réapparaît pendant une même étape; l'animation reste active à la première apparition et aux changements de route ou d'étape.
+- **Vérifications :** En attente de lint et du contrôle TypeScript.
+- **Reste / blocages :** À confirmer visuellement en navigation réelle.

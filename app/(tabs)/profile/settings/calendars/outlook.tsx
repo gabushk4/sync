@@ -1,4 +1,4 @@
-import ExternalCalendarForm from '@/components/ExternalCalendarForm';
+import ExternalCalendarForm from '@/components/externalCalendarForm';
 import { useAPI } from '@/contextes/contexteAPI';
 import catcher from '@/functions/catcher';
 import {

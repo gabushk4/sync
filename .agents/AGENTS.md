@@ -1,65 +1,27 @@
-# Règles de travail
+# Règles de travail — `.agents`
 
-## Incertitude
-- Ne devine jamais. Si une information manque (nom de champ, comportement,
-  version d'une librairie), arrête-toi et pose-moi la question.
+## Décisions architecturales (obligatoire)
 
-## Bugs
-- Si tu trouves un bug hors du sujet de la tâche, ne le corrige pas.
-  Ajoute une ligne dans HANDOFF.md (fichier, ligne, description) et continue.
+- **Lire `docs/DECISIONS.md`** avant toute modification ou ajout de fonctionnalité. Les décisions y sont consignées avec contexte, décision et fichiers impactés.
+- Toute nouvelle décision technique doit faire l'objet d'une entrée datée (`YYYY-MM-DD`) dans `docs/DECISIONS.md`.
 
-## Gros fichiers
-- Si un fichier dépasse 300 lignes, lis-le par blocs et traite-le
-  bloc par bloc. N'assume jamais avoir lu un fichier que tu n'as pas
-  lu en entier.
+## Couleurs et polices (obligatoire)
 
-## Suivi (écris au fur et à mesure, pas à la fin)
-- Sur chaque fichiers modifier prends l'habitude de run eslint et de corriger les erreurs Lint
-- Maintiens HANDOFF.md : ce qui est fait, ce qui reste, ce que tu
-  n'as pas pu faire et pourquoi.
-- Si tu dois t'arrêter avant d'avoir fini, termine HANDOFF.md avec
-  les instructions pour qu'un autre agent reprenne.
-- Les agents APPENDENT au HANDOFF, ne le réécrivent jamais.
+- **Interdit** d'utiliser des couleurs codées en dur (ex: `#6366f1`, `#10b981`, `#e2e8f0`, `#ffffff`, etc.) dans un composant.
+- Utiliser **`usePalette()`** depuis `@/contextes/contextePalette` pour toutes les couleurs de composants, textes, fonds, bordures, boutons, etc.
+- Utiliser **`useFont()`** depuis `@/contextes/contexteFont` pour toutes les familles de polices (ex: `fonts.title`, `fonts.body`).
+- Les couleurs disponibles dans `colors` : `primary`, `secondary`, `background`, `card`, `text`, `border`, `error`, `success`, `muted`, `warning`, `disponible`, `indisponible`, `groupe`, `or`, `notification`.
 
-## Expo
-- Version du projet : voir package.json. Pour toute API Expo, utilise
-  @docs ou demande-moi. Ne te fie pas à ta mémoire.
+Exemple :
+```tsx
+const { colors } = usePalette();
+const { fonts } = useFont();
 
-## Structure du projet
-- Dossier racine du projet: ~/Desktop/sync
-- Le dossier est structurer comme tel:
-    .
-    ├── abstractions -> Couche d'abstraction par dessus des composants React-Native. (Purement pour le style ou pour DRY)
-    ├── app
-    │   ├── (auth)
-    │   ├── (modals)
-    │   └── (tabs)
-    │       ├── feed
-    │       │   └── notifications
-    │       ├── home
-    │       │   ├── details
-    │       │   └── edit
-    │       ├── inbox
-    │       └── profile
-    │           └── settings
-    ├── assets
-    │   ├── fonts
-    │   ├── gifs
-    │   ├── icones
-    │   └── images
-    ├── components
-    │   └── __tests__
-    ├── constants
-    ├── contextes
-    ├── docs
-    ├── events
-    ├── functions
-    ├── hooks
-    ├── locales
-    │   ├── en
-    │   └── fr
-    ├── scripts
-    ├── svgs
-    ├── tests
-    ├── themes
-    └── types
+// ✅ Correct
+<View style={{ backgroundColor: colors.card }} />
+<Text style={{ color: colors.text, fontFamily: fonts.title }} />
+
+// ❌ Interdit
+<View style={{ backgroundColor: '#6366f1' }} />
+<Text style={{ color: '#ffffff' }} />
+```

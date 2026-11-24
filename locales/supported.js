@@ -5,6 +5,7 @@ import {
     SUPPORTED_LANGUAGES,
     SUPPORTED_LANGUAGE_CODES,
 } from './config';
+import i18n from 'i18next'
 
 /**
  * Compares the device locales against supported ones and returns the best match.

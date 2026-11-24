@@ -7,7 +7,6 @@ import { useFont } from '@/contextes/contexteFont'
 import { useConversations } from '@/contextes/contexteConversations'
 import { useRouteAbs } from '@/contextes/contexteRoute'
 import { useNavFab } from '@/hooks/useNavFAB'
-import Icon from '@react-native-vector-icons/ionicons'
 
 import ConversationItem from '@/components/conversationItem'
 import NotificationItem from '@/components/notificationItem'
@@ -15,6 +14,7 @@ import { Notification, useNotifications } from '@/contextes/contexteNotification
 import { useTranslation } from 'react-i18next'
 import { Conversation } from '@/types/messaging'
 import catcher from '@/functions/catcher'
+import NewChatIcon from '@/svgs/newChat'
 
 /**
  * Story #1 (Isma) : "En tant que membre, j'aimerais pouvoir envoyer un
@@ -56,10 +56,7 @@ export default function Inbox(){
         params: { type: 'message' },
         // a chat bubble with a + inside: "new message"
         icon: (
-            <View style={styles.iconeNouveauMessage}>
-                <Icon name="chatbubble-outline" size={30} color={colors.text} />
-                <Icon name="add" size={18} color={colors.text} style={styles.plusDansBulle} />
-            </View>
+            <NewChatIcon/>
         ),
     })
 
