@@ -34,6 +34,10 @@
 		"errorTitle": "Statut non modifié",
 		"errorMessage": "Impossible d’enregistrer votre statut de disponibilité."
 	},
+	"blockFriend": {
+		"block": "Bloquer",
+		"unblock": "Débloquer"
+	},
 	"memberIdLabel": "identifiant du membre",
 	"admin": {
 		"title": "Dashboard admin",
@@ -168,6 +172,7 @@
 	"errors": {
 		"widgetsLoadFailed": "erreur lors du chargement des widgets",
 		"closeFriendUpdateFailed": "impossible de modifier le statut d'ami proche",
+		"friendBlockUpdateFailed": "impossible de modifier le blocage de cet ami",
 		"updateFailed": "impossible de modifier le profil",
 		"loadFriendProfileFailed": "impossible de charger le profil de cet ami",
 		"friendProfileUnavailable": "ce profil est indisponible"

@@ -35,6 +35,7 @@ export type FriendAPIRes = {
     pseudo: string,
     // GET /amis sends the photo as `fp_url` (see sync_api routes/amis.js), not `pfp_url`.
     fp_url: string | null
+    bloque_par_moi?: boolean
 }
 
 function EventListAmiContent() {
@@ -102,7 +103,7 @@ function EventListAmiContent() {
                     temps_amitie: amitie
                 }
             })
-            setAmis(data)
+            setAmis(select ? data.filter((ami: FriendAPIRes) => !ami.bloque_par_moi) : data)
         } catch (error) {
             catcher(error, t('errors.loadFailed'))
         }

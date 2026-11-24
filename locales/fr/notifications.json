@@ -23,6 +23,7 @@
 		"acceptee": "acceptée",
 		"refusee": "refusée",
 		"en_attente": "en attente",
+		"expiree": "expirée",
 		"annulee": "annulée"
 	},
 	"vote": {
