@@ -43,3 +43,6 @@ yarn-error.*
 # test coverage
 coverage/
  
+
+# rules
+.agents/skills/*/rules/*
