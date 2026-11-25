@@ -1,10 +1,13 @@
 import Container from "@/abstractions/container";
+import ToastAbs from "@/abstractions/toastAbs";
 
 import Separator, { isLast } from "@/components/listSeparator";
 
+import { useAPI } from "@/contextes/contexteAPI";
 import { useFont } from "@/contextes/contexteFont";
 import { usePalette } from "@/contextes/contextePalette";
 import { useSettings } from "@/contextes/contexteSettings";
+import { useTutoriel } from "@/contextes/contexteTutoriel";
 
 import { getAvailableTimezones } from "@/functions/timezones";
 
@@ -12,10 +15,13 @@ import Setting from "@/types/settings";
 
 import Radius from "@/constants/Radius";
 
+import SelecteurTheme from "@/components/selecteurTheme";
 import ServerStatus from "@/components/serverStatus";
 import SettingRow from "@/components/settingsRow";
-import { DEFAULT_HUE } from "@/constants/Colors";
+import couleurTeinte from "@/functions/couleurTeinte";
+import { toastTypes } from "@/constants/toastConfig";
 import log from "@/functions/log";
+import catcher from "@/functions/catcher";
 import * as Camera from 'expo-camera';
 import Constants from 'expo-constants';
 import * as Linking from 'expo-linking';
@@ -26,8 +32,9 @@ import React, { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 
-const ABOUT_URL = 'https://sync.app/about';
-const PRIVACY_URL = 'https://app.notion.com/p/syncapp/Politique-de-confidentialit-sync-28b05fccf55c80638d84ce250bccadd1';
+const ABOUT_URL = 'https://www.syncalkemy.ca/';
+const PRIVACY_URL = 'https://www.syncalkemy.ca/confidentialite.html';
+const USAGE_CONTRACT = 'https://www.syncalkemy.ca/contrat_dutilisation.html'
 const MINOR_SEC_URL = 'https://app.notion.com/p/syncapp/Normes-li-s-a-la-s-curit-des-mineurs-2ae05fccf55c80909cc7f3783d0d3953' 
 
 
@@ -39,9 +46,10 @@ type Permissions = {
 
 /**
  * A settings screen meant to let the user customize his app experience. 
- * Settings available: 
- *      timezone 
- *      language (fr, en) 
+ * Settings available:
+ *      timezone
+ *      language (fr, en)
+ *      theme (its color in a circle, a color wheel in a modal — Philip, user story 49)
  *      OS permissions ( location, camera, notifications )      
  *      Asking for datas of the account stored in the system
  *      Asking for deletion of the account from the system
@@ -54,10 +62,41 @@ export default function Settings(){
     const {t} = useTranslation('settings')
     const { settings: values, hydrated, setSetting } = useSettings()
     const {hue, setHue} = usePalette()
+    const { rejouerTutoriel } = useTutoriel()
 
     const [permissions, setPermissions] = useState<Permissions>()
+    const { api } = useAPI()
+    // Show message text in push notifications (server side, GET/PATCH /notifications/preferences).
+    // undefined until loaded.
+    const [apercuMessages, setApercuMessages] = useState<boolean>()
+
+    const changerApercuMessages = async (actif: boolean) => {
+        setApercuMessages(actif)
+        try {
+            await api.patch('/notifications/preferences', { apercu_messages: actif })
+        } catch (error) {
+            setApercuMessages(!actif)
+            catcher(error, t('messagePreviewFailed'))
+        }
+    }
     const [, requestCameraPermission, getCameraPermission] = Camera.useCameraPermissions()
-    const [localHue, setLocalHue] = useState<number>(hue)
+    // The theme's color wheel (modal) is open.
+    const [selecteurThemeOuvert, setSelecteurThemeOuvert] = useState(false)
+
+    /**
+     * Leaving the color wheel: the picked hue becomes the app's theme (palette, kept on
+     * the device) — as the numeric field it replaces did.
+     *
+     * @author Philip — user story 49 (theme color wheel)
+     * @param {number} teinte - Hue (0-359).
+     * @returns {void}
+     */
+    const appliquerTeinte = (teinte: number) => {
+        setSelecteurThemeOuvert(false)
+        if (teinte === hue) return
+        setHue(teinte)
+        setSetting('theme', teinte)
+    }
 
     const timezones = getAvailableTimezones()
 
@@ -65,6 +104,15 @@ export default function Settings(){
         log("opening settings")
         Linking.openSettings()
     }
+
+    const replayTutorial = useCallback(async () => {
+        try {
+            await rejouerTutoriel()
+        } catch (error) {
+            console.warn("Impossible de rejouer le tutoriel", error)
+            ToastAbs.show({ type: toastTypes.error, text2: t('replayTutorialFailed') })
+        }
+    }, [rejouerTutoriel, t])
 
     const requestCamera = async (enabled: boolean) => {
         log("enabled", enabled)
@@ -76,7 +124,6 @@ export default function Settings(){
             openPermissionSettings()
         }
         await requestCameraPermission()
-        await getPermissions()
     }
 
     const requestLocation = async (enabled: boolean) => {
@@ -88,7 +135,6 @@ export default function Settings(){
             openPermissionSettings()
         }
         await Location.requestForegroundPermissionsAsync()
-        await getPermissions()
     }
 
     const requestNotifications = async (enabled: boolean) => {
@@ -100,7 +146,6 @@ export default function Settings(){
             openPermissionSettings()
         }
         await Notifications.requestPermissionsAsync()
-        await getPermissions()
     }
 
     const settings: Setting[] = [
@@ -124,26 +169,19 @@ export default function Settings(){
             ],
             onValueChange: value => setSetting('language', value as 'en' | 'fr'),
         },
-        //TODO: color picker instead on HSL color base
+        // The theme's hue: its color in a circle, the color wheel in a modal (Philip — user story 49).
         {
             id: 'theme',
             titleKey: 'theme',
-            type: 'input',
-            keyboardType: 'numeric',
-            value: localHue.toString(),
-            setDefault: () => {
-                setHue(DEFAULT_HUE)
-                setLocalHue(DEFAULT_HUE)
-            },
-            onBlur(e) {
-                const newHue = Number(localHue) % 360
-                setHue(newHue)
-                setLocalHue(newHue)
-                setSetting('theme', newHue)
-            },
-            onChangeText(text) {
-                setLocalHue(Number(text))                
-            }
+            type: 'color',
+            value: couleurTeinte(hue),
+            onPress: () => setSelecteurThemeOuvert(true),
+        },
+        {
+            id: 'replayTutorial',
+            titleKey: 'replayTutorial',
+            type: 'link',
+            onPress: replayTutorial,
         },
         {
             id: 'imports',
@@ -202,6 +240,27 @@ export default function Settings(){
             ],
         },
         {
+            id: 'privacy',
+            titleKey: 'privacy',
+            type: 'section',
+            settings: [
+                {
+                    id: 'messagePreview',
+                    titleKey: 'messagePreview',
+                    type: 'toggle',
+                    value: apercuMessages ?? true,
+                    disabled: apercuMessages === undefined,
+                    onValueChange: changerApercuMessages,
+                },
+            ],
+        },
+        {
+            id: 'sendFeedback',
+            titleKey: 'sendFeedback',
+            type: 'link',
+            href: { pathname: '/(modals)/reportBug', params: { page: 'feedback' } },
+        },
+        {
             id: 'exportData',
             titleKey: 'exportData',
             type: 'link',
@@ -228,30 +287,34 @@ export default function Settings(){
         },
     ]
 
-    /**
-     * Gets and sets the app's permissions from the OS itself. Those permissions are displayed in the settings screen.
-     */
-    const getPermissions = async () => {
-        const [camera, notifications, location] = await Promise.all([
-            getCameraPermission(),
-            Notifications.getPermissionsAsync(),
-            Location.getForegroundPermissionsAsync(),
-        ]);
+    const onFocus = useCallback(() => {
+        const fetchPermissions = async () => {
+            const [camera, notifications, location] = await Promise.all([
+                getCameraPermission(),
+                Notifications.getPermissionsAsync(),
+                Location.getForegroundPermissionsAsync(),
+            ]);
 
-        setPermissions({
-            camera: { granted: camera.granted, canAskAgain: camera.canAskAgain },
-            location: { granted: location.granted, canAskAgain: location.canAskAgain },
-            notifications: {
-                granted: notifications.granted ||
-                    notifications.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL,
-                canAskAgain: notifications.canAskAgain,
-            },
-        })
-    }
+            setPermissions({
+                camera: { granted: camera.granted, canAskAgain: camera.canAskAgain },
+                location: { granted: location.granted, canAskAgain: location.canAskAgain },
+                notifications: {
+                    granted:
+                        notifications.granted ||
+                        notifications.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL,
+                    canAskAgain: notifications.canAskAgain,
+                },
+            });
+        };
 
-    useFocusEffect(useCallback(() => {
-        getPermissions()
-    }, []))
+        fetchPermissions();
+
+        api.get('/notifications/preferences')
+            .then(({ data }) => setApercuMessages(data?.apercu_messages !== false))
+            .catch((error) => log('préférences de notifications', error));
+    }, [api, getCameraPermission]);
+
+    useFocusEffect(onFocus);
 
     const s = StyleSheet.create({
         screen: {
@@ -337,8 +400,8 @@ export default function Settings(){
                             <Separator
                                 show={
                                     !isLast(settings, i)
-                                    && (settings[i + 1].type != 'section' 
-                                        && setting.type != 'section'
+                                    && (settings[i + 1].type !== 'section' 
+                                        && setting.type !== 'section'
                                     )
                                 }
                             />
@@ -349,6 +412,7 @@ export default function Settings(){
                     {[
                         { id: 'about', titleKey: 'about', href: ABOUT_URL },
                         { id: 'privacyPolicy', titleKey: 'privacyPolicy', href: PRIVACY_URL },
+                        { id: 'usageContract', titleKey: 'usageContract', href: USAGE_CONTRACT },
                         { id: 'minorSecurity', titleKey: 'minorSecurity', href: MINOR_SEC_URL },
                     ].map((setting, index, links) => (
                         <React.Fragment key={setting.id}>
@@ -364,7 +428,13 @@ export default function Settings(){
                     </Text>
                 </View>
             </ScrollView>
-            
+            {selecteurThemeOuvert && (
+                <SelecteurTheme
+                    teinteInitiale={hue}
+                    onAppliquer={appliquerTeinte}
+                    onAnnuler={() => setSelecteurThemeOuvert(false)}
+                />
+            )}
         </Container>
     )
 }

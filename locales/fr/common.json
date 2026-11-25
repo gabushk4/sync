@@ -39,6 +39,7 @@
 		"warningWithoutMessage": "un avertissement sans message est survenu"
 	},
 	"bugReport": {
+		"tab": "Signaler un bug",
 		"title": "Signaler un bug",
 		"instructions": "Décris ce qui s'est passé et les étapes pour reproduire le problème.",
 		"when": "Quand j’ai fait",
@@ -71,6 +72,22 @@
 		"successMessage": "Les développeurs pourront examiner ce problème.",
 		"submitFailed": "impossible d'envoyer le signalement"
 	},
+	"feedback": {
+		"tab": "Envoyer un feedback",
+		"title": "Envoyer un feedback",
+		"prompt": "Comment vous sentez-vous par rapport au produit ?",
+		"placeholder": "Partagez une idée, une amélioration ou votre expérience…",
+		"sending": "Envoi…",
+		"successTitle": "Merci pour votre feedback",
+		"successMessage": "Votre message a été transmis aux développeurs.",
+		"submitFailed": "Impossible d'envoyer le feedback"
+	},
+	"shakeReport": {
+		"title": "Signaler un bug ?",
+		"message": "Voulez-vous vraiment ouvrir le formulaire de signalement ?",
+		"cancel": "Annuler",
+		"confirm": "Signaler"
+	},
 	"tabs": {
 		"home": "sync",
 		"feed": "fil",
@@ -80,10 +97,32 @@
 		"profile": "profil",
 		"profileTitle": "profile"
 	},
-	"demo": {
-		"modalTitle": "Modale",
-		"openCode": "Ouvre le code de cet écran :",
-		"changeText": "Modifie le texte, enregistre le fichier et l'application se mettra automatiquement à jour.",
-		"reloadHelp": "Appuie ici si l'application ne se met pas automatiquement à jour après une modification"
+	"tuto": {
+		"bouton_commencer": "Commencer",
+		"bouton_suivant": "Suivant",
+		"bouton_precedent": "Précédent",
+		"slide1": {
+			"titre": "Bienvenue sur Sync!",
+			"message": "Un réseau social qui t'aide à t'organiser avec tes proches. Plus de scroll infini qui t'isoles, voici un vrai réseau SOCIAL."
+		},
+		"slide2": {
+			"titre": "Timelines superposées",
+			"message": "Tes disponibilités et celles de tes amis s'affichent ensemble pour trouver vos créneaux communs instantanément."
+		},
+		"slide3": {
+			"titre": "Le bouton d'action rapide",
+			"message": "Sa fonction change selon l'écran:",
+			"fab": {
+				"home": "Sur l’écran d’accueil",
+				"messaging": "Sur l’écran de messagerie",
+				"createEdit": "Sur l’écran de création/modification",
+				"details": "Sur l’écran des détails",
+				"profile": "Sur l’écran de profil"
+			}
+		},
+		"slide4": {
+			"titre": "Ta liste de premiers pas",
+			"message": "Elle s'affiche dans ton profil. Chaque tâche est cliquable et te dirige vers l'écran concerné."
+		}
 	}
 }

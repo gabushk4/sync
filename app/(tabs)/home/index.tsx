@@ -1,89 +1,83 @@
-import { useAPI } from '@/contextes/contexteAPI';
-import { useGestionScroll } from '@/contextes/contexteGestionListes';
-import { usePalette } from '@/contextes/contextePalette';
+//packages imports
 
-import BarreRecherche from '@/components/barreRecherche';
-import normaliserRecherche from '@/functions/normaliserRecherche';
-import ouvrirDetailsEvenement from '@/functions/ouvrirDetailsEvenement';
-import { useNavFab } from '@/hooks/useNavFAB';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { router, useFocusEffect } from 'expo-router';
 import { DateTime } from 'luxon';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import Animated, { cancelAnimation, scrollTo, useAnimatedReaction, useAnimatedRef, useAnimatedStyle, useSharedValue, withDecay, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
-
-import { Dimensions, Easing, Image, Keyboard, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
+import { AppState,
+    Dimensions, Easing, Image, Keyboard,
+    StyleSheet, Text, TouchableOpacity, useColorScheme,
+    View
+} from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import Animated, {
+    cancelAnimation, scrollTo, useAnimatedReaction,
+    useAnimatedRef, useAnimatedStyle, useSharedValue, withDecay,
+    withRepeat, withSpring, withTiming
+} from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 
+//hooks
+import { useNavFab } from '@/hooks/useNavFAB';
+
+//functions
+import AutoRefresh from '@/functions/autoRefresh';
 import { getCommonFreeSlotsSurPlage } from '@/functions/availability';
 import catcher from '@/functions/catcher';
 import { convertUTCToLocal } from '@/functions/convertirUTCenLocal';
+import { estJourFerie, formaterEvenementsMembre, joursFeriesDuJour, paramsPlage } from '@/functions/evenementsMembre';
+import { debutCreationPourJour } from '@/functions/jourCreation';
 import log from '@/functions/log';
+import ouvrirDetailsEvenement from '@/functions/ouvrirDetailsEvenement';
 import { heuresVersDate, positionHeures } from '@/functions/positionTimeline';
 
-
+//components
+import BarreRecherche from '@/components/barreRecherche';
 import EventsList, { RETRAIT_RANGEE } from '@/components/eventsList';
-import ProfilPic from '@/components/pfp';
+import PfpWithAvailability from '@/components/pfpWithAvailability';
 import Spinner from '@/components/spinner';
 import Timeline from '@/components/timeline';
 import TrousHoraire, { PlageChoisie } from '@/components/trousHoraire';
+
+//contexts
+import { useAPI } from '@/contextes/contexteAPI';
 import { useFont } from '@/contextes/contexteFont';
+import { useGestionScroll } from '@/contextes/contexteGestionListes';
 import { useMembre } from '@/contextes/contexteMembre';
+import { usePalette } from '@/contextes/contextePalette';
 import { useTimeline } from '@/contextes/contexteTimeline';
 
+//constants
+import { withSpringConfig } from '@/constants/ReanimatedConfs';
+import { homeIds } from '@/constants/tutorial';
+import { JOURS_FENETRE, LIST_HEIGHT, WIDTH_COL } from '@/constants/Timeline'
 
 //dummy datas
 //import {seedData} from '@/seed'
-import { withSpringConfig } from '@/constants/ReanimatedConfs';
+
 import { calendrierEvents } from '@/events/calendrierEvents';
+import { creationEvents, PlageCreee } from '@/events/creationEvents';
 import { rechercheAmiEvents } from '@/events/rechercheAmiEvents';
-import AutoRefresh from '@/functions/autoRefresh';
-import { convertirTimestampHeure } from '@/functions/convertirTimestamp';
-import { estJourFerie, formaterEvenementsMembre, joursFeriesDuJour, paramsPlage } from '@/functions/evenementsMembre';
-import { debutCreationPourJour, estJourPasse } from '@/functions/jourCreation';
+
 import { Friend } from '@/types/calendar';
-import { scheduleOnRN } from 'react-native-worklets';
+import { HeureMaintenant, LigneMaintenant } from '@/components/home/indicateurMaintenant';
+import OngletAujourdhui from '@/components/home/ongletAujourdhui';
+import ListeAmis from '@/components/home/listeAmis'
+
+
 
 //Constants
-const WIDTH_COL = 80;
 const HEIGHT_BOT_BAR = 80;
 const HEIGHT_DATE = 56;
 const HEIGHT_TIMELINE = 32;
-// Width of the current time's label in the hours' row ("14:05").
-const LARGEUR_HEURE_MAINTENANT = 44;
 const AnimatedStyleMinVal = 0.1
-const LIST_HEIGHT = 104
-// Height of the floating back-to-now button.
-const HAUTEUR_RETOUR = 34
+/** Friends' rows loaded at a time: 10 more each time the rows are scrolled to the bottom */
+const AMIS_PAR_PAGE = 10
 // Max events per request in the month view (the API defaults to 20, too few for a month).
 
-
-// "Back to today" tab in the bottom bar (against the screen's edge): width and
-// corner radius.
-const LARGEUR_ONGLET = 52
-const RAYON_ONGLET = 10
-// Limite volontaire : les disponibilités communes ne sont calculées que dans
-// la fenêtre déjà chargée. Exemple : fenêtre du 14 au 20 inclus, même si l'on
-// consulte le 16; sa borne API exclusive est le 21 à 00:00. On ne charge donc
-// pas une nouvelle semaine depuis chaque jour affiché.
-const JOURS_FENETRE = 7
-const { width: WIN_W, height: WIN_H } = Dimensions.get('window')
-
-/**
- * Short month name of `dt` for the "back to today" tab ("oct", "janv"), without
- * the abbreviation dot. Falls back to the first letters of the full name ('MMMM',
- * as in the calendar) if the short form isn't available.
- *
- * @author Philip — rectification for a more conventional display
- * @param {DateTime} dt
- * @returns {string}
- */
-function abregerMois(dt: DateTime): string {
-  const court = dt.toFormat('MMM')
-  if (court && !court.includes('null')) return court.replace(/\.$/, '')
-  return dt.toFormat('MMMM').slice(0, 4)
-}
+const JOURS_GLISSEMENT_FENETRE = 3
+const { width: WIN_W } = Dimensions.get('window')
 
 /**
  * Home screen. Shows the displayed day as horizontal timeline rows: one per
@@ -110,19 +104,13 @@ export default function Home() {
   const { fonts } = useFont()
   const { api } = useAPI()
   const colorScheme = useColorScheme()
-  const { initialiserOffset, definirOffsetMaintenant, afficherRetourMaintenant, onPan, offset: offsetX, LEFT_GO_TO_AFTER, clampOffset, maxOffset } = useGestionScroll()
+  const { initialiserOffset, definirOffsetMaintenant, afficherRetourMaintenant, onPan, offset: offsetX, clampOffset, maxOffset } = useGestionScroll()
   const { pxHeures, L_HEURES } = useTimeline();
   const { membre } = useMembre()
 
   const icones = {
     arrowR:colorScheme === 'dark'?require('@/assets/icones/fleche-d-dark-icon.png'):require('@/assets/icones/fleche-d-light-icon.png'),
-    arrowL:colorScheme === 'dark'?require('@/assets/icones/fleche-g-dark-icon.png'):require('@/assets/icones/fleche-g-light-icon.png'),
-    loupe:colorScheme === 'dark'?require('@/assets/icones/loupe-dark-icon.png'):require('@/assets/icones/loupe-light-icon.png'),
-    notifications:colorScheme === 'dark'?require('@/assets/icones/notif-dark-icon.png'):require('@/assets/icones/notif-light-icon.png'),
-    maintenant:colorScheme === 'dark'?require('@/assets/icones/horloge-dark-icon.png'):require('@/assets/icones/horloge-light-icon.png'),
-    deconnecte:colorScheme === 'dark'?require('@/assets/icones/dark-deconnecte-icon.png'):require('@/assets/icones/light-deconnecte-icon.png'),
-    rafraichir: colorScheme === 'dark' ? require('@/assets/icones/rafraichir-dark-icon.png') : require('@/assets/icones/rafraichir-light-icon.png'),
-    ajouterAmi:colorScheme === 'dark'?require('@/assets/icones/ajouter-ami-dark-icon.png'):require('@/assets/icones/ajouter-ami-dark-icon.png'),
+    arrowL:colorScheme === 'dark'?require('@/assets/icones/fleche-g-dark-icon.png'):require('@/assets/icones/fleche-g-light-icon.png'),    
     calendrier: colorScheme === 'dark' ? require('@/assets/icones/calendrier-dark-icon.png') : require('@/assets/icones/calendrier-light-icon.png'),
   }
   
@@ -131,9 +119,7 @@ export default function Home() {
   const friendsEventsRefresh = useRef<AutoRefresh>(null)
   const userEventsRefresh = useRef<AutoRefresh>(null)
 
-  //Sates
-  const [tempsClassement, setTempsClassement] = useState(() => DateTime.now())
-  const [friends, setFriends] = useState<Array<any>>([])
+  const [friends, setFriends] = useState<any[]>([])
 
   // ── Friend search (user story 22, Philip) ──
   // The magnifier left of the hours opens a search bar over the timeline; the
@@ -145,14 +131,20 @@ export default function Home() {
   const [texteRecherche, setTexteRecherche] = useState('')
   // The search the friends' requests use (the text, trimmed).
   const rechercheRef = useRef('')
+  // Friends asked for (10, 20, 30...): the API sends that many rows and whether there are
+  // more (plus_amis). The whole list is asked again each time, so the regular refresh
+  // keeps every loaded row up to date.
+  const nbAmisDemandesRef = useRef(AMIS_PAR_PAGE)
+  const plusAmisRef = useRef(false)
+  const chargementPlusRef = useRef(false)
+  const [chargementPlusAmis, setChargementPlusAmis] = useState(false)
+  // rows loaded, read on the UI thread (see the reaction on offsetY)
+  const nbAmisCharges = useSharedValue(0)
   // The search the last friends' answer was for: "no result" waits for it.
   const [rechercheRepondue, setRechercheRepondue] = useState('')
   // Every friend (last answer without a search): shown again at once on closing.
   const amisSansRechercheRef = useRef<any[] | null>(null)
 
-  // Rows shown: the loaded friends whose pseudo contains the typed text (case and
-  // accents ignored, like the API), so each letter filters right away.
-  const motifRecherche = normaliserRecherche(texteRecherche)
   /**
    * Params of the friends' request: the loaded window, plus the search if any.
    *
@@ -162,6 +154,7 @@ export default function Home() {
    */
   const paramsAmis = (debut: DateTime) => ({
     ...paramsPlage(debut, debut.plus({ days: JOURS_FENETRE })),
+    limiteAmi: nbAmisDemandesRef.current,
     ...(rechercheRef.current ? { recherche: rechercheRef.current } : {}),
   })
 
@@ -183,6 +176,8 @@ export default function Home() {
     const recherche = texte.trim()
     if (recherche === rechercheRef.current) return
     rechercheRef.current = recherche
+    // a new search starts from its first 10 friends again
+    nbAmisDemandesRef.current = AMIS_PAR_PAGE
     friendsEventsRefresh.current?.setParams(paramsAmis(windowStartRef.current))
   }
 
@@ -218,7 +213,7 @@ export default function Home() {
     if (rechercheRef.current && amisSansRechercheRef.current) setFriends(amisSansRechercheRef.current)
     appliquerRecherche('')
   }
-  const [userEvents, setUserEvents] = useState<Array<any>>([])
+  const [userEvents, setUserEvents] = useState<any[]>([])
   const [todayDateTime, setTodayDateTime] = useState<DateTime>()
   // Forward scroll changes to JS only when the visible calendar day changes or
   // the window itself is rebased, never on every animation frame.
@@ -240,6 +235,9 @@ export default function Home() {
   // back to this screen keeps it instead of resetting to today.
   const jourAfficheRef = useRef<DateTime | undefined>(undefined)
   useEffect(() => { jourAfficheRef.current = todayDateTime }, [todayDateTime])
+  const retourAujourdhuiAuFocusRef = useRef(false)
+  const appEnArrierePlanRef = useRef(false)
+  const retourMaintenantRef = useRef<() => void>(() => {})
   // The horizontal offset is shared by every timeline of the app (GestionScrollProvider):
   // the sliding window only follows it while this screen is focused, and its last
   // value here is put back on return. Otherwise another screen's one-day timeline
@@ -298,33 +296,6 @@ export default function Home() {
     offsetX.set(offset)
   }
 
-  // ── Current time line ──
-  // Drawn inside every row (and its time in the hours' row), at the same place as an
-  // event at this time would be (positionHeures): it stays on that time while the rows
-  // scroll. Moved every 30 s (about a pixel).
-  const [instantCourant, setInstantCourant] = useState(() => DateTime.now())
-  useEffect(() => {
-    const minuterie = setInterval(() => setInstantCourant(DateTime.now()), 30_000)
-    return () => clearInterval(minuterie)
-  }, [])
-  // One line over every row (full height, no gaps between rows): a see-through strip
-  // scrolled exactly like the rows (scrollTo from the shared offset, see EventsList),
-  // the line at the current time in it.
-  const ligneMaintenantRef = useAnimatedRef<Animated.ScrollView>()
-  useAnimatedReaction(
-    () => offsetX.get(),
-    (offset) => scrollTo(ligneMaintenantRef, offset, 0, false)
-  )
-  const debutFenetreJour = windowStart.startOf('day')
-  const maintenantVisible = instantCourant >= debutFenetreJour && instantCourant < debutFenetreJour.plus({ days: JOURS_FENETRE })
-  const xMaintenant = positionHeures(instantCourant, windowStart) * (pxHeures + L_HEURES)
-
-  // Refresh the proximity tie-breaker as upcoming slots get closer or pass.
-  useEffect(() => {
-    const timer = setInterval(() => setTempsClassement(DateTime.now()), 60_000)
-    return () => clearInterval(timer)
-  }, [])
-
   // Holidays (imported, see estJourFerie) are shown under the date in the bottom bar,
   // but they don't occupy the day: no block on the timeline, no "fully booked" card,
   // and they don't remove common free slots.
@@ -359,42 +330,16 @@ export default function Home() {
   // loaded. A fully booked selected day must not hide availability on the other
   // six days of the planning window.
   const dispoCommunesPossibles = evenementsMembreAJour && evenementsAmisAJour
+  
   const disponibilitesAmis = useMemo(() => friends.map((ami) => ({
     ami,
-    commonFreeSlots: dispoCommunesPossibles
+    commonFreeSlots: dispoCommunesPossibles && !ami.bloque_par_moi
       ? getCommonFreeSlotsSurPlage(evenementsHoraire, ami.evenements, windowStart, JOURS_FENETRE)
       : [],
   })), [friends, dispoCommunesPossibles, evenementsHoraire, windowStart])
-  const amisAvecDisponibilites = useMemo(() => {
-    const maintenant = tempsClassement
-    return disponibilitesAmis.map(({ ami, commonFreeSlots }) => {
-      const aVenir: any[] = commonFreeSlots.filter((slot: any) => !slot.passe && slot.end > maintenant)
-      const minutesCommunes = aVenir.reduce((total: number, slot: any) => {
-        const debutUtile = slot.start > maintenant ? slot.start : maintenant
-        return total + Math.max(0, slot.end.diff(debutUtile, 'minutes').minutes)
-      }, 0)
-      const prochaineDisponibilite = aVenir.length > 0
-        ? Math.max(0, aVenir[0].start.diff(maintenant, 'minutes').minutes)
-        : Number.POSITIVE_INFINITY
-      return { ami, commonFreeSlots, minutesCommunes, prochaineDisponibilite }
-    }).sort((a, b) =>
-      b.minutesCommunes - a.minutesCommunes
-      || a.prochaineDisponibilite - b.prochaineDisponibilite
-      || String(a.ami.pseudo ?? '').localeCompare(String(b.ami.pseudo ?? ''))
-    )
-  }, [disponibilitesAmis, tempsClassement])
-  // Keep the availability ranking in the rendered list, then apply the current
-  // search without changing that order.
-  const amisAffiches = useMemo(() => {
-    const classes = rechercheOuverte && motifRecherche
-      ? amisAvecDisponibilites.filter(({ ami }) => normaliserRecherche(ami.pseudo ?? '').includes(motifRecherche))
-      : amisAvecDisponibilites
-    return classes
-  }, [amisAvecDisponibilites, rechercheOuverte, motifRecherche])
-  const aucunResultat = rechercheOuverte && !!motifRecherche && amisAffiches.length === 0
-    && rechercheRepondue === texteRecherche.trim()
-  const [chargementEchec, setChargementEchec] = useState(false)
-  const [chargementEvenements, setChargementEvenements] = useState(false)
+
+  const [, setChargementEchec] = useState(false)
+  const [chargementEvenements] = useState(false)
   // Pre-fills the create screen with the day currently displayed, at the suggested
   // hour (see debutCreationPourJour).
   const debutCreation = todayDateTime && debutCreationPourJour(todayDateTime)
@@ -416,79 +361,6 @@ export default function Home() {
       : withTiming(1, { duration: 500 }),
   }));
 
-  // "Back to today" tab in the bottom bar (replaces the floating arrows that sat on
-  // the timeline). It keeps their behaviour: shown when now isn't on screen (another
-  // day, or today scrolled away from the current hour), on the side where now is —
-  // right when now is later (a past day), left when now is earlier (a future day) —
-  // springing from one edge to the other and fading in / out.
-  // jourRelatif: -1 past day, 0 today, 1 future day.
-  const jourRelatif = useSharedValue(0)
-  useEffect(() => {
-    if (!todayDateTime) return
-    const aujourdhui = DateTime.now().startOf('day')
-    jourRelatif.set(todayDateTime < aujourdhui ? -1 : todayDateTime > aujourdhui ? 1 : 0)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [todayDateTime])
-
-  // Mirrors the tab's visibility for touches (a faded-out tab mustn't catch taps).
-  const [ongletVisible, setOngletVisible] = useState(false)
-  // Current time shown in the tab (see texteOnglet).
-  const [maintenantOnglet, setMaintenantOnglet] = useState(() => DateTime.now())
-  /**
-   * The tab is shown / hidden: records it, and refreshes its clock when shown.
-   *
-   * @author Philip — rectification for a more conventional display
-   * @param {boolean} visible
-   * @returns {void}
-   */
-  const changerVisibiliteOnglet = (visible: boolean) => {
-    setOngletVisible(visible)
-    if (visible) setMaintenantOnglet(DateTime.now())
-  }
-
-  // Tab label, by how far the displayed day is from today: the current time on
-  // today (timeline scrolled away from now), today's day of the month in the same
-  // month, else today's month abbreviation ("oct", "janv" — locale-aware). Kept up
-  // to date every 30 s while the tab is shown.
-  useEffect(() => {
-    if (!ongletVisible) return
-    const minuteur = setInterval(() => setMaintenantOnglet(DateTime.now()), 30000)
-    return () => clearInterval(minuteur)
-  }, [ongletVisible])
-
-  const surAujourdhui = !todayDateTime || todayDateTime.hasSame(maintenantOnglet, 'day')
-  const dansLeMois = !todayDateTime || todayDateTime.hasSame(maintenantOnglet, 'month')
-  const texteOnglet = surAujourdhui
-    ? maintenantOnglet.toFormat('HH:mm')
-    : dansLeMois
-      ? String(maintenantOnglet.day)
-      // Luxon's short month name, without its abbreviation dot ("janv." → "janv").
-      // 'MMM', not the standalone 'LLL': Hermes' Intl returns null for the latter
-      // (the tab showed "null"); the calendar's 'MMMM' uses the same 'MMM' family.
-      : abregerMois(maintenantOnglet)
-  useAnimatedReaction(
-    () => jourRelatif.get() !== 0 || afficherRetourMaintenant.get().afficher,
-    (visible, precedent) => {
-      if (visible !== precedent) scheduleOnRN(changerVisibiliteOnglet, visible)
-    }
-  )
-
-  const ongletAujourdhuiAnime = useAnimatedStyle(() => {
-    const visible = jourRelatif.get() !== 0 || afficherRetourMaintenant.get().afficher
-    const aDroite = jourRelatif.get() < 0
-      || (jourRelatif.get() === 0 && afficherRetourMaintenant.get().left === LEFT_GO_TO_AFTER)
-    // Only the side away from the screen's edge is rounded.
-    const arrondiGauche = withTiming(aDroite ? RAYON_ONGLET : 0, { duration: 200 })
-    const arrondiDroite = withTiming(aDroite ? 0 : RAYON_ONGLET, { duration: 200 })
-    return {
-      left: withSpring(aDroite ? WIN_W - LARGEUR_ONGLET : 0, { mass: 1.6, damping: 20 }),
-      opacity: withTiming(visible ? 1 : 0, { duration: 300 }),
-      borderTopLeftRadius: arrondiGauche,
-      borderBottomLeftRadius: arrondiGauche,
-      borderTopRightRadius: arrondiDroite,
-      borderBottomRightRadius: arrondiDroite,
-    }
-  })
   /**
    * AutoRefresh callback for GET /evenements: converts the member's events to
    * local DateTimes, sorts them earliest first, stores them for the member's row
@@ -578,6 +450,10 @@ export default function Home() {
 
       setJourAmis(windowStartRef.current)
       setFriends(amisFinal)
+      nbAmisCharges.set(amisFinal.length)
+      plusAmisRef.current = !!data.plus_amis
+      chargementPlusRef.current = false
+      setChargementPlusAmis(false)
       // User story 22: which search this answer is for (see aucunResultat), and every
       // friend kept when there was none.
       setRechercheRepondue(rechercheRef.current)
@@ -586,6 +462,20 @@ export default function Home() {
       setChargementEchec(true)
       catcher(error, t('errors.formatFriendEvents'))
     }
+  }
+
+  /**
+   * The rows were scrolled near the bottom: asks for 10 more friends (if there are more,
+   * and not already asking). The answer replaces the rows with the longer list.
+   *
+   * @returns {void}
+   */
+  const chargerPlusAmis = () => {
+    if (!plusAmisRef.current || chargementPlusRef.current) return
+    chargementPlusRef.current = true
+    setChargementPlusAmis(true)
+    nbAmisDemandesRef.current += AMIS_PAR_PAGE
+    friendsEventsRefresh.current?.setParams(paramsAmis(windowStartRef.current))
   }
 
   // ── Handlers ──
@@ -647,7 +537,8 @@ export default function Home() {
     const enCache = cacheJoursRef.current.get(`${start.toISODate()}/${fin.toISODate()}`)
     if (!enCache) return
     setUserEvents(enCache);
-      setJourMembre(start);
+    // same day: the same object, so nothing redraws for it
+    setJourMembre((jour) => (jour?.hasSame(start, 'day') ? jour : start));
   };
 
   /**
@@ -678,6 +569,49 @@ export default function Home() {
   useEffect(() => calendrierEvents.abonner((jour) => appliquerJourCalendrier(jour)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [])
+
+  /**
+   * Something was just created (see creationEvents): moves to its time range right
+   * away, while this screen is still hidden under the creation screen — its day (the
+   * window around it, like a day picked in the calendar) and its hours in the middle of
+   * the rows (its start near the left when it's longer than the rows). Recorded as this
+   * screen's offset, so the focus effect puts it back there instead of where the member
+   * was before opening the creation.
+   *
+   * @author Philip — back on the created event's time range after a creation
+   * @param {PlageCreee} plage - Local start and end of what was created.
+   * @returns {void}
+   */
+  const allerALaPlageCreee = ({ debut, fin }: PlageCreee) => {
+    // In the window's zone: the rows' wall-clock layout (positionHeures) reads it.
+    const zone = windowStartRef.current.zone
+    const debutLocal = debut.setZone(zone)
+    const finLocal = fin.setZone(zone)
+    const jour = debutLocal.startOf('day')
+    if (!jourAfficheRef.current?.hasSame(jour, 'day')) {
+      setTodayDateTime(jour)
+      dateAujShared.set(jour.toMillis())
+      jourDemandeRef.current = jour
+      afficherDepuisCache(jour)
+    }
+    // The window starts three days before the displayed day (like the day arrows).
+    const debutFenetre = jour.minus({ days: 3 })
+    chargerFenetre(debutFenetre)
+    const cellule = pxHeures + L_HEURES
+    const largeur = (positionHeures(finLocal, debutFenetre) - positionHeures(debutLocal, debutFenetre)) * cellule
+    const offset = clampOffset(largeur <= WIN_W - WIDTH_COL
+      // Fits in the rows: centered on them.
+      ? offsetCentreSur(debutLocal.plus({ milliseconds: finLocal.diff(debutLocal).toMillis() / 2 }), debutFenetre)
+      // Longer: its start near the left, half an hour in.
+      : positionHeures(debutLocal, debutFenetre) * cellule - cellule / 2)
+    offsetAccueilRef.current = offset
+    offsetX.set(offset)
+  }
+  // The latest handler (the hour's width can change with the zoom), for the
+  // subscription made once below.
+  const allerALaPlageCreeeRef = useRef(allerALaPlageCreee)
+  useEffect(() => { allerALaPlageCreeeRef.current = allerALaPlageCreee })
+  useEffect(() => creationEvents.abonner((plage) => allerALaPlageCreeeRef.current(plage)), [])
 
   /**
    * Arrows of the bottom bar: shows the previous / next day.
@@ -711,10 +645,10 @@ export default function Home() {
       setTodayDateTime(dateVue.startOf('day'))
       dateAujShared.set(dateVue.toMillis())
     }
-    // Keep the seven-day window moving by one calendar day at a time. This limits
-    // refetches to one per 24h scrolled and preserves the visible instant.
+    // Move the seven-day window by three calendar days in the scroll direction.
+    // The overlap keeps the visible instant in the window while reducing fetches.
     if (heures < 24 || heures >= 6 * 24) {
-      const deltaJours = heures < 24 ? -1 : 1
+      const deltaJours = heures < 24 ? -JOURS_GLISSEMENT_FENETRE : JOURS_GLISSEMENT_FENETRE
       const nouveauDebut = debut.plus({ days: deltaJours })
       windowStartRef.current = nouveauDebut
       windowStartMillis.set(nouveauDebut.toMillis())
@@ -776,14 +710,34 @@ export default function Home() {
     }
     afficherRetourMaintenant.set({...afficherRetourMaintenant.get(), afficher:false})
   };
+
+  useEffect(() => {
+    retourMaintenantRef.current = retourMaintenant
+  })
+
+  useEffect(() => {
+    const abonnement = AppState.addEventListener('change', (etat) => {
+      if (etat === 'background') {
+        appEnArrierePlanRef.current = true
+        return
+      }
+      if (etat !== 'active') return
+      if (!appEnArrierePlanRef.current) return
+
+      appEnArrierePlanRef.current = false
+      const maintenant = DateTime.now()
+      if (jourAfficheRef.current?.hasSame(maintenant, 'day')) return
+
+      if (accueilActifRef.current) retourMaintenantRef.current()
+      else retourAujourdhuiAuFocusRef.current = true
+    })
+
+    return () => abonnement.remove()
+  }, [])
+
   const lockedAxis = useSharedValue<string | null>(null)
 
   const maxY = useSharedValue(0)
-  const zoneH = useRef(0)
-  const majMaxY = () => {
-    maxY.set(Math.max(0, amisAffiches.length * (LIST_HEIGHT + 4) - zoneH.current))
-  }
-  useEffect(majMaxY, [amisAffiches.length])
 
   // A tap anywhere on the rows clears the picked range ("click off"). Shorter than the
   // hold that starts a selection on the member's row (200 ms), so that hold never
@@ -850,6 +804,18 @@ export default function Home() {
           scrollTo(friendsList, 0, offset, false)
   )
 
+  // Near the bottom of the rows (2 rows left, or all of them fit on screen): 10 more
+  // friends. Asked again after each answer while still there (nbAmisCharges changes).
+  useAnimatedReaction(
+    () => {
+      const presDuBas = offsetY.get() >= maxY.get() - 2 * (LIST_HEIGHT + 4)
+      return presDuBas ? nbAmisCharges.get() : -1
+    },
+    (actuel, precedent) => {
+      if (actuel >= 0 && actuel !== precedent) scheduleOnRN(chargerPlusAmis)
+    }
+  )
+
   useAnimatedReaction(
     () => {
       const cellule = pxHeures + L_HEURES
@@ -880,23 +846,57 @@ export default function Home() {
       : debutCreation ? { start: debutCreation.toISO() } : undefined,
     icon: null,
     visible: true,
+    //Gabriel US 33
+    //Bloc bellow skipped since the native fucntion of event form is to bring back start to now. 
+    // We dont need to validate it while entering the form
+    // 
     // No events in the past: on a day before today, the "+" shows an error instead
     // (a picked range is never in the past).
-    bloque: !plageChoisie && todayDateTime && estJourPasse(todayDateTime) ? t('create.pastDate', { ns: 'events' }) : undefined,
+    //bloque: !plageChoisie && todayDateTime && estJourPasse(todayDateTime) ? t('create.pastDate', { ns: 'events' }) : undefined,
+    //END Gabriel US 33
+  
   })
-
+  
   // The picked range stays when the home screen is left (backing out of the creation
   // finds it still selected); a tap elsewhere clears it (see effacerSelection). Once an
   // event covers it (e.g. the one just created on it), it's dropped when the member's
   // events arrive (modifierEvenementsMembreFetched).
+
+  // Leaving the screen (another tab, a pushed screen): polling paused, not destroyed, so
+  // coming back only asks the server what changed.
+  function pauseALaSortie() {
+    // This screen's exact position, given back on return (it was only recorded when
+    // the displayed day changed, so coming back from e.g. the creation jumped to an
+    // older position, away from a range picked on the same day).
+    if (accueilActifRef.current) offsetAccueilRef.current = offsetX.get()
+    accueilActifRef.current = false
+    accueilActif.set(false)
+    userEventsRefresh.current?.stop()
+    friendsEventsRefresh.current?.stop()
+  }
 
   useFocusEffect(
     useCallback(() => {
       const now = DateTime.now();
       // Keep the day that was displayed — already the calendar's selection when
       // coming back from it (see appliquerJourCalendrier). It used to reset to
-      // today; the "today" tab in the bottom bar does that now. First visit: today.
-      const jourAffiche = jourAfficheRef.current ?? now
+      // today; the "today" tab in the bottom bar does that now. First visit and
+      // app resume: today.
+      const retourAujourdhui = retourAujourdhuiAuFocusRef.current
+      retourAujourdhuiAuFocusRef.current = false
+      const premiereOuverture = jourAfficheRef.current === undefined
+      const initialiserAujourdhui = retourAujourdhui || premiereOuverture
+      const jourAffiche = initialiserAujourdhui ? now : jourAfficheRef.current!
+      // Establish today's window and offset before enabling the scroll listener.
+      // Otherwise its initial offset (0) can be interpreted as the first day of
+      // the seven-day window and replace today's date during startup.
+      if (initialiserAujourdhui) {
+        const debutAujourdhui = now.startOf('day').minus({ days: 3 })
+        chargerFenetre(debutAujourdhui)
+        const offsetAujourdhui = offsetCentreSur(now, debutAujourdhui)
+        offsetAccueilRef.current = offsetAujourdhui
+        initialiserOffset(offsetAujourdhui, false)
+      }
       // Keep the existing sliding window and horizontal offset when returning
       // from a pushed screen (such as event creation). Re-centering only the
       // window start here made the same offset point at a different calendar day.
@@ -906,15 +906,30 @@ export default function Home() {
       accueilActifRef.current = true
       accueilActif.set(true)
       fenetreEnCoursRef.current =`${debutFenetre.toISODate()}/${debutFenetre.plus({ days: JOURS_FENETRE }).toISODate()}`
-      setTodayDateTime(jourAffiche.startOf('day'));
-      setTempsClassement(now);
+      // Coming back to the tab: only what changed is updated, so the timeline doesn't
+      // redraw and re-rank every friend each time (same day → same object; the ranking
+      // by "time from now" is redone if it's over a minute old).
+      setTodayDateTime((jour) => (jour?.hasSame(jourAffiche, 'day') ? jour : jourAffiche.startOf('day')));
       dateAujShared.set(jourAffiche.toMillis());
       jourDemandeRef.current = jourAffiche.startOf('day');
       afficherDepuisCache(jourAffiche);
       //chargerEvenements(now, now)
 
+      // Back on the tab: the pollers paused when it was left resume. Same query, so
+      // the server only sends the events again if something changed (before, both were
+      // rebuilt with a full reload each time, which re-ranked every friend).
+      const paramsMembre = paramsPlage(debutFenetre, debutFenetre.plus({ days: JOURS_FENETRE }))
+      if (userEventsRefresh.current && !userEventsRefresh.current.estArrete()
+        && friendsEventsRefresh.current && !friendsEventsRefresh.current.estArrete()) {
+        userEventsRefresh.current.reprendre(paramsMembre)
+        friendsEventsRefresh.current.reprendre(paramsAmis(debutFenetre))
+        return pauseALaSortie
+      }
+      userEventsRefresh.current?.destroy()
+      friendsEventsRefresh.current?.destroy()
+
       userEventsRefresh.current = new AutoRefresh(api, '/evenements/', {
-        extraParams: paramsPlage(debutFenetre, debutFenetre.plus({ days: JOURS_FENETRE })),
+        extraParams: paramsMembre,
         onData: modifierEvenementsMembreFetched,
         onError: (error) => {
           log("impossible de charger les évènements du membre", error)
@@ -933,21 +948,22 @@ export default function Home() {
           log("impossible de charger les évènements d'amis", error)
           catcher(error, t('errors.loadFriendEvents'))
         }
-      })      
+      })
 
-      return () => {
-        // This screen's exact position, given back on return (it was only recorded when
-        // the displayed day changed, so coming back from e.g. the creation jumped to an
-        // older position, away from a range picked on the same day).
-        if (accueilActifRef.current) offsetAccueilRef.current = offsetX.get()
-        accueilActifRef.current = false
-        accueilActif.set(false)
-        userEventsRefresh.current?.destroy()
-        friendsEventsRefresh.current?.destroy()
-      }
+      return pauseALaSortie
+      // On focus only: the pollers are resumed / created here once per visit (their
+      // callbacks read refs); as dependencies they would be rebuilt on every render.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
   );
 
+  // The screen is gone for good (sign-out...): the pollers too.
+  useEffect(() => () => {
+    userEventsRefresh.current?.destroy()
+    friendsEventsRefresh.current?.destroy()
+  }, [])
+
+  const onBackToNow = useCallback(()=> retourMaintenantRef.current(), [])
 
   const s = StyleSheet.create({
     container: {
@@ -1071,31 +1087,6 @@ export default function Home() {
       height: 22,
       width: 22,
     },
-    // "Today" tab: flush with the screen's left or right edge, inside the bar's
-    // side padding (its left position and corners are animated).
-    ongletAujourdhui: {
-      position: 'absolute',
-      width: LARGEUR_ONGLET,
-      height: 40,
-      overflow: 'hidden',
-      backgroundColor: colors.secondary,
-    },
-    boutonAujourdhui: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    // Today's day of the month, inside the "today" tab.
-    texteAujourdhui: {
-      color: colors.background,
-      fontFamily: fonts.title,
-      fontSize: 16,
-    },
-    // The time ("14:37") and a month ("sept") are wider than a day number: smaller
-    // so they fit the tab.
-    texteMaintenant: {
-      fontSize: 13,
-    },
     // Member's timeline + the fixed "fully booked" card laid over it.
     zoneTimelineMembre: {
       flex: 1,
@@ -1157,40 +1148,13 @@ export default function Home() {
       alignItems: 'center',
       justifyContent: 'center',
     },
+    chargementPlusAmis: {
+      height: LIST_HEIGHT / 2,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     calendarContainer: {
       flex:5
-    },
-    // Current time: a line over all the rows, its time in the hours' row (see xMaintenant)
-    bandeMaintenant: {
-      position: 'absolute',
-      left: WIDTH_COL,
-      right: 0,
-      top: 0,
-      bottom: 0,
-      zIndex: 10,
-    },
-    ligneMaintenant: {
-      position: 'absolute',
-      top: 0,
-      bottom: 0,
-      width: 2,
-      backgroundColor: colors.error,
-      zIndex: 10,
-    },
-    heureMaintenant: {
-      position: 'absolute',
-      bottom: 2,
-      width: LARGEUR_HEURE_MAINTENANT,
-      paddingVertical: 1,
-      borderRadius: 6,
-      alignItems: 'center',
-      backgroundColor: colors.error,
-      zIndex: 10,
-    },
-    texteHeureMaintenant: {
-      color: '#fff',
-      fontFamily: fonts.number,
-      fontSize: 11,
     },
     addFriendPlaceholderContainer: {
       height: '100%',
@@ -1231,7 +1195,7 @@ export default function Home() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <View style={s.container}>
+      <View style={s.container} testID={homeIds.index}>
 
         {/* ── Friend search (user story 22), opened by the magnifier left of the hours ── */}
         {rechercheOuverte && (
@@ -1246,7 +1210,7 @@ export default function Home() {
         )}
 
         {/* ── Timeline (heures) ── */}
-        <View style={s.timeline}>
+        <View style={s.timeline} testID='timeline'>
           {/* Friend search (user story 22): a small magnifier in the photos' column. */}
           <TouchableOpacity
             style={s.caseRecherche}
@@ -1265,11 +1229,7 @@ export default function Home() {
               ? DateTime.now()
               : todayDateTime?.plus({ hours: 9 })}
             timelineDays={JOURS_FENETRE}
-            premierPlan={maintenantVisible && (
-              <View pointerEvents="none" style={[s.heureMaintenant, { left: xMaintenant - LARGEUR_HEURE_MAINTENANT / 2 }]}>
-                <Text style={s.texteHeureMaintenant}>{convertirTimestampHeure(instantCourant)}</Text>
-              </View>
-            )}
+            premierPlan={<HeureMaintenant windowStart={windowStart}/>}
           />
         </View>
 
@@ -1277,80 +1237,21 @@ export default function Home() {
         <GestureDetector gesture={Gesture.Simultaneous(panGesture, toucherHorsSelection)}>
           <View
             style={s.calendarContainer}
+            testID={homeIds.schedules}
           >
           <Animated.View style={[loadingAnimated, s.friendsZone]}>
-            {/* TODO: ScrollView verticale des amis */}
-            {aucunResultat ? (
-              // No friend matches the search (user story 22).
-              <View style={s.addFriendPlaceholderContainer}>
-                <Ionicons name="search-outline" size={32} color={colors.muted} />
-                <Text style={s.addFriendPlaceholderText}>
-                  {t('search.noResult', { texte: texteRecherche.trim() })}
-                </Text>
-              </View>
-            ) : friends.length === 0 && !rechercheOuverte ? (
-              <View style={s.addFriendPlaceholderContainer}>
-                <Text style={s.addFriendPlaceholderText}>
-                  {t('friendsListEmptyState')}
-                </Text>
-                <TouchableOpacity onPress={()=>{
-                    router.push('/(modals)/ajouterAmi')
-                }}>
-                    <Image
-                        source={icones.ajouterAmi}
-                        style={{height:64, width:64}}
-                        resizeMode="contain"
-                    />
-                </TouchableOpacity>
-              </View>
-              ) : (
-                  <Animated.ScrollView
-                    ref={friendsList}
-                    showsVerticalScrollIndicator={false}
-                    onLayout={(e) => {
-                      zoneH.current = e.nativeEvent.layout.height;
-                      majMaxY();
-                    }}
-                  >
-                    {amisAffiches.map(({ ami: friend, commonFreeSlots }) => {
-                      // Toujours calculer sur la fenêtre active entière, pas sur
-                      // le jour actuellement visible (qui peut être le 16 dans
-                      // une fenêtre chargée du 14 au 20).
-                      return(
-                        <View key={friend.id} style={[s.friendList]}>
-                          {/* Photo de profil */}
-                          {/* Same band as the row's events/free slots (RETRAIT_RANGEE above and
-                              below, rounded like the blocks) so the photo lines up with them. */}
-                          <TouchableOpacity
-                            style={s.colonneAmi}
-                            accessibilityRole="button"
-                            accessibilityLabel={t('viewFriendProfile', { name: friend.pseudo })}
-                            onPress={() => router.push({ pathname: '/(tabs)/home/profil/[membreId]', params: { membreId: friend.id } })}
-                          >
-                          <View style={s.photoAmi}>
-                            <ProfilPic
-                              pfp={friend.fp_url}
-                              size={64}
-                            />
-                          </View>
-                          </TouchableOpacity>
-                          {/* Événements horizontaux */}
-                          <EventsList
-                            owner={friend}
-                            commonFreeSlots={commonFreeSlots}
-                            listSize={LIST_HEIGHT}
-                            horizontal={true}
-                            events={friend.evenements}
-                            textColor={colors.text}
-                            offsetSnap={L_HEURES + pxHeures}
-                            displayedDate={windowStart}
-                            timelineDays={JOURS_FENETRE}
-                            getEvenements={() => { refreshAt(todayDateTime ?? DateTime.now()) }}
-                          />
-                        </View>                    
-                      )})}
-                </Animated.ScrollView>
-            )}
+            <ListeAmis
+              friends={friends}
+              evenementsHoraire={evenementsHoraire}
+              windowStart={windowStart}
+              dispoCommunesPossibles={dispoCommunesPossibles}
+              rechercheOuverte={rechercheOuverte}
+              texteRecherche={texteRecherche}
+              rechercheRepondue={rechercheRepondue}
+              chargementPlusAmis={chargementPlusAmis}
+              scrollRef={friendsList}
+              maxY={maxY}
+            />
           </Animated.View>        
 
         {/* ── Zone membre (1/4) ── */}
@@ -1358,10 +1259,7 @@ export default function Home() {
             style={[loadingAnimated, s.memberZone, { backgroundColor: colors.card }]}
           >
               <View style={[s.column, { backgroundColor: colors.card }]}>
-                <ProfilPic
-                  size={64}
-                  pfp={membre.fp}
-                />
+                <PfpWithAvailability size={64} pfp={membre.fp} statut={membre.statutDisponibilite} />
               </View>    
               <View style={s.zoneTimelineMembre}>
                 <EventsList
@@ -1406,19 +1304,7 @@ export default function Home() {
               </View>
             </Animated.View>
           {/* Current time: one line over all the rows, scrolled like them */}
-          <Animated.ScrollView
-            ref={ligneMaintenantRef}
-            horizontal
-            scrollEnabled={false}
-            pointerEvents="none"
-            showsHorizontalScrollIndicator={false}
-            style={s.bandeMaintenant}
-            contentContainerStyle={{ height: '100%' }}
-          >
-            <View style={{ width: JOURS_FENETRE * 24 * (pxHeures + L_HEURES), height: '100%' }}>
-              {maintenantVisible && <View style={[s.ligneMaintenant, { left: xMaintenant - 1 }]} />}
-            </View>
-          </Animated.ScrollView>
+          <LigneMaintenant offsetX={offsetX} windowStart={windowStart}/>
         </View>
         </GestureDetector>
 
@@ -1427,22 +1313,7 @@ export default function Home() {
               {/* One tap back to today / now: a tab against the screen's edge, on the
                   side where now is (see ongletAujourdhuiAnime). Absolutely positioned
                   so the arrows and the date button don't move. */}
-              <Animated.View
-                style={[s.ongletAujourdhui, ongletAujourdhuiAnime]}
-                pointerEvents={ongletVisible ? 'auto' : 'none'}
-              >
-                <TouchableOpacity
-                  style={s.boutonAujourdhui}
-                  onPress={retourMaintenant}
-                  hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
-                  accessibilityRole="button"
-                  accessibilityLabel={surAujourdhui ? t('backToNow') : t('backToToday')}
-                >
-                  <Text style={[s.texteAujourdhui, !(dansLeMois && !surAujourdhui) && s.texteMaintenant]} numberOfLines={1}>
-                    {texteOnglet}
-                  </Text>
-                </TouchableOpacity>
-              </Animated.View>
+              <OngletAujourdhui todayDateTime={todayDateTime} onPress={onBackToNow}/>
               <TouchableOpacity style={s.arrow} onPress={reculerDate}>
                 <Image
                   source={icones.arrowL}

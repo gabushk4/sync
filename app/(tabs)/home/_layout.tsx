@@ -35,6 +35,10 @@ export default function HomeLayout() {
             <Stack.Screen
                 name="details/[eventId]" options={{headerBackVisible:true, headerBackButtonDisplayMode:'minimal', headerTitle:t('navigation.details')}}
             />
+            {/* An event's shared photo album (from its page) */}
+            <Stack.Screen
+                name="details/album/[eventId]" options={{headerBackVisible:true, headerBackButtonDisplayMode:'minimal', headerTitle:t('navigation.album')}}
+            />
             <Stack.Screen
                 name="edit/[event]" options={{headerBackVisible:true, headerBackButtonDisplayMode:'minimal', headerTitle:t('navigation.edit')}}
             />
@@ -50,6 +54,10 @@ export default function HomeLayout() {
             {/* Its info (tap on its title) */}
             <Stack.Screen
                 name="conversation/infos/[conversationId]" options={{headerBackVisible:true, headerBackButtonDisplayMode:'minimal', headerTitle:''}}
+            />
+            {/* All its photos (from its info; the screen sets its title) */}
+            <Stack.Screen
+                name="conversation/photos/[conversationId]" options={{headerBackVisible:true, headerBackButtonDisplayMode:'minimal'}}
             />
         </Stack>
     )

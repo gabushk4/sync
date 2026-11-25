@@ -1,5 +1,6 @@
 // Types for the event conflict screen. Part of user story 8 (conflict screen
 // when creating an overlapping event).
+import type { MomentAlerte } from './calendar'
 
 /**
  * Existing event that overlaps the one being created, as sent in the API's
@@ -30,7 +31,9 @@ export type NouvelEvenement = {
     /** UTC SQL datetime ('yyyy-MM-dd HH:mm:ss'). */
     fin: string | null
     regle_recurrence?: string | null
+    alertes?: MomentAlerte[]
     participants: { id: string, privilege: string }[]
+    depuis_dispo_commune: true | false
     [cle: string]: unknown
 }
 

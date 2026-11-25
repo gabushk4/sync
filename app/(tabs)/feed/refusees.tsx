@@ -16,7 +16,7 @@ import Icon from "@react-native-vector-icons/ionicons";
 /** One invitation, as returned by GET /evenements/invitations (see formaterInvitation server-side). */
 type InvitationRecue = {
     id: string
-    statut_metier: 'en_attente' | 'acceptee' | 'refusee'
+    statut_metier: 'en_attente' | 'acceptee' | 'refusee' | 'expiree'
     pseudo_invitant: string
     id_evenement: string
     titre_evenement: string

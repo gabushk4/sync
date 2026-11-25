@@ -15,6 +15,8 @@
     "dangerZone":"zone dangereuse",
     "signOut":"se déconnecter",
     "open":"ouvrir",
+    "replayTutorial":"rejouer le tutoriel",
+    "replayTutorialFailed":"impossible de relancer le tutoriel",
     "deleteAccount":"supprimer mon compte",
     "exportData":"exporter mes données",
     "theme":"palette",
@@ -22,11 +24,28 @@
     "appVersion":"version {{version}}",
     "about":"à propos de sync",
     "privacyPolicy":"politique de confidentialité",
+    "usageContract":"contrat d'utilisation",
     "minorSecurity":"sécurité des mineurs",
     "imports":"importer et gérer un calendrier",
     "calendarImports":{
         "local": "à partir de l'appareil ou fichier .ics",
         "google": "à partir de Google",
         "outlook": "à partir du Outlook"
+    },
+    "privacy":"confidentialité",
+    "messagePreview":"texte des messages dans les notifications",
+    "messagePreviewFailed":"le réglage n'a pas pu être changé",
+    "sendFeedback":"Envoyer un feedback",
+    "themePicker": {
+        "title":"palette de l'app",
+        "open":"changer la couleur de l'app",
+        "wheel":"roue des couleurs",
+        "preview":"aperçu",
+        "sampleTitle":"souper entre amis",
+        "sampleTime":"demain, 18:00 – 20:00",
+        "sampleStatus":"acceptée",
+        "sampleButton":"modifier",
+        "done":"terminé",
+        "cancel":"annuler"
     }
 }

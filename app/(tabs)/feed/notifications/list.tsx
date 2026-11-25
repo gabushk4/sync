@@ -19,6 +19,9 @@ import NotificationItem from "@/components/notificationItem";
 import { withTimingConfig } from "@/constants/ReanimatedConfs";
 import Spinner from "@/svgs/spinner";
 
+// Created once, outside the component (inside, it was a new component on every render)
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity)
+
 /**
  * Notifications list shown in the feed tab: filter chips (sync, friends, events,
  * unread), multi-select delete, pull to refresh, and a link to the refused
@@ -88,8 +91,6 @@ export default function NotificationsList({}){
         }
     }
 
-    const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity)
-
     const rafraichissementAnime = useAnimatedStyle(()=>{
         "worklet"
         return{
@@ -128,8 +129,17 @@ export default function NotificationsList({}){
         }
     }
 
-    useEffect(() => {
+    // New notifications (or read ones): the list shows them all again. Done during the
+    // render when they change (not with a setState in an effect, which drew the old
+    // list once more first); the ref the filters start from is updated in the effect.
+    const [notificationsVues, setNotificationsVues] = useState(notifications)
+    const [nonLuesVues, setNonLuesVues] = useState(nonLues)
+    if (notificationsVues !== notifications || nonLuesVues !== nonLues) {
+        setNotificationsVues(notifications)
+        setNonLuesVues(nonLues)
         setNotificationsCopie(notificationsVisibles)
+    }
+    useEffect(() => {
         notificationsOriginales.current = [...notificationsVisibles]
     }, [notifications, nonLues])
 

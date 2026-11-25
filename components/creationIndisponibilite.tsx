@@ -2,6 +2,7 @@ import { useLocalSearchParams, useNavigation } from "expo-router";
 import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DateTime } from "luxon";
+import { StyleSheet, View } from "react-native";
 
 import { useAPI } from "@/contextes/contexteAPI";
 
@@ -11,12 +12,14 @@ import VoileEnvoi from "@/components/voileEnvoi";
 import ToastAbs from "@/abstractions/toastAbs";
 import { toastTypes } from "@/constants/toastConfig";
 import ConflitEvenement, { SortieConflit } from "@/components/conflitEvenement";
+import { creationEvents, PlageCreee } from "@/events/creationEvents";
 import catcher from "@/functions/catcher";
 import { debutDejaPasse, plagePreremplie } from "@/functions/jourCreation";
 import titreEvenement from "@/functions/titreEvenement";
 import useEnvoiCreation, { corpsCreation } from "@/hooks/useEnvoiCreation";
 import { defaultEvent, Event } from "@/types/calendar";
 import { conflitsDeLaReponse, EvenementEnConflit, NouvelEvenement } from "@/types/conflit";
+import { eventFormIds } from "@/constants/tutorial";
 
 /**
  * Unavailability page: a stretch where the member is busy, stored as an event of
@@ -43,6 +46,7 @@ const CreationIndisponibilite = forwardRef<CreationHandle>(function CreationIndi
     const { api } = useAPI()
 
     const formRef = useRef<EventFormHandle>(null)
+    const tutorialTargetRef = useRef<View>(null)
     const [event] = useState<Event>(defaultEvent)
     const { enChargement, envoyerUneFois } = useEnvoiCreation()
     // Conflict screen over this page (409 answer), or null.
@@ -51,6 +55,22 @@ const CreationIndisponibilite = forwardRef<CreationHandle>(function CreationIndi
     const { start, end } = useLocalSearchParams<{ start?: string, end?: string }>()
     const maintenant = DateTime.now()
     const { debutSuggere, finDemandee } = plagePreremplie(start, end, maintenant)
+
+    // The range being sent: the home timeline moves to it once created (here or from
+    // the conflict screen), like an event's.
+    const plageEnvoyeeRef = useRef<PlageCreee | null>(null)
+
+    /**
+     * Created: announces the unavailability's range (creationEvents), so the home
+     * timeline shows it, then goes back to the home timeline.
+     *
+     * @author Philip — back on the created range after a creation
+     * @returns {void}
+     */
+    const quitterApresCreation = () => {
+        if (plageEnvoyeeRef.current) creationEvents.creee(plageEnvoyeeRef.current)
+        navigation.dispatch({ type: 'POP_TO_TOP' })
+    }
 
     /**
      * Validates the form (start not past) and sends the unavailability, then goes
@@ -76,7 +96,9 @@ const CreationIndisponibilite = forwardRef<CreationHandle>(function CreationIndi
                 // An empty title (no reason) is shown as "Unavailable" (titreEvenement).
                 ...corpsCreation(values),
                 participants: [],
+                depuis_dispo_commune: false
             }
+            plageEnvoyeeRef.current = { debut: values.start, fin: values.end }
             const response = await api.post('/evenements/', nouvelle)
             if (response.status === 201) {
                 ToastAbs.show({
@@ -85,7 +107,7 @@ const CreationIndisponibilite = forwardRef<CreationHandle>(function CreationIndi
                     text2: t('unavailability.createdMessage'),
                     autoHide: true,
                 })
-                navigation.dispatch({ type: 'POP_TO_TOP' })
+                quitterApresCreation()
             }
         } catch (error: any) {
             if (error.response?.status === 409 && nouvelle) {
@@ -109,13 +131,13 @@ const CreationIndisponibilite = forwardRef<CreationHandle>(function CreationIndi
     const quitterConflit = (sortie: SortieConflit) => {
         setConflit(null)
         if (sortie === 'retour') navigation.goBack()
-        else if (sortie === 'accueil') navigation.dispatch({ type: 'POP_TO_TOP' })
+        else if (sortie === 'accueil') quitterApresCreation()
     }
 
     useImperativeHandle(ref, () => ({ envoyer }))
 
     return (
-        <>
+        <View ref={tutorialTargetRef} testID={eventFormIds.dnd} style={styles.formulaire}>
             <EventForm
                 ref={formRef}
                 event={event}
@@ -133,8 +155,14 @@ const CreationIndisponibilite = forwardRef<CreationHandle>(function CreationIndi
                     onSortie={quitterConflit}
                 />
             )}
-        </>
+        </View>
     )
 })
 
 export default CreationIndisponibilite
+
+const styles = StyleSheet.create({
+    formulaire: {
+        flex: 1,
+    },
+})

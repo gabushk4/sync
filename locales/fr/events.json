@@ -6,7 +6,8 @@
     "calendar": "Calendrier",
     "invitationReview": "Horaires de l'invitation",
     "unavailability": "Nouvelle indisponibilité",
-    "unavailabilityDetails": "Détails de l'indisponibilité"
+    "unavailabilityDetails": "Détails de l'indisponibilité",
+    "album": "Album de l'évènement"
   },
   "creationPages": {
     "event": "Évènement",
@@ -60,11 +61,13 @@
     "repeatedUntil": "évènement répété chaque {{unit}} jusqu'au :",
     "private": "privé",
     "public": "public",
-    "participants": "participants"
+    "participants": "participants",
+    "removedOnConfirm_one": "{{count}} participant sera retiré au ✓",
+    "removedOnConfirm_other": "{{count}} participants seront retirés au ✓"
   },
   "participantRemoval": {
     "confirmTitle": "Retirer ce participant ?",
-    "confirmMessage": "Voulez-vous retirer {{pseudo}} de cet événement ?",
+    "confirmMessage": "Êtes-vous sûr ? {{pseudo}} fait déjà partie de l'évènement.",
     "cancel": "Annuler",
     "remove": "Retirer"
   },
@@ -134,19 +137,31 @@
     "participantsLoadFailed": "erreur au chargement des participants"
   },
   "invitationReview": {
-    "hint": "Touche l'évènement de {{pseudo}} ou le tien pour répondre.",
     "leader": "Organisateur",
     "me": "Moi",
     "loadFailed": "Impossible de charger les horaires de l'invitation",
     "retry": "Impossible de charger les horaires. Touche pour réessayer.",
     "private": "Privé",
-    "commonSlot": "Dispo"
+    "availabilityPartial": "Dispo partielle",
+    "availabilityAll": "Tout le monde dispo",
+    "availablePeople": "{{compte}} dispo : {{noms}}",
+    "alreadyProposed": "Cette plage est déjà proposée.",
+    "proposeRange": "Proposer {{plage}}",
+    "allTooShort": "Tout le monde est libre par moments, mais moins longtemps que l’évènement.",
+    "availabilityTitle": "Disponibilité commune",
+    "rangeAlreadyProposed": "déjà proposée"
   },
   "invitationDecision": {
     "accept": "Accepter",
     "refuse": "Refuser",
     "refuseFailed": "Impossible de refuser l'invitation",
-    "invitedBy": "Invité par"
+    "invitedBy": "Invité par",
+    "refusedTitle": "Invitation refusée",
+    "proposeQuestion": "Aimerais-tu proposer une autre date?",
+    "proposeHint": "Les participants vont voter. Si l'organisateur choisit ta date, tu recevras une nouvelle invitation.",
+    "proposeYes": "Proposer une autre date",
+    "proposeNo": "Non merci",
+    "done": "OK"
   },
   "unavailability": {
     "reasonPlaceholder": "raison (optionnelle)...",
@@ -159,6 +174,11 @@
     "leftOutTitle": "Pas invité",
     "leftOut_one": "{{pseudos}} est indisponible à ce moment : pas d’invitation envoyée",
     "leftOut_other": "{{pseudos}} sont indisponibles à ce moment : pas d’invitation envoyée"
+  },
+  "availabilityStatus": {
+    "blockedTitle": "Invitation bloquée",
+    "blocked_one": "{{pseudos}} a choisi de ne pas recevoir d’invitations.",
+    "blocked_other": "{{pseudos}} ont choisi de ne pas recevoir d’invitations."
   },
   "postpone": {
     "suggestionsCount": "Plages proposées ({{count}})",
@@ -186,6 +206,65 @@
     "notFreeTitle": "Plus tout le monde est libre",
     "notFreeMessage": "{{pseudos}} : plus libre à ce moment",
     "confirmPropose": "Proposer {{plage}}?",
-    "confirm": "Confirmer"
+    "confirm": "Confirmer",
+    "proposeTitle": "Proposer un report",
+    "moveTitle": "Déplacer l’évènement",
+    "move": "Déplacer",
+    "confirmMove": "Déplacer l’évènement {{plage}}?",
+    "date": "Date",
+    "time": "Heure",
+    "keepsDuration": "La durée de l’évènement est conservée.",
+    "futureOnly": "Choisis un moment à venir.",
+    "sameTime": "C’est déjà la plage actuelle."
+  },
+  "reminders": {
+    "title": "Alertes de rappel",
+    "debut": "Au début de l'événement",
+    "fin": "À la fin de l'événement",
+    "none": "Aucune alerte n'est configurée.",
+    "add": "Ajouter une alerte",
+    "cancel": "Annuler",
+    "sent": "Rappel : {{title}} {{moment}}."
+  },
+  "album": {
+    "title": "Album photo",
+    "seeAll": "Tout voir",
+    "add": "Ajouter des photos",
+    "addSelected": "Ajouter à l'album ({{count}})",
+    "empty": "Aucune photo pour l'instant. Partage celles de l'évènement !",
+    "open": "Photo de {{pseudo}}",
+    "close": "Fermer",
+    "counter": "{{index}} / {{total}}",
+    "you": "Toi",
+    "delete": "Supprimer la photo",
+    "deleteTitle": "Supprimer cette photo ?",
+    "deleteMessage": "Elle sera retirée de l'album pour tout le monde.",
+    "deleteConfirm": "Supprimer",
+    "cancel": "Annuler",
+    "deleteFailed": "Impossible de supprimer la photo",
+    "added_one": "{{count}} photo ajoutée à l'album",
+    "added_other": "{{count}} photos ajoutées à l'album",
+    "addFailed": "Les photos n'ont pas pu être ajoutées",
+    "loadFailed": "Impossible de charger l'album",
+    "noAccess": "Seuls les membres de l'évènement voient son album",
+    "pending": "En attente d'approbation",
+    "accept": "Accepter",
+    "acceptAll": "Tout accepter",
+    "refuse": "Refuser",
+    "review": "Revoir",
+    "toApprove_one": "{{count}} photo à approuver",
+    "toApprove_other": "{{count}} photos à approuver",
+    "wantsToAdd_one": "{{pseudo}} veut ajouter une photo",
+    "wantsToAdd_other": "{{pseudo}} veut ajouter {{count}} photos",
+    "sentForApproval_one": "Photo envoyée : elle attend l'approbation de l'organisateur",
+    "sentForApproval_other": "{{count}} photos envoyées : elles attendent l'approbation de l'organisateur",
+    "decisionFailed": "La décision n'a pas pu être enregistrée",
+    "settingsFailed": "Le réglage n'a pas pu être changé",
+    "approvalSetting": "Approuver les photos",
+    "approvalSettingHint": "Les photos des participants attendent ton accord avant d'apparaître dans l'album.",
+    "emptyWithApproval": "Aucune photo pour l'instant. Les tiennes apparaîtront une fois approuvées par l'organisateur.",
+    "cancelTitle": "Annuler cette photo ?",
+    "cancelMessage": "Elle ne sera pas envoyée à l'organisateur.",
+    "cancelConfirm": "Annuler la photo"
   }
 }

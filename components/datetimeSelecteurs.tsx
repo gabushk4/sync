@@ -4,31 +4,102 @@ import { usePalette } from "@/contextes/contextePalette";
 import ceilBy5 from '@/functions/ceilBy5';
 import { debutCreationPourJour, estJourneeEntiere } from '@/functions/jourCreation';
 import { convertirTimestampDateLongue, convertirTimestampHeure } from "@/functions/convertirTimestamp";
-import log from "@/functions/log";
 
 import SwitchAbs from '@/abstractions/switchAbs';
-import RNDateTimePicker from "@react-native-community/datetimepicker";
+import RNDateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { DateTime } from "luxon";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from 'react-i18next';
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import Animated from "react-native-reanimated";
+import { Platform, StyleSheet, Text, TextStyle, TouchableOpacity, View } from "react-native";
 
 import { useEventDraft } from '@/contextes/contexteEventDraft';
 import CommonSlotsSuggestions from './commonSlotsSuggestions';
 
 type Props = {
     timezone: string | 'local',
-    start: DateTime,
-    setStart: Function,
-    end: DateTime,
-    setEnd: Function,
-    disabled: boolean,
+    disabled?: boolean,
     minimumStart: DateTime | undefined,
-    maximum?: DateTime
+    maximum?: DateTime,
+    /** @deprecated Unused: start/end come from useEventDraft. To remove from EventForm's call. */
+    start?: DateTime,
+    /** @deprecated See `start`. */
+    setStart?: Function,
+    /** @deprecated See `start`. */
+    end?: DateTime,
+    /** @deprecated See `start`. */
+    setEnd?: Function,
 }
 
 const END_DELAY_FROM_START = 60 //minutes
+// Height of a compact iOS picker, used by the placeholder shown until the real pickers mount
+const IOS_PICKER_PLACEHOLDER_HEIGHT = 34
+
+// Static styles: created once at module scope
+const staticStyles = StyleSheet.create({
+    label: {
+        fontSize: 20,
+    },
+    container: {
+        flexDirection: 'column',
+        flex: 3,
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        borderRadius: 8,
+        overflow: 'hidden',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        marginBottom: 8,
+        gap: 8,
+    },
+    dateTimeContainer: {
+        flex: 3,
+        width: '100%',
+        paddingTop: 0,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: Platform.OS === 'android' ? 0 : 4,
+    },
+    allDayRow: {
+        flex: 2,
+        marginBottom: 4,
+    },
+    allDayLabel: {
+        flex: 1,
+    },
+    allDaySwitch: {
+        width: '20%',
+    },
+    pickerContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'column',
+    },
+    dateTimePicker: {
+        width: 'auto',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderRadius: 8,
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+        marginBottom: 4,
+    },
+    androidTimeLabel: {
+        flex: 0,
+        width: '20%',
+        marginRight: 18,
+    },
+    dateFontSize: {
+        fontSize: 17,
+    },
+    inputTemps: {
+        fontSize: 20,
+    },
+    pickerPlaceholder: {
+        height: IOS_PICKER_PLACEHOLDER_HEIGHT,
+    },
+})
 
 /**
  * Start/end date and time pickers for an event, with an "all day" toggle.
@@ -46,30 +117,39 @@ const END_DELAY_FROM_START = 60 //minutes
  *   calendar, and each Android date picker opens alone
  * @returns {JSX.Element}
  */
-export default function DateTimeSelecteur({timezone, disabled=false, minimumStart, maximum} : Props){
+function DateTimeSelecteur({timezone, disabled=false, minimumStart, maximum} : Props){
     const { t } = useTranslation('calendar')
 
     const { colors } = usePalette();
     const { fonts } = useFont()
     const { setStart, setEnd, start, end } = useEventDraft();
+
     // Defensive floor: whatever `maximum` arrives as, it must never end up
     // before this form's own minimum references (minimumStart, or a few
     // minutes after `start` for the end-time picker below) — otherwise the
     // native picker's "minimumDate < maximumDate" invariant crashes,
     // regardless of what upstream miscalculated. Found via the month
     // calendar's range selection (user story 5).
-    let maximumSur = maximum
-    if (maximumSur) {
-        if (minimumStart && maximumSur < minimumStart) maximumSur = minimumStart
+    const maximumSur = useMemo(() => {
+        if (!maximum) return undefined
+        let max = maximum
+        if (minimumStart && max < minimumStart) max = minimumStart
         const plancherFin = start.plus({ minutes: 5 })
-        if (maximumSur < plancherFin) maximumSur = plancherFin
-    }
-    
-    //log('datetimeSelecteurs: date', dateEvenement, 'debut', debutEvenement, 'fin', finEvenement)
+        if (max < plancherFin) max = plancherFin
+        return max
+    }, [maximum, minimumStart, start])
 
-//    log("dateTime selector", start, end)
-
-    const dtNow = DateTime.now().startOf('minute');   
+    // Dates handed to the native pickers: memoized so they aren't re-created (and
+    // re-sent to native) on every render. `start`/`end` only change identity when the
+    // dates really change (see the context's setters).
+    const startDayJS = useMemo(() => start.startOf('day').toJSDate(), [start])
+    const startJS = useMemo(() => start.toJSDate(), [start])
+    const endDayJS = useMemo(() => end.startOf('day').toJSDate(), [end])
+    const endJS = useMemo(() => end.toJSDate(), [end])
+    const minEndJS = useMemo(() => start.plus({ minutes: 5 }).toJSDate(), [start])
+    const minStartDayJS = useMemo(() => minimumStart?.startOf('day').toJSDate(), [minimumStart])
+    const minStartJS = useMemo(() => minimumStart?.toJSDate(), [minimumStart])
+    const maxJS = useMemo(() => maximumSur?.toJSDate(), [maximumSur])
 
     // Times before "all day" was switched on, restored when it's switched off
     // (null: none, e.g. a whole-day range from the calendar).
@@ -86,7 +166,23 @@ export default function DateTimeSelecteur({timezone, disabled=false, minimumStar
     // The switch is turned on by itself once, when the pre-filled dates are whole
     // days (a range selected in the month calendar).
     const allDayDetecte = useRef(false)
-    
+
+    // iOS draws its 4 pickers inline: creating 4 native UIDatePickers while the screen
+    // transition runs made it stutter. A placeholder of the same height is shown until
+    // the JS thread is idle. Android opens dialogs on demand, nothing to defer.
+    // (InteractionManager was removed in React Native 0.87: requestIdleCallback replaces
+    // it. The timeout guarantees the pickers show up even if the thread stays busy.)
+    const [pickersReady, setPickersReady] = useState(Platform.OS !== 'ios')
+    useEffect(() => {
+        if (pickersReady) return
+        const handle = requestIdleCallback(() => setPickersReady(true), { timeout: 500 })
+        return () => cancelIdleCallback(handle)
+    }, [pickersReady])
+
+    const iosPickerProps = useMemo(
+        () => (Platform.OS === 'ios' ? { timeZoneName: timezone, accentColor: colors.text } : {}),
+        [timezone, colors.text]
+    )
 
     /**
      * Applies a new start date (keeping the existing start time). The end is kept,
@@ -98,7 +194,6 @@ export default function DateTimeSelecteur({timezone, disabled=false, minimumStar
      * @returns {void}
      */
     const handleStartDateChange = (jsDate : Date) => {
-        if (Platform.OS === 'android') setShowDatePicker(false);
         if (isAllDay) {
             const debutJour = DateTime.fromJSDate(jsDate).startOf('day')
             setStart(debutJour)
@@ -109,8 +204,6 @@ export default function DateTimeSelecteur({timezone, disabled=false, minimumStar
         // The end used to be reset to its day's midnight here, losing its time.
         let newFin = end
 
-        let diffTime = end.diff(start, 'minutes').minutes //for keeping same event length
-        
         const newStart = newDate.set({ 
             hour: start.hour, 
             minute: start.minute, 
@@ -123,7 +216,6 @@ export default function DateTimeSelecteur({timezone, disabled=false, minimumStar
 
         setStart(newStart);
         //TODO: keep same length as a setting
-        //setEnd(newStart.plus({minutes:diffTime})); //Applies event length
         setEnd(newFin)
     };
 
@@ -135,12 +227,10 @@ export default function DateTimeSelecteur({timezone, disabled=false, minimumStar
      * @returns {void}
      */
     const handleEndDateChange = (jsDate: Date) => {
-        // It never closed its Android dialog.
-        if (Platform.OS === 'android') setShowFinDatePicker(false);
-        let newDate: DateTime | null = ceilBy5(DateTime.fromJSDate(jsDate).set({second:0}));
+        const newDate = ceilBy5(DateTime.fromJSDate(jsDate).set({second:0}));
 
         // Change only the date not the time
-        let newEnd = end.set({
+        const newEnd = end.set({
             year: newDate.year,
             month: newDate.month,
             day: newDate.day,
@@ -168,12 +258,7 @@ export default function DateTimeSelecteur({timezone, disabled=false, minimumStar
 
         setStart(newDebut);
         //TODO: keep same length as a setting
-        //setEnd(newDebut.plus({minutes:diffTime})); //Applies event length
         setEnd(newFin)
-
-        log("newDebut", newDebut)
-
-        if (Platform.OS === 'android') setShowStartPicker(false);
     };
 
     /**
@@ -183,16 +268,24 @@ export default function DateTimeSelecteur({timezone, disabled=false, minimumStar
      * @returns {void}
      */
     const handleEndTimeChange = (jsDate: Date) => {
-        log('handleEndChange', jsDate)
-        let newFin = ceilBy5(DateTime.fromJSDate(jsDate).set({ second: 0 }));
-
-        log('newFin', newFin, "startOf day", newFin.startOf('day').toJSDate())
-        setEnd(newFin)       
-
-        if (Platform.OS === 'android') setShowEndPicker(false);
+        setEnd(ceilBy5(DateTime.fromJSDate(jsDate).set({ second: 0 })))
     };
 
-    
+    /**
+     * Builds a picker's onChange. On Android the dialog must close whatever the outcome:
+     * when the person cancelled ('dismissed', no date), the flag used to stay true, so
+     * the next tap changed nothing and the dialog never reopened.
+     */
+    const surChangement = (fermer: () => void, appliquer: (d: Date) => void) =>
+        (e: DateTimePickerEvent, date?: Date) => {
+            if (Platform.OS === 'android') fermer()
+            if (e.type === 'set' && date) appliquer(date)
+        }
+
+    const onChangeStartDate = surChangement(() => setShowDatePicker(false), handleStartDateChange)
+    const onChangeStartTime = surChangement(() => setShowStartPicker(false), handleStartTimeChange)
+    const onChangeEndDate = surChangement(() => setShowFinDatePicker(false), handleEndDateChange)
+    const onChangeEndTime = surChangement(() => setShowEndPicker(false), handleEndTimeChange)
 
     // Pre-filled whole days (a range from the month calendar): "all day" on.
     useEffect(() => {
@@ -242,72 +335,24 @@ export default function DateTimeSelecteur({timezone, disabled=false, minimumStar
         setEnd(fin)
     }
 
-    const s = StyleSheet.create({
-        label: {
-            color: colors.muted,
-            fontSize: 20,
-            fontFamily: fonts.body,
-        },
-        inputTemps: {
-            color: colors.text,
-            fontSize: 20,
-            fontFamily: fonts.body
-        },
-        container: {
-            flexDirection: 'column',
-            flex:3,
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            backgroundColor: colors.card,
-            borderRadius: 8,
-            borderColor: colors.border,
-            overflow: 'hidden',
-            paddingHorizontal: 8,
-            paddingVertical:4,
-            marginBottom: 8,
-            gap:8
-        },
-        dateTimeContainer: {
-            flex:3,
-            width: '100%',
-            paddingTop: 0,
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems:'center',
-            gap:Platform.OS === 'android' ? 0 : 4 
-        },
-        pickerContainer: {
-            flex: 1,
-            alignItems: 'center', 
-            justifyContent: 'center',
-            flexDirection: 'column',
-            //backgroundColor:colors.secondary
-        },
-        dateTimePicker: {
-            width: 'auto',
-            alignItems: 'center',
-            borderWidth: 1,
-            borderRadius: 8,
-            borderColor: colors.border,
-            backgroundColor:colors.primary,
-            paddingVertical: 4,
-            paddingHorizontal: 8,
-            marginBottom:4
-        },
-        androidTimeLabel: {
-            flex: 0,
-            width: '20%',
-            marginRight: 18
-        },
-        
-    });
+    // Only what depends on the palette/fonts; recomputed when they change
+    const dyn = useMemo(() => ({
+        label: { color: colors.muted, fontFamily: fonts.body } as TextStyle,
+        inputTemps: { color: colors.text, fontFamily: fonts.body } as TextStyle,
+        container: { backgroundColor: colors.card, borderColor: colors.border },
+        dateTimePicker: { borderColor: colors.border, backgroundColor: colors.primary },
+    }), [colors.muted, colors.text, colors.card, colors.border, colors.primary, fonts.body])
+
+    const isAndroid = Platform.OS === 'android'
+    const labelStyle = [staticStyles.label, dyn.label, staticStyles.pickerContainer, isAndroid ? staticStyles.androidTimeLabel : null]
+    const placeholder = <View style={staticStyles.pickerPlaceholder} />
 
     return (
-        <Animated.View style={s.container}>    
-            <View style={[s.dateTimeContainer, { flex: 2, marginBottom:4 }]}>
-                <Text style={[s.label, {flex:1}]}>{t('dateTime.allDay')}</Text>
+        <View style={[staticStyles.container, dyn.container]}>    
+            <View style={[staticStyles.dateTimeContainer, staticStyles.allDayRow]}>
+                <Text style={[staticStyles.label, dyn.label, staticStyles.allDayLabel]}>{t('dateTime.allDay')}</Text>
                     <SwitchAbs
-                        style={{width:'20%'}}
+                        style={staticStyles.allDaySwitch}
                         value={isAllDay}
                         // onValueChange: SwitchAbs only forwards that one; the
                         // onChange used here was dropped, so the switch never toggled.
@@ -315,101 +360,103 @@ export default function DateTimeSelecteur({timezone, disabled=false, minimumStar
                     />
             </View>    
             {/* --- Start --- */}
-            <View style={s.dateTimeContainer}>
-                <Text style={[s.label, s.pickerContainer, Platform.OS === 'android' ? s.androidTimeLabel : {}]}>{t('dateTime.starts')}</Text>
+            <View style={staticStyles.dateTimeContainer}>
+                <Text style={labelStyle}>{t('dateTime.starts')}</Text>
                 {/* Date */}
-                <View style={s.pickerContainer}>
-                    {Platform.OS === 'android' && (
-                        <TouchableOpacity onPress={() => setShowDatePicker(true)} disabled={disabled} style={s.dateTimePicker} >
-                            <Text style={[s.inputTemps, {fontSize:17}]}>{convertirTimestampDateLongue(start.startOf('day'))}</Text>
+                <View style={staticStyles.pickerContainer}>
+                    {isAndroid && (
+                        <TouchableOpacity onPress={() => setShowDatePicker(true)} disabled={disabled} style={[staticStyles.dateTimePicker, dyn.dateTimePicker]} >
+                            <Text style={[staticStyles.inputTemps, dyn.inputTemps, staticStyles.dateFontSize]}>{convertirTimestampDateLongue(start.startOf('day'))}</Text>
                         </TouchableOpacity>
                     )}
-                    {showDatePicker && (
+                    {showDatePicker && (pickersReady ? (
                         <RNDateTimePicker
-                            value={start?.startOf('day').toJSDate() || dtNow.toJSDate()}
+                            value={startDayJS}
                             mode="date"
-                            minimumDate={minimumStart?.startOf('day').toJSDate() ?? undefined}
-                            maximumDate={maximumSur?.toJSDate()}
-                            display={Platform.OS === 'android' ? 'calendar' : 'default'}
-                            onChange={(e, date) => date && handleStartDateChange(date)}
-                            {...(Platform.OS === 'ios' ? { timeZoneName: timezone, accentColor: colors.text } : {})}
+                            minimumDate={minStartDayJS}
+                            maximumDate={maxJS}
+                            display={isAndroid ? 'calendar' : 'default'}
+                            onChange={onChangeStartDate}
+                            {...iosPickerProps}
                         />
-                    )}
+                    ) : placeholder)}
                 </View>
                 {/* Time */}
                 {!isAllDay &&
-                    <View style={s.pickerContainer}>
-                        {Platform.OS === 'android' && (
-                            <TouchableOpacity style={s.dateTimePicker} onPress={() => setShowStartPicker(true)} disabled={disabled}>
-                                <Text style={s.inputTemps}>{convertirTimestampHeure(start)}</Text>
+                    <View style={staticStyles.pickerContainer}>
+                        {isAndroid && (
+                            <TouchableOpacity style={[staticStyles.dateTimePicker, dyn.dateTimePicker]} onPress={() => setShowStartPicker(true)} disabled={disabled}>
+                                <Text style={[staticStyles.inputTemps, dyn.inputTemps]}>{convertirTimestampHeure(start)}</Text>
                             </TouchableOpacity>
                         )}
-                        {showDebutPicker && (
+                        {showDebutPicker && (pickersReady ? (
                             <RNDateTimePicker                        
-                                value={start.toJSDate()}
-                                minimumDate={minimumStart?.toJSDate() ?? undefined}
-                                maximumDate={maximumSur?.toJSDate()}
+                                value={startJS}
+                                minimumDate={minStartJS}
+                                maximumDate={maxJS}
                                 mode="time"
                                 is24Hour={true}
                                 minuteInterval={5}
-                                display={Platform.OS === 'android' ? 'spinner' : 'default'}
-                                onChange={(e, date) => date && handleStartTimeChange(date)}
-                                {...(Platform.OS === 'ios' ? { timeZoneName: timezone, accentColor: colors.text } : {})}
+                                display={isAndroid ? 'spinner' : 'default'}
+                                onChange={onChangeStartTime}
+                                {...iosPickerProps}
                             />
-                        )}
+                        ) : placeholder)}
                     </View>
                 }
             </View>
 
             {/* --- End --- */}
-            <View style={s.dateTimeContainer}>            
-                <Text style={[s.label, s.pickerContainer, Platform.OS === 'android' ? s.androidTimeLabel : {}]}>{t('dateTime.ends')}</Text>
+            <View style={staticStyles.dateTimeContainer}>            
+                <Text style={labelStyle}>{t('dateTime.ends')}</Text>
                 {/* Date */}
-                <View style={s.pickerContainer}>                
-                    {Platform.OS === 'android' && (
-                        <TouchableOpacity onPress={() => setShowFinDatePicker(true)} disabled={disabled} style={s.dateTimePicker} >
-                            <Text style={[s.inputTemps, {fontSize:17}]}>{convertirTimestampDateLongue(end.startOf('day'))}</Text>
+                <View style={staticStyles.pickerContainer}>                
+                    {isAndroid && (
+                        <TouchableOpacity onPress={() => setShowFinDatePicker(true)} disabled={disabled} style={[staticStyles.dateTimePicker, dyn.dateTimePicker]} >
+                            <Text style={[staticStyles.inputTemps, dyn.inputTemps, staticStyles.dateFontSize]}>{convertirTimestampDateLongue(end.startOf('day'))}</Text>
                         </TouchableOpacity>
                     )}
-                    {showFinDatePicker && (
+                    {showFinDatePicker && (pickersReady ? (
                         <RNDateTimePicker
-                            value={end.startOf('day').toJSDate()}
+                            value={endDayJS}
                             mode="date"
-                            minimumDate={start.startOf('day').toJSDate()}
-                            maximumDate={maximumSur?.toJSDate()}
-                            display={Platform.OS === 'android' ? 'calendar' : 'default'}
-                            onChange={(e, date) => date && handleEndDateChange(date)}
-                            {...(Platform.OS === 'ios' ? { timeZoneName: timezone, accentColor: colors.text } : {})}
+                            minimumDate={startDayJS}
+                            maximumDate={maxJS}
+                            display={isAndroid ? 'calendar' : 'default'}
+                            onChange={onChangeEndDate}
+                            {...iosPickerProps}
                         />
-                    )}
+                    ) : placeholder)}
                 </View>
                 {/* Time */}
                 {!isAllDay &&
-                    <View style={s.pickerContainer}>
-                        {Platform.OS === 'android' && (
-                            <TouchableOpacity style={s.dateTimePicker} onPress={() => setShowEndPicker(true)} disabled={disabled}>
-                                <Text style={s.inputTemps}>{convertirTimestampHeure(end)}</Text>
+                    <View style={staticStyles.pickerContainer}>
+                        {isAndroid && (
+                            <TouchableOpacity style={[staticStyles.dateTimePicker, dyn.dateTimePicker]} onPress={() => setShowEndPicker(true)} disabled={disabled}>
+                                <Text style={[staticStyles.inputTemps, dyn.inputTemps]}>{convertirTimestampHeure(end)}</Text>
                             </TouchableOpacity>
                         )}
-                        {showFinPicker && (
+                        {showFinPicker && (pickersReady ? (
                             <RNDateTimePicker
-                                value={end.toJSDate()}
-                                minimumDate={start.plus({ minutes: 5 }).toJSDate()}
-                                maximumDate={maximumSur?.toJSDate()}
+                                value={endJS}
+                                minimumDate={minEndJS}
+                                maximumDate={maxJS}
                                 mode="time"
                                 is24Hour={true}
                                 minuteInterval={5}
-                                display={Platform.OS === 'android' ? 'spinner' : 'default'}
-                                onChange={(e, date) => date && handleEndTimeChange(date)}
-                                {...(Platform.OS === 'ios' ? { timeZoneName: timezone, accentColor: colors.text } : {})}
+                                display={isAndroid ? 'spinner' : 'default'}
+                                onChange={onChangeEndTime}
+                                {...iosPickerProps}
                             />
-                        )}
+                        ) : placeholder)}
                     </View>
                 }
             </View> 
 
             {/* --- Suggestions --- */}
             <CommonSlotsSuggestions/>
-        </Animated.View>
+        </View>
     );
 }
+
+export default React.memo(DateTimeSelecteur)

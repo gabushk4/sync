@@ -24,15 +24,16 @@ export default function ChargementEcran({}){
 
     const imageAnime = useAnimatedStyle(()=>{
         return{
-            top:topImage.value
+            top:topImage.get()
         }
     })
 
     useEffect(()=>{
-        topImage.value = withRepeat(withSequence(
+        // .set() (not `.value =`): the React Compiler rules forbid writing to a hook's value
+        topImage.set(withRepeat(withSequence(
             withTiming(-10, {duration:500, easing:Easing.inOut(Easing.quad)}),
             withTiming(0, {duration:500, easing:Easing.inOut(Easing.cubic)} ),
-        ), -1,true)
+        ), -1,true))
 
         const interval = setInterval(()=>{
             setPoints((prev)=>prev.length<3?prev+'.':'')

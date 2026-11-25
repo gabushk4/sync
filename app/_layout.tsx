@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import '../i18n';
+import i18n from '../i18n';
 
 //Providers
 import { APIProvider } from '@/contextes/contexteAPI';
@@ -13,38 +13,41 @@ import { AccessTokenProvider } from '@/contextes/contexteToken';
 import { ThemeProvider } from "expo-router/react-navigation";
 
 //Contexts
-
-//Dependencies
-import { router, Stack, usePathname } from 'expo-router';
-import { Accelerometer } from 'expo-sensors';
-import * as SplashScreen from 'expo-splash-screen';
-import { View } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import 'react-native-reanimated';
-
-//Components
-import Toast from 'react-native-toast-message';
-
-//Functions
-import ChargementEcran from '@/components/chargementEcran';
 import { AuthProvider, useAuth } from '@/contextes/contexteAuth';
 import { ConversationsProvider } from '@/contextes/contexteConversations';
+import { EventDraftProvider } from '@/contextes/contexteEventDraft';
 import { GestionScrollProvider } from '@/contextes/contexteGestionListes';
 import { InvitesProvider } from '@/contextes/contexteInvites';
 import { MockModeProvider } from '@/contextes/contexteMockMode';
 import { NotificationProvider } from '@/contextes/contexteNotifications';
 import { SettingsProvider, useSettings } from '@/contextes/contexteSettings';
+import { SignalementsProvider } from '@/contextes/contexteSignalements';
 import { TimelineProvider } from '@/contextes/contexteTimeline';
+import { TutorielProvider, useTutoriel } from '@/contextes/contexteTutoriel';
+
+//Dependencies
+import { router, Stack, usePathname } from 'expo-router';
+import { Accelerometer } from 'expo-sensors';
+import * as SplashScreen from 'expo-splash-screen';
+import { Alert, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import {
   configureReanimatedLogger,
   ReanimatedLogLevel,
 } from 'react-native-reanimated';
 
+//Components
+import Toast from 'react-native-toast-message';
+import ChargementEcran from '@/components/chargementEcran';
 import RequestStatus from '@/components/requestStatus';
-import { toastConfig } from '@/constants/toastConfig';
-import { EventDraftProvider } from '@/contextes/contexteEventDraft';
-import { SignalementsProvider } from '@/contextes/contexteSignalements';
+import SlideshowIntro from '@/components/slideshowIntro';
+
+//Functions
+import { configurerAffichagePremierPlan } from '@/functions/notificationsPush';
 import { initLocalization } from '@/locales/initLocale';
+import useNotificationsPush from '@/hooks/useNotificationsPush';
+
+import { toastConfig } from '@/constants/toastConfig';
 
 // This is the default configuration
 configureReanimatedLogger({
@@ -56,50 +59,50 @@ export { ErrorBoundary } from 'expo-router';
 
 SplashScreen.preventAutoHideAsync();
 
+// User story 45: in the foreground, a push is shown as the app's toast, not as a system alert.
+configurerAffichagePremierPlan();
+
 export default function RootLayout() {
   return (
-    
     <GestureHandlerRootView style={{ flex: 1 }}>
       <FontProvider>
         <AccessTokenProvider>
           <MockModeProvider>
-            <APIProvider>
-              <SignalementsProvider>
-              
-                <SettingsProvider>
-                  <PaletteProvider>
-                    <MembreProvider>
-                      <AuthProvider> 
-                        <NotificationProvider>
-                          <ConversationsProvider>
-                            <RouteAbsProvider>
-                              <ModalProvider>                  
-                                <FabProvider>
-                                  <TimelineProvider>
-                                    <GestionScrollProvider> 
-                                      <InvitesProvider>
-                                        
-                                          <AppLoader />  
-                                    
-                                      </InvitesProvider>  
-                                    </GestionScrollProvider>
-                                  </TimelineProvider>
-                                </FabProvider>                  
-                              </ModalProvider>
-                            </RouteAbsProvider>
-                          </ConversationsProvider>   
-                        </NotificationProvider>  
-                      </AuthProvider>
-                    </MembreProvider>
-                  </PaletteProvider>
-                </SettingsProvider>
-              </SignalementsProvider>
-            </APIProvider>
+            <TutorielProvider>
+              <APIProvider>
+                <SignalementsProvider>
+                  <SettingsProvider>
+                    <PaletteProvider>
+                      <MembreProvider>
+                        <AuthProvider>
+                          <NotificationProvider>
+                            <ConversationsProvider>
+                              <RouteAbsProvider>
+                                <ModalProvider>
+                                  <FabProvider>
+                                    <TimelineProvider>
+                                      <GestionScrollProvider>
+                                        <InvitesProvider>
+                                          <AppLoader />
+                                        </InvitesProvider>
+                                      </GestionScrollProvider>
+                                    </TimelineProvider>
+                                  </FabProvider>
+                                </ModalProvider>
+                              </RouteAbsProvider>
+                            </ConversationsProvider>
+                          </NotificationProvider>
+                        </AuthProvider>
+                      </MembreProvider>
+                    </PaletteProvider>
+                  </SettingsProvider>
+                </SignalementsProvider>
+              </APIProvider>
+            </TutorielProvider>
           </MockModeProvider>
-        </AccessTokenProvider>            
+        </AccessTokenProvider>
       </FontProvider>
     </GestureHandlerRootView>
-    
   );
 }
 
@@ -111,7 +114,7 @@ function AppLoader() {
   useEffect(() => {
     if (!settingsLoaded) return;
     initLocalization(settings.language).finally(() => setLocaleLoaded(true));
-  }, [settingsLoaded]);
+  }, [settingsLoaded, settings.language]);
 
   useEffect(() => {
     if (fontsLoaded && localeLoaded) SplashScreen.hideAsync();
@@ -130,6 +133,9 @@ function RootLayoutNav() {
   const { navTheme } = usePalette();
   const { state } = useAuth()
   const pathname = usePathname()
+  const { isCompleted, isLoading, marquerTermine } = useTutoriel();
+
+  useNotificationsPush()
 
   useEffect(() => {
     if (state !== 'authenticated') return
@@ -144,15 +150,28 @@ function RootLayoutNav() {
         if (!actif || !disponible) return
 
         Accelerometer.setUpdateInterval(100)
+        let confirmationOuverte = false
         subscription = Accelerometer.addListener(({ x, y, z }) => {
           const acceleration = Math.sqrt(x * x + y * y + z * z)
           const maintenant = Date.now()
           const dejaDansSignalement = pathname.endsWith('/reportBug')
 
-          if (acceleration < 2.3 || dejaDansSignalement || maintenant - dernierDeclenchement < 2000) return
+          if (acceleration < 2.3 || dejaDansSignalement || confirmationOuverte || maintenant - dernierDeclenchement < 2000) return
 
           dernierDeclenchement = maintenant
-          router.push('/(modals)/reportBug')
+          confirmationOuverte = true
+          Alert.alert(
+            i18n.t('shakeReport.title'),
+            i18n.t('shakeReport.message'),
+            [
+              { text: i18n.t('shakeReport.cancel'), style: 'cancel', onPress: () => { confirmationOuverte = false } },
+              { text: i18n.t('shakeReport.confirm'), onPress: () => {
+                confirmationOuverte = false
+                router.push({ pathname: '/(modals)/reportBug', params: { page: 'bug' } })
+              } },
+            ],
+            { cancelable: true, onDismiss: () => { confirmationOuverte = false } },
+          )
         })
       } catch (error) {
         console.warn('Impossible de démarrer la détection de secousse', error)
@@ -166,84 +185,60 @@ function RootLayoutNav() {
     }
   }, [pathname, state])
 
-  /* const enregistrerPushToken = async (accessToken: string)=>{
-    
-    if(!Device.isDevice){
-      alert('notifications push requièrent un appareil physique')
-      return
-    }
-
-    const {status: statusExistant} = await Notifs.getPermissionsAsync()
-    let statusFinal = statusExistant
-
-    if(statusExistant !== 'granted'){
-      const {status} = await Notifs.requestPermissionsAsync()
-      statusFinal = status
-    }
-
-    if(statusFinal !== 'granted'){
-      alert('permission aux notifications push non-accordée')
-      return
-    }
-
-    const pushToken = (await Notifs.getExpoPushTokenAsync()).data
-    //log('pushToken', pushToken)
-
-    try {
-      await api.post('/notifications/push_token', 
-        {
-          push_token: pushToken
-        },
-        {
-          headers:{
-            'Authorization':`Bearer ${accessToken}`
-          }
-        }
-      )
-      return true
-    } catch (error) {
-      catcher(error, 'problème survenu lors de l\'ouverture')
-      return false
-    }
-  } */
+  // Push registration: see enregistrerPushToken (functions/notificationsPush), called by useNotificationsPush.
 
   if (state === 'loading') {
     return <ChargementEcran />;
   }
 
+  // Slideshow d'intro : écran intermédiaire plein écran entre login et home.
+  // Remplace complètement la navigation tant qu'il n'est pas terminé.
+  if (state === 'authenticated' && !isLoading && !isCompleted) {
+    return (
+      <>
+        <ThemeProvider value={navTheme}>
+          <SlideshowIntro onFinish={marquerTermine} />
+        </ThemeProvider>
+        <Toast config={toastConfig} />
+      </>
+    );
+  }
+
   return (
-    <ThemeProvider value={navTheme}>
-      <View style={{ flex: 1 }}>
-      <Stack>
-        {/* Modals and scanQR are only ever opened by a signed-in member, so they live
-            behind the same guard as the tabs: signing out removes them all at once and
-            shows (auth). Outside the guard, an open modal (e.g. the sign-out confirmation)
-            stayed on top of the login screen. */}
-        <Stack.Protected guard={state === 'authenticated'}>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="(modals)"
-            options={{
-              presentation: 'transparentModal',
-              animation: 'none',
-              gestureEnabled: false,
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name='scanQR'
-            options={{
-              headerShown:false
-            }}
-          />
-        </Stack.Protected>
-        <Stack.Protected guard={state === 'unauthenticated'}>
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        </Stack.Protected>
-      </Stack>
-      <RequestStatus />
-      <Toast config={toastConfig}/>
-      </View>
-    </ThemeProvider>
+    <>
+      <ThemeProvider value={navTheme}>
+        <View style={{ flex: 1 }}>
+        <Stack>
+          {/* Modals and scanQR are only ever opened by a signed-in member, so they live
+              behind the same guard as the tabs: signing out removes them all at once and
+              shows (auth). Outside the guard, an open modal (e.g. the sign-out confirmation)
+              stayed on top of the login screen. */}
+          <Stack.Protected guard={state === 'authenticated'}>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="(modals)"
+              options={{
+                presentation: 'transparentModal',
+                animation: 'none',
+                gestureEnabled: false,
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name='scanQR'
+              options={{
+                headerShown:false
+              }}
+            />
+          </Stack.Protected>
+          <Stack.Protected guard={state === 'unauthenticated'}>
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          </Stack.Protected>
+        </Stack>
+        <RequestStatus />      
+        </View>
+        <Toast config={toastConfig}/>
+      </ThemeProvider>
+    </>
   );
 }

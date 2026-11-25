@@ -9,24 +9,30 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 const DELAI_MESSAGE_MS = 5000
 
 export default function RequestStatus() {
+    const isFetching = useSyncExternalStore(
+        (callback) => requestListener.subscribe(callback),
+        () => requestListener.isFetching,
+    )
+
+    if (!isFetching) return null
+
+    return <RequestStatusApresDelai />
+}
+
+function RequestStatusApresDelai() {
     const { colors } = usePalette()
     const { t } = useTranslation('common')
     const insets = useSafeAreaInsets()
-    const isFetching = useSyncExternalStore(
-        (callback) => requestListener.subscribe(() => callback()),
-        () => requestListener.isFetching,
-    )
     const [afficherStatut, setAfficherStatut] = useState(false)
 
     useEffect(() => {
-        if (!isFetching) {
-            setAfficherStatut(false)
-            return
-        }
+        const timeout = setTimeout(
+            () => setAfficherStatut(true),
+            DELAI_MESSAGE_MS,
+        )
 
-        const timeout = setTimeout(() => setAfficherStatut(true), DELAI_MESSAGE_MS)
         return () => clearTimeout(timeout)
-    }, [isFetching])
+    }, [])
 
     if (!afficherStatut) return null
 
@@ -36,7 +42,7 @@ export default function RequestStatus() {
             pointerEvents="none"
             style={{
                 position: 'absolute',
-                top: insets.top + 8,
+                bottom: insets.bottom + 136,
                 alignSelf: 'center',
                 zIndex: 1000,
                 flexDirection: 'row',

@@ -22,10 +22,10 @@ export const isLast = (list: Array<any>, index:number) => index == list.length -
  * @returns a line meant to separate list elements. 
  */
 export default function Separator({ show, style }: Props) {
-    
-    if (!show) return null;
-    
+    // hooks first, before any early return (same order on every render)
     const { colors: c } = usePalette()
+
+    if (!show) return null;
 
     
     const s = {

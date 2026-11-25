@@ -10,7 +10,9 @@
 		"loadMore": "charger plus d'amis disponibles",
 		"friendSince": "ami depuis le {{date}}",
 		"emptyState": "Ajoute des amis grâce à l'option :",
-		"unavailable": "indisponible à ce moment"
+		"unavailable": "indisponible à ce moment",
+		"pickFriends": "Choisis des amis",
+		"addCount": "Ajouter ({{count}})"
 	},
 	"add": {
 		"codeLabel": "Code d'ami",
@@ -46,5 +48,15 @@
 		"errors": {
 			"responseFailed": "Impossible de répondre à cette demande d'ami"
 		}
+	},
+	"relation": {
+		"add": "Ajouter en ami",
+		"addShort": "Ajouter",
+		"sent": "Demande d'ami envoyée",
+		"sentShort": "Envoyée",
+		"sentToast": "Demande d'ami envoyée",
+		"accept": "Accepter sa demande d'ami",
+		"acceptShort": "Accepter",
+		"accepted": "Vous êtes maintenant amis"
 	}
 }

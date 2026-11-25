@@ -17,6 +17,7 @@ import {
 } from '@/functions/importCalendar';
 import { definirImportEnCours } from '@/functions/importStaging';
 import Icon from '@react-native-vector-icons/ionicons';
+import CheckboxAbs from '@/abstractions/checkboxAbs';
 // API 'legacy' : la seule qui fonctionne dans Expo Go (voir functions/importCalendar.js)
 import * as Calendar from 'expo-calendar/legacy';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -264,21 +265,16 @@ export default function ImportCalendarScreen() {
                         {calendars.map(calendar => {
                             const selected = selectedIds.has(calendar.id);
                             return (
-                                <TouchableOpacity
+                                <CheckboxAbs
                                     key={calendar.id}
-                                    accessibilityRole="checkbox"
-                                    accessibilityState={{ checked: selected }}
-                                    style={styles.row}
+                                    checked={selected}
                                     onPress={() => toggleCalendar(calendar.id)}
+                                    size={22}
+                                    style={styles.row}
                                 >
-                                    <Icon
-                                        name={selected ? 'checkbox' : 'square-outline'}
-                                        size={22}
-                                        color={selected ? colors.secondary : colors.muted}
-                                    />
                                     <Text numberOfLines={2} style={styles.rowText}>{calendar.title}</Text>
                                     {calendar.color ? <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: calendar.color }} /> : null}
-                                </TouchableOpacity>
+                                </CheckboxAbs>
                             );
                         })}
                         <TouchableOpacity

@@ -14,9 +14,8 @@ export default function ModalLayout() {
                 contentStyle: { backgroundColor: 'transparent' },
                 freezeOnBlur: false,
                 presentation: 'transparentModal',
-            }}
-            
-            />
+            }}            
+        />
             <Toast config={toastConfig} />
         </>
         

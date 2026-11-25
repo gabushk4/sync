@@ -1,6 +1,8 @@
 import { DateTime } from 'luxon';
 import { UrlDescriptor } from './url';
 
+export type MomentAlerte = 'debut' | 'fin';
+
 export type Event = {
   id?: string;
   titre?: string;      // optionnal if private
@@ -16,6 +18,7 @@ export type Event = {
   // Other participants than the creator: drawn in the group color (Philip — user story 23).
   groupe?: boolean;
   regle_recurrence?: string;
+  alertes?: MomentAlerte[];
   id_parent?: string;
   debut_occurence?: DateTime;
   timezone: string;
@@ -52,6 +55,9 @@ export const defaultEvent = <Event>{
 export type Friend = {
   id: string;
   fp_url?: string;
+  statut_disponibilite?: 'disponible' | 'silencieux' | 'indisponible' | null;
+  /** Whether this member has marked the friend as close (per-member preference). */
+  proche?: boolean;
   evenements: Event[];
 };
 

@@ -10,36 +10,37 @@ type Props = {
     'value' | 'onSubmitEditing' | 'secureTextEntry' | 'keyboardType' | 
     'returnKeyType' | 'autoComplete' | 'onBlur' | 'onFocus' | 'textContentType' |
     'multiline' | 'onLayout' | 'numberOfLines' | 'autoFocus' | 'maxLength' |
-    'onEndEditing' | 'pointerEvents' | 'autoCorrect' | 'autoCapitalize'
+    'onEndEditing' | 'pointerEvents' | 'autoCorrect' | 'autoCapitalize' | 'onChange'
 >;
 
-const TextInputAbs = forwardRef<TextInput, Props>(({
+const TextInputAbs = forwardRef<TextInput, Props>( function TextInputAbs({
     readOnly = false,
     value,
     onLayout,
     onChangeText,
-    onSubmitEditing = () => {},
+    onSubmitEditing = (e) => {},
     placeholder = '...',
     placeholderTextColor = undefined,
     secureTextEntry = false,
     keyboardType = 'default',
     returnKeyType = 'default',
     autoComplete = 'off',
-    onBlur = () => {},
-    onFocus = () => {},
+    onBlur = (e) => {},
+    onFocus = (e) => {},
     textContentType = 'none',
     style,
     multiline = false,
     numberOfLines = 1,
     autoFocus = false,
     maxLength = undefined,
-    onEndEditing = () => { },
+    onEndEditing = (e) => { },
     pointerEvents = 'auto',
     // Same defaults as React Native's TextInput, so existing inputs are unchanged;
     // codes/ids pass false/'none' so iOS doesn't "correct" them.
     autoCorrect = true,
     autoCapitalize = 'sentences',
-}, ref) => {
+    onChange = (e) =>{}
+}, ref){
     const { colors } = usePalette();
     const { fonts } = useFont();
 

@@ -1,4 +1,6 @@
 {
+	"editProfile": "Modifier le profil",
+	"changePhoto": "Changer la photo de profil",
 	"navigation": {
 		"profile": "Profil",
 		"edit": "éditer le profil",
@@ -23,11 +25,26 @@
 		"warning": "attention les yeux !"
 	},
 	"memberSince": "membre depuis le {{date}}",
+	"availability": {
+		"change": "Changer ma disponibilité",
+		"close": "Fermer le choix de disponibilité",
+		"disponible": "Recevoir normalement",
+		"silencieux": "Silencieux",
+		"indisponible": "Bloquer les invitations",
+		"errorTitle": "Statut non modifié",
+		"errorMessage": "Impossible d’enregistrer votre statut de disponibilité."
+	},
+	"blockFriend": {
+		"block": "Bloquer",
+		"unblock": "Débloquer"
+	},
 	"memberIdLabel": "identifiant du membre",
 	"admin": {
 		"title": "Dashboard admin",
 		"dashboard": "Ouvrir le dashboard admin",
 		"bugsTab": "Bugs",
+		"feedbackTab": "Feedbacks",
+		"feedbackEmpty": "Aucun feedback n'a été envoyé.",
 		"empty": "Aucun bug n’a été rapporté.",
 		"loadFailed": "Impossible de charger les bugs rapportés.",
 		"retry": "Réessayer",
@@ -76,9 +93,70 @@
 			"confirmTitle": "Anonymiser ce membre ?",
 			"confirmMessage": "Les données de {{pseudo}} seront supprimées ou anonymisées. Cette action est définitive.",
 			"confirmAction": "Anonymiser"
+		},
+		"metricsTab":"Usages",
+		"osMetricsTab":"OS",
+		"metrics":{
+			"title": "Métriques d'usage",
+			"refresh": "Actualiser",
+			"loadFailed": "Impossible de charger les métriques.",
+			"retry": "Réessayer",
+			"empty": "Aucune métrique disponible.",
+			"calculeLe": "Calculé {{date}}",
+			"dernierCalcul": "Dernier calcul",
+			"tauxGlobaux": "Taux globaux",
+			"population": "Population",
+			"membresActives": "Membres actives",
+			"evenementsCrees": "Événements créés",
+			"evenementsDispoCommune": "Événements dispo commune",
+			"invitationsEnvoyees": "Invitations envoyées",
+			"invitationsAcceptees": "Invitations acceptées",
+			"membresHoraireMaj": "Membres à jour (30j)",
+			"tauxActivation": "activation",
+			"tauxAcceptationInvitations": "acceptation des invitations",
+			"tauxMaj30j": "mises à jour (30j)",
+			"tauxEvenementsDispoCommune": "usage dispo commune",
+			"periodeCourante": "Période courante",
+			"parJour7j": "Moyenne sur 7 jours",
+			"parJour30j": "Moyenne sur 30 jours",
+			"periode": "du {{debut}} au {{fin}}",
+			"histoire": "Historique"
+		},
+		"os_metrics": {
+			"title": "Métriques OS",
+			"refresh": "Actualiser",
+			"periode": "Période",
+			"historique": "Tout l'historique",
+			"periode24h": "24 h",
+			"periode7j": "7 jours",
+			"periode30j": "30 jours",
+			"periode90j": "90 jours",
+			"personnalise": "Personnalisé",
+			"debut": "Début",
+			"fin": "Fin",
+			"systeme": "Système",
+			"disque": "Disque",
+			"echantillons": "Échantillons",
+			"cpu": "CPU",
+			"memoireRss": "Mémoire RSS",
+			"heapUtilise": "Heap utilisé",
+			"octetsExternes": "Octets externes",
+			"disqueTotal": "Disque total",
+			"disqueUtilise": "Disque utilisé",
+			"disqueDisponible": "Disque disponible",
+			"utilisationDisque": "Utilisation disque",
+			"nbEchantillons": "Nombre d'échantillons",
+			"periodeSousTitre": "du {{debut}} au {{fin}}",
+			"tendanceCpu": "Tendance CPU",
+			"loadFailed": "Impossible de charger les métriques OS.",
+			"empty": "Aucune donnée pour cette période."
 		}
 	},
 	"friendMood": "État d'âme",
+	"closeFriend": {
+		"add": "Ajouter aux amis proches",
+		"remove": "Retirer des amis proches"
+	},
 	"moodEmpty": "Aucun état d'âme partagé pour le moment.",
 	"bioEmpty": "Aucune bio pour le moment.",
 	"commonSlots": {
@@ -95,8 +173,33 @@
 	},
 	"errors": {
 		"widgetsLoadFailed": "erreur lors du chargement des widgets",
+		"closeFriendUpdateFailed": "impossible de modifier le statut d'ami proche",
+		"friendBlockUpdateFailed": "impossible de modifier le blocage de cet ami",
 		"updateFailed": "impossible de modifier le profil",
 		"loadFriendProfileFailed": "impossible de charger le profil de cet ami",
 		"friendProfileUnavailable": "ce profil est indisponible"
+	},
+	"password": {
+		"open": "changer mon mot de passe",
+		"title": "changer mon mot de passe",
+		"current": "mot de passe actuel",
+		"new": "nouveau mot de passe",
+		"confirm": "confirmer le nouveau mot de passe",
+		"ruleLength": "au moins {{length}} caractères",
+		"ruleSpecial": "un caractère spécial",
+		"ruleCase": "une majuscule et une minuscule",
+		"sameHint": "c'est le même que ton mot de passe actuel : rien ne changera",
+		"match": "les mots de passe correspondent",
+		"noMatch": "les mots de passe ne correspondent pas",
+		"show": "afficher les mots de passe",
+		"hide": "masquer les mots de passe",
+		"submit": "changer le mot de passe",
+		"failedTitle": "le mot de passe n'a pas été changé",
+		"wrongCurrent": "le mot de passe actuel est incorrect",
+		"changedTitle": "mot de passe changé",
+		"changedMessage": "ton mot de passe a été changé. un courriel de confirmation t'a été envoyé : si ce n'était pas toi, tu pourras le signaler.",
+		"sameTitle": "tout est beau",
+		"sameMessage": "c'est déjà ton mot de passe : rien n'a changé.",
+		"done": "ok"
 	}
 }

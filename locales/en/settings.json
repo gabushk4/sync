@@ -15,6 +15,8 @@
     "dangerZone":"danger zone",
     "signOut":"sign out",
     "open":"open",
+    "replayTutorial":"Replay the tutorial",
+    "replayTutorialFailed":"Unable to restart the tutorial",
     "deleteAccount":"delete my account",
     "exportData":"export my data",
     "theme":"palette",
@@ -22,6 +24,7 @@
     "appVersion":"version {{version}}",
     "about":"about sync",
     "privacyPolicy":"privacy policy",
+    "usageContract":"usage contract",
     "minorSecurity":"child safety standards",
     "imports":"import and manage a calendar",
     "calendarImports":{
@@ -29,5 +32,21 @@
         "file": "from .ics file",
         "google": "from Google Agenda",
         "outlook": "from Outlook Calendar"
+    },
+    "privacy":"privacy",
+    "messagePreview":"message text in notifications",
+    "messagePreviewFailed":"the setting couldn't be changed",
+    "sendFeedback":"Send feedback",
+    "themePicker": {
+        "title":"app palette",
+        "open":"change the app's color",
+        "wheel":"color wheel",
+        "preview":"preview",
+        "sampleTitle":"dinner with friends",
+        "sampleTime":"tomorrow, 18:00 – 20:00",
+        "sampleStatus":"accepted",
+        "sampleButton":"edit",
+        "done":"done",
+        "cancel":"cancel"
     }
 }

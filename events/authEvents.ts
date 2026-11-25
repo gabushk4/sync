@@ -1,6 +1,6 @@
 import log from "@/functions/log";
+import Listener from "@/types/listener"
 
-type Listener = () => void
 
 let listeners: Listener[] = [];
 

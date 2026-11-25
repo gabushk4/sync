@@ -1,4 +1,9 @@
+import { ReactNode } from 'react';
+import { Text, TouchableOpacity, View } from 'react-native';
 import Toast, {ToastShowParams as ToastShowParamsBase} from 'react-native-toast-message';
+
+import { useFont } from '@/contextes/contexteFont';
+import { usePalette } from '@/contextes/contextePalette';
 
 // `text3` is an extra muted line shown by the custom warning toast (components/toastAvertissement.js).
 type ToastShowParams = ToastShowParamsBase & { text3?: string };
@@ -7,6 +12,13 @@ type ToastShowParams = ToastShowParamsBase & { text3?: string };
 const DUREE_PAR_DEFAUT = 4000
 /** Extra time for the hide animation before the watchdog moves on (ms). */
 const MARGE_ANIMATION = 800
+/**
+ * Time the hide animation takes before the next queued toast shows (ms).
+ * react-native-toast-message calls onHide when the hide STARTS: showing the next toast
+ * right then caught the card while it slid away, so a second toast only changed the
+ * text of the first. Waiting lets the first one leave and the next one come in.
+ */
+const DELAI_SORTIE = 450
 
 const queue: ToastShowParams[] = [];
 let isShowing = false;
@@ -50,7 +62,8 @@ function processQueue() {
         ...config,
         onHide: () => {
             if (originalOnHide) originalOnHide();
-            if (id === idCourant) processQueue();
+            // after the hide animation, so the next toast slides in as a new one
+            if (id === idCourant) setTimeout(() => { if (id === idCourant) processQueue(); }, DELAI_SORTIE);
         },
     });
 
@@ -90,3 +103,67 @@ const ToastAbs = {
 };
 
 export default ToastAbs;
+
+type ToastBaseProps = {
+    /** Border and title color (e.g. colors.success, colors.secondary). */
+    couleur: string
+    /** Left column (an icon or image), vertically centered. */
+    icone?: ReactNode
+    titre?: string
+    texte?: string
+    /** Right of the texts (e.g. a chevron when the toast opens something). */
+    droite?: ReactNode
+    /** Makes the whole card tappable. */
+    onPress?: () => void
+    accessibilityLabel?: string
+    /** Drawn under the row, inside the card (e.g. an extra line or a link). */
+    children?: ReactNode
+}
+
+/**
+ * The card shared by the app's custom toasts (constants/toastConfig): rounded card in the
+ * palette's card color with a colored border, the icon on the left, the title (in that
+ * color) and the text. A new toast type only gives its color, icon and texts instead of
+ * copying these styles. Tappable when given onPress.
+ *
+ * @param {ToastBaseProps} props
+ * @returns {JSX.Element}
+ */
+export function ToastBase({ couleur, icone, titre, texte, droite, onPress, accessibilityLabel, children }: ToastBaseProps) {
+    const { colors } = usePalette()
+    const { fonts } = useFont()
+
+    const contenu = (
+        <>
+            <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 80, paddingVertical: 8 }}>
+                <View style={{ width: '20%', alignItems: 'center', justifyContent: 'center' }}>
+                    {icone}
+                </View>
+                <View style={{ flex: 1, paddingRight: 4 }}>
+                    {!!titre && <Text style={{ color: couleur, fontFamily: fonts.title, fontSize: 18 }} numberOfLines={2}>{titre}</Text>}
+                    {!!texte && <Text style={{ color: colors.text, fontFamily: fonts.body, fontSize: 15 }} numberOfLines={2}>{texte}</Text>}
+                </View>
+                {droite}
+            </View>
+            {children}
+        </>
+    )
+    const style = {
+        width: '90%' as const, marginTop: 16, overflow: 'hidden' as const,
+        backgroundColor: colors.card, borderColor: couleur, borderWidth: 1, borderRadius: 16,
+    }
+
+    return onPress ? (
+        <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={onPress}
+            accessibilityRole="button"
+            accessibilityLabel={accessibilityLabel ?? [titre, texte].filter(Boolean).join('. ')}
+            style={style}
+        >
+            {contenu}
+        </TouchableOpacity>
+    ) : (
+        <View accessibilityLabel={accessibilityLabel} style={style}>{contenu}</View>
+    )
+}

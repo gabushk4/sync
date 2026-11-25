@@ -16,8 +16,6 @@ export function useNavFab(owner: string, config: FabConfig) {
     // runs first in the same commit. Philip — user story 5.
     useEffect(() => { configRef.current = config })
 
-    console.log('useNavFab render', owner);
-
     const href = config?.href
     const visible = config?.href
     const paramsKey = JSON.stringify(config?.params ?? null)
@@ -25,7 +23,6 @@ export function useNavFab(owner: string, config: FabConfig) {
     const bloque = config?.bloque
 
     useFocusEffect(React.useCallback(() => {      
-        console.log('useFocusEffect fired', owner, configRef.current?.href);
         if(configRef.current?.href)
             setFabConfig(owner, configRef.current)
         else

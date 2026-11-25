@@ -62,14 +62,20 @@ export function corpsCreation(values: EventFormValues) {
  * @param {{ pseudo: string }[] | undefined} indisponibles
  * @returns {void}
  */
-export function avertirIndisponibles(indisponibles?: { pseudo: string }[]) {
-    if (!indisponibles?.length) return
+export function avertirIndisponibles(indisponibles?: { pseudo: string }[], bloques?: { pseudo: string }[]) {
+    if (!bloques?.length && !indisponibles?.length) return
+    const details: string[] = []
+    if (bloques?.length) details.push(i18n.t('events:availabilityStatus.blocked', {
+        count: bloques.length,
+        pseudos: bloques.map((i) => i.pseudo).join(', '),
+    }))
+    if (indisponibles?.length) details.push(i18n.t('events:unavailability.leftOut', {
+        count: indisponibles.length,
+        pseudos: indisponibles.map((i) => i.pseudo).join(', '),
+    }))
     ToastAbs.show({
         type: toastTypes.warning,
-        text1: i18n.t('events:unavailability.leftOutTitle'),
-        text2: i18n.t('events:unavailability.leftOut', {
-            count: indisponibles.length,
-            pseudos: indisponibles.map((i) => i.pseudo).join(', '),
-        }),
+        text1: bloques?.length ? i18n.t('events:availabilityStatus.blockedTitle') : i18n.t('events:unavailability.leftOutTitle'),
+        text2: details.join(' '),
     })
 }

@@ -1,0 +1,34 @@
+{
+  "checklist": {
+    "title": "Getting started",
+    "progress": "{{done}} of {{total}} done",
+    "hide": "Hide",
+    "allDone":"It's complete!",
+    "tasks": {
+      "addedEvent": {
+        "title": "Create an event",
+        "description": "From the home screen, tap + to plan something with your friends."
+      },
+      "addedFriend": {
+        "title": "Add a friend",
+        "description": "Scan their QR code or share your code from your profile."
+      },
+      "importedEvents": {
+        "title": "Import your calendar",
+        "description": "Connect Google, Outlook or your device, or import a file from the settings."
+      },
+      "invitedFriend": {
+        "title": "Invite a friend to an event",
+        "description": "Open an event and tap Invite to pick from your friends."
+      },
+      "createdDiscussion": {
+        "title": "Start an event chat",
+        "description": "From an event, open its group chat to get organized."
+      },
+      "fromSharedAvailability": {
+        "title": "Plan from a shared availability",
+        "description": "On the timeline, tap a moment when you’re all free to create an event."
+      }
+    }
+  }
+}

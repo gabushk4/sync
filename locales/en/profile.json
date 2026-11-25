@@ -1,4 +1,6 @@
 {
+	"editProfile": "Edit profile",
+	"changePhoto": "Change profile picture",
 	"navigation": {
 		"profile": "Profile",
 		"edit": "edit profile",
@@ -23,11 +25,26 @@
 		"warning": "watch your eyes!"
 	},
 	"memberSince": "member since {{date}}",
+	"availability": {
+		"change": "Change my availability",
+		"close": "Close availability choices",
+		"disponible": "Green · receive normally",
+		"silencieux": "Yellow · silent",
+		"indisponible": "Red · block invitations",
+		"errorTitle": "Status not changed",
+		"errorMessage": "Could not save your availability status."
+	},
+	"blockFriend": {
+		"block": "Block",
+		"unblock": "Unblock"
+	},
 	"memberIdLabel": "member ID",
 	"admin": {
 		"title": "Admin dashboard",
 		"dashboard": "Open admin dashboard",
 		"bugsTab": "Bugs",
+		"feedbackTab": "Feedback",
+		"feedbackEmpty": "No feedback has been sent.",
 		"empty": "No bugs have been reported.",
 		"loadFailed": "Could not load reported bugs.",
 		"retry": "Try again",
@@ -44,6 +61,7 @@
 		"unknownMember": "Unknown member",
 		"statusLabel": "Status: {{statut}}",
 		"requestedAt": "Requested {{date}}",
+		
 		"statuses": {
 			"en_attente": "To do",
 			"en_cours": "In progress",
@@ -76,9 +94,70 @@
 			"confirmTitle": "Anonymize this member?",
 			"confirmMessage": "{{pseudo}}'s data will be deleted or anonymized. This can't be undone.",
 			"confirmAction": "Anonymize"
+		},
+		"metricsTab": "Usage",
+		"osMetricsTab": "OS",
+		"metrics":{
+			"title": "Usage metrics",
+			"refresh": "Refresh",
+			"loadFailed": "Could not load metrics.",
+			"retry": "Try again",
+			"empty": "No metrics available.",
+			"calculeLe": "Computed {{date}}",
+			"dernierCalcul": "Latest snapshot",
+			"tauxGlobaux": "Global rates",
+			"population": "Population",
+			"membresActives": "Active members",
+			"evenementsCrees": "Events created",
+			"evenementsDispoCommune": "Events from common availabilities",
+			"invitationsEnvoyees": "Invitations sent",
+			"invitationsAcceptees": "Invitations accepted",
+			"membresHoraireMaj": "Members updated (30d)",
+			"tauxActivation": "Activation rate",
+			"tauxAcceptationInvitations": "Invitation acceptance",
+			"tauxMaj30j": "Update (30d)",
+			"tauxEvenementsDispoCommune": "Common avail. usage",
+			"periodeCourante": "Current period",
+			"parJour7j": "7-day average",
+			"parJour30j": "30-day average",
+			"periode": "from {{debut}} to {{fin}}",
+			"histoire": "History"
+		},
+		"os_metrics": {
+			"title": "OS Metrics",
+			"refresh": "Refresh",
+			"periode": "Period",
+			"historique": "Full history",
+			"periode24h": "Last 24h",
+			"periode7j": "Last 7 days",
+			"periode30j": "Last 30 days",
+			"periode90j": "Last 90 days",
+			"personnalise": "Custom",
+			"debut": "Start",
+			"fin": "End",
+			"systeme": "System",
+			"disque": "Disk",
+			"echantillons": "Samples",
+			"cpu": "CPU",
+			"memoireRss": "RSS Memory",
+			"heapUtilise": "Heap used",
+			"octetsExternes": "External bytes",
+			"disqueTotal": "Total disk",
+			"disqueUtilise": "Used disk",
+			"disqueDisponible": "Available disk",
+			"utilisationDisque": "Disk usage",
+			"nbEchantillons": "Number of samples",
+			"periodeSousTitre": "from {{debut}} to {{fin}}",
+			"tendanceCpu": "CPU Trend",
+			"loadFailed": "Could not load OS metrics.",
+			"empty": "No data for this period."
 		}
 	},
 	"friendMood": "Mood",
+	"closeFriend": {
+		"add": "Add to close friends",
+		"remove": "Remove from close friends"
+	},
 	"moodEmpty": "No mood shared right now.",
 	"bioEmpty": "No bio yet.",
 	"commonSlots": {
@@ -95,8 +174,33 @@
 	},
 	"errors": {
 		"widgetsLoadFailed": "error loading widgets",
+		"closeFriendUpdateFailed": "unable to update close friend status",
+		"friendBlockUpdateFailed": "unable to update this friend's block status",
 		"updateFailed": "unable to update profile",
 		"loadFriendProfileFailed": "unable to load this friend's profile",
 		"friendProfileUnavailable": "this profile is unavailable"
+	},
+	"password": {
+		"open": "change my password",
+		"title": "change my password",
+		"current": "current password",
+		"new": "new password",
+		"confirm": "confirm the new password",
+		"ruleLength": "at least {{length}} characters",
+		"ruleSpecial": "a special character",
+		"ruleCase": "an upper and a lower case letter",
+		"sameHint": "it's the same as your current password: nothing will change",
+		"match": "the passwords match",
+		"noMatch": "the passwords don't match",
+		"show": "show the passwords",
+		"hide": "hide the passwords",
+		"submit": "change the password",
+		"failedTitle": "the password wasn't changed",
+		"wrongCurrent": "the current password is wrong",
+		"changedTitle": "password changed",
+		"changedMessage": "your password was changed. a confirmation email was sent to you: if it wasn't you, you can report it.",
+		"sameTitle": "all good",
+		"sameMessage": "that's already your password: nothing changed.",
+		"done": "ok"
 	}
 }
