@@ -147,6 +147,7 @@ class AutoRefresh {
                 params,
                 signal: this.abortController.signal,
             })
+            log('POLL', this.url, 'envoyé:', params.last_checked, 'reçu:', response.data?.last_checked, 'changed:', response.data?.has_changed)
 
             // Réponse périmée : une requête plus récente a été lancée entre-temps
             if (myId !== this.requestId) return
