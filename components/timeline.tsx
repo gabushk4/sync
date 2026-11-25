@@ -1,40 +1,13 @@
-import React, { useEffect, useRef } from "react"
-import { Text, View } from "react-native"
-import Animated, { scrollTo, useAnimatedReaction, useAnimatedRef } from "react-native-reanimated"
+import { DateTime } from "luxon"
+import React, { useMemo, useRef } from "react"
+import { StyleSheet, Text, View } from "react-native"
+import Animated, { scrollTo, useAnimatedReaction, useAnimatedRef, useAnimatedStyle } from "react-native-reanimated"
 
 import { useFont } from "@/contextes/contexteFont"
+import { useGestionScroll } from "@/contextes/contexteGestionListes"
 import { usePalette } from '@/contextes/contextePalette'
 import { useTimeline } from "@/contextes/contexteTimeline"
-import { useGestionScroll } from "../contextes/contexteGestionListes"
-import { DateTime } from "luxon"
 
-
-const heures = [
-    { id: "T0", heure: "0:00" },
-    { id: "T1", heure: "1:00" },
-    { id: "T2", heure: "2:00" },
-    { id: "T3", heure: "3:00" },
-    { id: "T4", heure: "4:00" },
-    { id: "T5", heure: "5:00" },
-    { id: "T6", heure: "6:00" },
-    { id: "T7", heure: "7:00" },
-    { id: "T8", heure: "8:00" },
-    { id: "T9", heure: "9:00" },
-    { id: "T10", heure: "10:00" },
-    { id: "T11", heure: "11:00" },
-    { id: "T12", heure: "12:00" },
-    { id: "T13", heure: "13:00" },
-    { id: "T14", heure: "14:00" },
-    { id: "T15", heure: "15:00" },
-    { id: "T16", heure: "16:00" },
-    { id: "T17", heure: "17:00" },
-    { id: "T18", heure: "18:00" },
-    { id: "T19", heure: "19:00" },
-    { id: "T20", heure: "20:00" },
-    { id: "T21", heure: "21:00" },
-    { id: "T22", heure: "22:00" },
-    { id: "T23", heure: "23:00" }
-];
 type TimelineProps = {
     horizontal: boolean
     windowStart?: DateTime
@@ -48,61 +21,59 @@ type TimelineProps = {
     premierPlan?: React.ReactNode
 }
 
-export default function Timeline({ horizontal, windowStart, selectedDate, timelineDays = 1, defilerAuDemarrage = true, premierPlan } : TimelineProps){
+const styles = StyleSheet.create({
+    // Horizontal: a clipping window (what the ScrollView's own frame was). It keeps the
+    // ScrollView's default flex (grow + shrink) and fills the height of its row.
+    fenetreH: {
+        zIndex: 2,
+        flexGrow: 1,
+        flexShrink: 1,
+        alignSelf: 'stretch',
+        overflow: 'hidden',
+    },
+    contenuH: {
+        flexDirection: 'row',
+        height: '100%',
+    },
+    verticale: {
+        zIndex: 2,
+        paddingTop: 16,
+    },
+    contenuV: {
+        backgroundColor: 'transparent',
+        flexDirection: 'column',
+    },
+})
+
+/**
+ * The hours' cells (24 per day), built once. They only depend on the window, the
+ * palette, the fonts and the sizes: they used to be rebuilt (168 views with a Text each,
+ * on the home screen) every time the screen redrew.
+ */
+function useCellulesHeures(horizontal: boolean, windowStart: DateTime | undefined, timelineDays: number) {
     const { colors } = usePalette()
-    const {fonts} = useFont()
-    const {pxHeures, L_HEURES, H_HEURES} = useTimeline()
-    const { offset } = useGestionScroll()
+    const { fonts } = useFont()
+    const { pxHeures, L_HEURES, H_HEURES } = useTimeline()
+    const debutMs = windowStart?.startOf('day').toMillis()
 
-    const scrollViewRef = useAnimatedRef<Animated.ScrollView>()
-    const initialisationFaite = useRef(false)
-
-    useAnimatedReaction(
-        () => offset.get(),
-        (offset) => 
-            scrollTo(scrollViewRef, horizontal ? offset : 0, horizontal ? 0 : offset, false)
-    )
-    
-    useEffect(()=>{},[pxHeures])
-
-    return(
-        <Animated.ScrollView
-            style={{ zIndex: 2, pointerEvents: 'none', ...(horizontal ? {} : { paddingTop: 16 }) }}
-            contentContainerStyle={{ backgroundColor: 'transparent', flexDirection: horizontal ? 'row' : 'column' }}
-            ref={scrollViewRef}
-            horizontal={horizontal}
-            showsHorizontalScrollIndicator={false}
-            showsVerticalScrollIndicator={false}
-            scrollEnabled={true}
-            onLayout={() => {
-                if (initialisationFaite.current) return
-                initialisationFaite.current = true
-                if (!defilerAuDemarrage) return
-                const cible = selectedDate ?? DateTime.now()
-                const heureDansLaFenetre = windowStart
-                    ? cible.diff(windowStart.startOf('day'), 'hours').hours
-                    : cible.hour
-                offset.set(Math.max(0, heureDansLaFenetre) * (pxHeures + L_HEURES))
-            }}
-            >
-            {Array.from({ length: timelineDays * 24 }, (_, index) => {
-                const dateBase = windowStart ?? DateTime.now().startOf('day').minus({ days: 3 })
-                const jour = Math.floor(index / 24)
-                const heure = index % 24
-                const now = dateBase.startOf('day').plus({ days: jour, hours: heure })
-                const item = heures[heure]
-                const minuit = heure === 0
-                return (
+    return useMemo(() => {
+        const dateBase = windowStart ?? DateTime.now().startOf('day').minus({ days: 3 })
+        return Array.from({ length: timelineDays * 24 }, (_, index) => {
+            const jour = Math.floor(index / 24)
+            const heure = index % 24
+            const now = dateBase.startOf('day').plus({ days: jour, hours: heure })
+            const minuit = heure === 0
+            return (
                 <View
-                key={`h-${index}`}
-                style={{
-                    
-                    
-                    alignItems: 'center',
-                    justifyContent:'center',
-                    backgroundColor: 'transparent',
-                    ...(horizontal ? { marginRight: pxHeures, width: L_HEURES, height:'100%', borderLeftWidth: minuit ? 1 : 0, borderColor: colors.muted } : { marginBottom: pxHeures, height: H_HEURES, width:'100%' })
-                }}
+                    key={`h-${index}`}
+                    style={{
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: 'transparent',
+                        ...(horizontal
+                            ? { marginRight: pxHeures, width: L_HEURES, height: '100%', borderLeftWidth: minuit ? 1 : 0, borderColor: colors.muted }
+                            : { marginBottom: pxHeures, height: H_HEURES, width: '100%' })
+                    }}
                 >
                     <Text
                         style={{
@@ -117,13 +88,96 @@ export default function Timeline({ horizontal, windowStart, selectedDate, timeli
                             ...(horizontal && !minuit ? { transform: [{ translateX: -L_HEURES / 2 }] } : {}),
                         }}
                     >
-                        {minuit ? now.toFormat('ccc d') : item.heure}
+                        {minuit ? now.toFormat('ccc d') : `${heure}:00`}
                     </Text>
                 </View>
-            )})}
-            {premierPlan}
-            </Animated.ScrollView>
-        
-        
+            )
+        })
+        // windowStart is read through debutMs: a new DateTime for the same day rebuilds nothing.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [debutMs, horizontal, timelineDays, colors.text, colors.muted, fonts.number, pxHeures, L_HEURES, H_HEURES])
+}
+
+/**
+ * Horizontal hours' row. Not a ScrollView any more: the hours sit in one layer translated
+ * by the shared offset (one transform per frame, like the friends' rows), instead of a
+ * scrollTo native command on every frame of a drag.
+ */
+function TimelineHorizontale({ windowStart, selectedDate, timelineDays = 1, defilerAuDemarrage = true, premierPlan }: TimelineProps) {
+    const { pxHeures, L_HEURES } = useTimeline()
+    const { offset } = useGestionScroll()
+    const cellules = useCellulesHeures(true, windowStart, timelineDays)
+    const initialisationFaite = useRef(false)
+
+    const translation = useAnimatedStyle(() => ({
+        transform: [{ translateX: -offset.get() }],
+    }))
+
+    return (
+        <View
+            pointerEvents="none"
+            style={styles.fenetreH}
+            onLayout={() => {
+                if (initialisationFaite.current) return
+                initialisationFaite.current = true
+                if (!defilerAuDemarrage) return
+                const cible = selectedDate ?? DateTime.now()
+                const heureDansLaFenetre = windowStart
+                    ? cible.diff(windowStart.startOf('day'), 'hours').hours
+                    : cible.hour
+                offset.set(Math.max(0, heureDansLaFenetre) * (pxHeures + L_HEURES))
+            }}
+        >
+            <Animated.View style={[styles.contenuH, { width: timelineDays * 24 * (pxHeures + L_HEURES) }, translation]}>
+                {cellules}
+                {premierPlan}
+            </Animated.View>
+        </View>
     )
+}
+
+/**
+ * Vertical hours' column (other screens): unchanged, still a ScrollView driven by scrollTo.
+ */
+function TimelineVerticale({ windowStart, selectedDate, timelineDays = 1, defilerAuDemarrage = true, premierPlan }: TimelineProps) {
+    const { pxHeures, L_HEURES } = useTimeline()
+    const { offset } = useGestionScroll()
+    const cellules = useCellulesHeures(false, windowStart, timelineDays)
+
+    const scrollViewRef = useAnimatedRef<Animated.ScrollView>()
+    const initialisationFaite = useRef(false)
+
+    useAnimatedReaction(
+        () => offset.get(),
+        (valeur) => scrollTo(scrollViewRef, 0, valeur, false)
+    )
+
+    return (
+        <Animated.ScrollView
+            style={[styles.verticale, { pointerEvents: 'none' }]}
+            contentContainerStyle={styles.contenuV}
+            ref={scrollViewRef}
+            horizontal={false}
+            showsHorizontalScrollIndicator={false}
+            showsVerticalScrollIndicator={false}
+            scrollEnabled={true}
+            onLayout={() => {
+                if (initialisationFaite.current) return
+                initialisationFaite.current = true
+                if (!defilerAuDemarrage) return
+                const cible = selectedDate ?? DateTime.now()
+                const heureDansLaFenetre = windowStart
+                    ? cible.diff(windowStart.startOf('day'), 'hours').hours
+                    : cible.hour
+                offset.set(Math.max(0, heureDansLaFenetre) * (pxHeures + L_HEURES))
+            }}
+        >
+            {cellules}
+            {premierPlan}
+        </Animated.ScrollView>
+    )
+}
+
+export default function Timeline(props: TimelineProps) {
+    return props.horizontal ? <TimelineHorizontale {...props} /> : <TimelineVerticale {...props} />
 }

@@ -1,7 +1,7 @@
 import { ajouterAuBrouillon, BROUILLON_VIDE, BrouillonInvites, marquerRetrait, retirerDuBrouillon } from "@/functions/brouillonInvites";
 import log from "@/functions/log";
 import { Participant } from "@/types/invites";
-import React, { createContext, useCallback, useContext, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 
 type InvitesContextValue = {
     /** Friends added in the form, not invited yet (sent with ✓). */
@@ -46,8 +46,14 @@ export const InvitesProvider: React.FC<React.PropsWithChildren> = ({ children })
 
     const resetInvites = useCallback(() => setBrouillon(BROUILLON_VIDE), [])
 
+    // Memoized: a new object on every render of the provider re-rendered every consumer.
+    const value = useMemo<InvitesContextValue>(
+        () => ({ invites, retraits, ajouterInvite, supprimerInvite, retirerParticipant, resetInvites }),
+        [invites, retraits, ajouterInvite, supprimerInvite, retirerParticipant, resetInvites]
+    )
+
     return (
-        <InvitesContexte.Provider value={{ invites, retraits, ajouterInvite, supprimerInvite, retirerParticipant, resetInvites }}>
+        <InvitesContexte.Provider value={value}>
             {children}
         </InvitesContexte.Provider>
     )

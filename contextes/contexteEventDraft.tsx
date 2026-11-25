@@ -9,7 +9,7 @@ import { FriendIntervals, Interval } from "@/types/availabilities"
 import { Participant } from "@/types/invites"
 import { isCancel } from "axios"
 import { DateTime } from "luxon"
-import { createContext, Dispatch, ReactNode, SetStateAction, useCallback, useContext, useEffect, useRef, useState } from "react"
+import { createContext, Dispatch, ReactNode, SetStateAction, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 import { useAPI } from "./contexteAPI"
 import { useInvites } from "./contexteInvites"
 
@@ -35,31 +35,57 @@ type Props = {
     children: ReactNode
 }
 
+const DEBOUNCE_MS = 350
+
+// Stable empty arrays: `cond ? values : []` created a new [] on every render, which
+// defeated the memoized context value (and any memo on the consumers).
+const EMPTY_INTERVALS: Interval[] = []
+const EMPTY_FRIENDS: FriendIntervals[] = []
+
 export const EventDraftProvider = ({makeReq = true, initialStart, initialEnd, children } : Props) => {
 
     const { invites } = useInvites()
     const { api } = useAPI()
 
-    const now = DateTime.now()
     const suggestionsOffset = useRef(0) 
     const friendsListOffset = useRef(0)
     const commonAvailController = useRef<AbortController | null>(null)
     const friendsAvailController = useRef<AbortController>(new AbortController())
 
-    const DEBOUNCE_MS = 350
-
     const [requestsEnabled, setRequestsEnabled] = useState(makeReq)
     const [friendsRequestsEnabled, setFriendsRequestsEnabled] = useState(makeReq)
 
-    const [start, setStart] = useState<DateTime>(ceilBy5(initialStart ?? now.plus({hour:1})))
-    const [end, setEnd] = useState<DateTime>(ceilBy5(initialEnd ?? start.plus({ hour: 1 })))
+    // Lazy: "now" and ceilBy5 only matter for the first render
+    const [initialRange] = useState(() => {
+        const initStart = ceilBy5(initialStart ?? DateTime.now().plus({ hour: 1 }))
+        const initEnd = ceilBy5(initialEnd ?? initStart.plus({ hour: 1 }))
+        return { initStart, initEnd }
+    })
+    const [start, setStartState] = useState<DateTime>(initialRange.initStart)
+    const [end, setEndState] = useState<DateTime>(initialRange.initEnd)
+
+    // Stable setters that ignore an equal value. A new DateTime instance is never ===
+    // the previous one even for the same instant, so setting the same dates again
+    // (focus effect, details loading…) used to re-render every consumer for nothing.
+    const setStart = useCallback<Dispatch<SetStateAction<DateTime<boolean>>>>((value) => {
+        setStartState((prev) => {
+            const next = typeof value === 'function' ? value(prev) : value
+            return next.equals(prev) ? prev : next
+        })
+    }, [])
+    const setEnd = useCallback<Dispatch<SetStateAction<DateTime<boolean>>>>((value) => {
+        setEndState((prev) => {
+            const next = typeof value === 'function' ? value(prev) : value
+            return next.equals(prev) ? prev : next
+        })
+    }, [])
     
     const [slotSuggestionsState, setSlotSuggestionsState] = useState<{ key: string; values: Interval[] }>({ key: '', values: [] })
     const [friendsAvailabilityState, setFriendsAvailabilityState] = useState<{ key: string; values: FriendIntervals[]; hasMore: boolean }>({ key: '', values: [], hasMore: false })
     const rangeKey = `${start.toMillis()}/${end.toMillis()}`
     const commonSlotsKey = `${rangeKey}/${invites.map(invite => invite.id).sort().join(',')}`
-    const slotSuggestions = slotSuggestionsState.key === commonSlotsKey ? slotSuggestionsState.values : []
-    const friendsSuggestions = friendsAvailabilityState.key === rangeKey ? friendsAvailabilityState.values : []
+    const slotSuggestions = slotSuggestionsState.key === commonSlotsKey ? slotSuggestionsState.values : EMPTY_INTERVALS
+    const friendsSuggestions = friendsAvailabilityState.key === rangeKey ? friendsAvailabilityState.values : EMPTY_FRIENDS
     const friendsHasMore = friendsAvailabilityState.key === rangeKey && friendsAvailabilityState.hasMore
 
     const getCommonAvail = useCallback(async (signal: AbortSignal) => {
@@ -193,8 +219,16 @@ export const EventDraftProvider = ({makeReq = true, initialStart, initialEnd, ch
         return friendsAvailabilityEvents.onRequestMore(() => getFriendsAvail(true))
     }, [getFriendsAvail, requestsEnabled, friendsRequestsEnabled])
 
+    // Memoized: a new object on every render of the provider re-rendered every consumer
+    // (the form, the 4 native pickers, the suggestions…).
+    const value = useMemo<EventDraftContextType>(() => ({
+        invites, start, setStart, end, setEnd,
+        slotSuggestions, friendsSuggestions, friendsHasMore,
+        setRequestsEnabled, setFriendsRequestsEnabled,
+    }), [invites, start, setStart, end, setEnd, slotSuggestions, friendsSuggestions, friendsHasMore])
+
     return (
-        <EventDraftContext.Provider value={{invites, start, setStart, end, setEnd, slotSuggestions, friendsSuggestions, friendsHasMore, setRequestsEnabled, setFriendsRequestsEnabled}}>
+        <EventDraftContext.Provider value={value}>
             {children}
         </EventDraftContext.Provider>
     )
